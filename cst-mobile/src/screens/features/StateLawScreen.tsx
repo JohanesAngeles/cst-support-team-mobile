@@ -40,7 +40,7 @@ export default function StateLawScreen({ navigation }: Props) {
           </View>
           <View style={styles.pill}>
             <Ionicons name="water-outline" size={11} color='#3498DB' />
-            <Text style={[styles.pillText, { color: '#3498DB' }]}>{item.dieselTax}¢/gal</Text>
+            <Text style={[styles.pillText, { color: '#3498DB' }]}>{item.dieselTax}</Text>
           </View>
         </View>
       </View>

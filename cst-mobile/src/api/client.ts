@@ -1,7 +1,7 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://192.168.100.4:5000/api';
+const BASE_URL = 'https://cst-support-api-3020a5341eb4.herokuapp.com/api';
 
 const client = axios.create({
   baseURL: BASE_URL,

@@ -16,15 +16,17 @@ type FeatureScreen = keyof MainStackParamList | null;
 
 const features: { icon: string; label: string; color: string; desc: string; screen: FeatureScreen }[] = [
   { icon: 'shield-checkmark-outline', label: 'AI Legal Assistant', color: '#3498DB', desc: 'Ask legal questions',  screen: 'AILegal' },
-  { icon: 'document-text-outline',    label: 'Smart Forms',        color: '#9B59B6', desc: 'Contracts & docs',     screen: null },
+  { icon: 'document-text-outline',    label: 'Smart Forms',        color: '#9B59B6', desc: 'Contracts & docs',     screen: 'SmartForms' },
   { icon: 'library-outline',          label: 'State Law',          color: '#1ABC9C', desc: 'All 50 states',        screen: 'StateLaw' },
-  { icon: 'hammer-outline',           label: 'Ticket Dispute',     color: '#E67E22', desc: 'Fight your tickets',   screen: null },
-  { icon: 'business-outline',         label: 'Corp Startups',      color: '#2ECC71', desc: 'LLC & EIN filing',     screen: null },
-  { icon: 'trending-up-outline',      label: 'Rate Tools',         color: '#F39C12', desc: 'Broker & lane rates',  screen: null },
-  { icon: 'people-outline',           label: 'Driver Protection',  color: '#E74C3C', desc: 'Coercion & wellness',  screen: null },
+  { icon: 'hammer-outline',           label: 'Ticket Dispute',     color: '#E67E22', desc: 'Fight your tickets',   screen: 'TicketDispute' },
+  { icon: 'business-outline',         label: 'Corp Startups',      color: '#2ECC71', desc: 'LLC & EIN filing',     screen: 'CorpStartups' },
+  { icon: 'trending-up-outline',      label: 'Rate Tools',         color: '#F39C12', desc: 'Broker & lane rates',  screen: 'RateTools' },
+  { icon: 'people-outline',           label: 'Driver Protection',  color: '#E74C3C', desc: 'Coercion & wellness',  screen: 'DriverProtection' },
   { icon: 'calendar-outline',         label: 'Driver Calendar',    color: '#8E44AD', desc: 'Never miss a deadline',screen: 'Calendar' },
+  { icon: 'timer-outline',            label: 'HOS Tracker',        color: '#16A085', desc: '70/60-hr cycle log',    screen: 'HOSTracker' },
+  { icon: 'stopwatch-outline',        label: 'Detention Tracker',  color: '#C0392B', desc: 'Clock in/out & pay',    screen: 'DetentionTracker' },
   { icon: 'construct-outline',        label: 'Maintenance',        color: '#E67E22', desc: 'Track service & repairs', screen: 'Maintenance' },
-  { icon: 'folder-outline',           label: 'Document Vault',     color: '#F5A623', desc: 'Store your docs',      screen: null },
+  { icon: 'folder-outline',           label: 'Document Vault',     color: '#F5A623', desc: 'Store your docs',      screen: 'DocumentVault' },
   { icon: 'calculator-outline',       label: 'Tax Calculator',     color: '#27AE60', desc: 'One-button tax prep',  screen: 'TaxCalculator' },
   { icon: 'bar-chart-outline',        label: 'Profit & Loss',      color: '#9B59B6', desc: 'Revenue & expenses',   screen: 'ProfitLoss' },
 ];

@@ -10,6 +10,14 @@ import MaintenanceScreen from '../screens/features/MaintenanceScreen';
 import ProfitLossScreen from '../screens/features/ProfitLossScreen';
 import StateLawScreen from '../screens/features/StateLawScreen';
 import StateLawDetailScreen from '../screens/features/StateLawDetailScreen';
+import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
+import DriverProtectionScreen from '../screens/features/DriverProtectionScreen';
+import CorpStartupsScreen from '../screens/features/CorpStartupsScreen';
+import RateToolsScreen from '../screens/features/RateToolsScreen';
+import TicketDisputeScreen from '../screens/features/TicketDisputeScreen';
+import SmartFormsScreen from '../screens/features/SmartFormsScreen';
+import HOSTrackerScreen from '../screens/features/HOSTrackerScreen';
+import DetentionTrackerScreen from '../screens/features/DetentionTrackerScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -21,6 +29,14 @@ export type MainStackParamList = {
   ProfitLoss: undefined;
   StateLaw: undefined;
   StateLawDetail: { abbr: string };
+  DocumentVault: undefined;
+  DriverProtection: undefined;
+  CorpStartups: undefined;
+  RateTools: undefined;
+  TicketDispute: undefined;
+  SmartForms: undefined;
+  HOSTracker: undefined;
+  DetentionTracker: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -46,6 +62,14 @@ export default function MainStack() {
       <Stack.Screen name="ProfitLoss" component={ProfitLossScreen} options={{ title: 'Profit & Loss' }} />
       <Stack.Screen name="StateLaw" component={StateLawScreen} options={{ title: 'State Law Reference' }} />
       <Stack.Screen name="StateLawDetail" component={StateLawDetailScreen} options={({ route }) => ({ title: route.params.abbr })} />
+      <Stack.Screen name="DocumentVault" component={DocumentVaultScreen} options={{ title: 'Document Vault' }} />
+      <Stack.Screen name="DriverProtection" component={DriverProtectionScreen} options={{ title: 'Driver Protection' }} />
+      <Stack.Screen name="CorpStartups" component={CorpStartupsScreen} options={{ title: 'Corp Startups' }} />
+      <Stack.Screen name="RateTools" component={RateToolsScreen} options={{ title: 'Rate Tools' }} />
+      <Stack.Screen name="TicketDispute" component={TicketDisputeScreen} options={{ title: 'Ticket Dispute' }} />
+      <Stack.Screen name="SmartForms" component={SmartFormsScreen} options={{ title: 'Smart Forms' }} />
+      <Stack.Screen name="HOSTracker" component={HOSTrackerScreen} options={{ title: 'HOS Tracker' }} />
+      <Stack.Screen name="DetentionTracker" component={DetentionTrackerScreen} options={{ title: 'Detention Tracker' }} />
     </Stack.Navigator>
   );
 }

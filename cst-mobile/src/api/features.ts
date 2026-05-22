@@ -49,3 +49,16 @@ export const updateRevenue = (period: 'Week' | 'Month' | 'Quarter' | 'Year', dat
   grossRevenue?: number; netProfit?: number; totalMiles?: number; fuelCost?: number;
   expenses?: { label: string; amount: number; color: string }[]; trend?: number[];
 }) => client.put(`/revenue/${period}`, data).then(r => r.data);
+
+// HOS
+export const getHOSEntries = () => client.get('/hos').then(r => r.data);
+export const logHOSEntry = (data: { date: string; drivingHours: number; onDutyHours: number; notes?: string }) =>
+  client.post('/hos', data).then(r => r.data);
+export const deleteHOSEntry = (id: string) => client.delete(`/hos/${id}`).then(r => r.data);
+
+// Detention
+export const getDetentionEvents = () => client.get('/detention').then(r => r.data);
+export const startDetention = (data: { location: string; type: string; loadNum?: string; freeHours: number; ratePerHour: number }) =>
+  client.post('/detention/start', data).then(r => r.data);
+export const stopDetention = (id: string) => client.put(`/detention/${id}/stop`, {}).then(r => r.data);
+export const deleteDetentionEvent = (id: string) => client.delete(`/detention/${id}`).then(r => r.data);

@@ -4,7 +4,6 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
-import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
 import { Colors } from '../constants/colors';
 
 export default function AppNavigator() {
@@ -20,7 +19,7 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      {!user ? <AuthStack /> : !user.isVerified ? <VerifyEmailScreen /> : <MainStack />}
+      {!user ? <AuthStack /> : <MainStack />}
     </NavigationContainer>
   );
 }

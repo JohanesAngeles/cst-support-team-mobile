@@ -48,7 +48,7 @@ export default function StateLawDetailScreen({ route }: Props) {
           </View>
           <View style={styles.quickCard}>
             <Ionicons name="water-outline" size={22} color="#3498DB" />
-            <Text style={[styles.quickValue, { color: '#3498DB' }]}>{entry.dieselTax}¢</Text>
+            <Text style={[styles.quickValue, { color: '#3498DB' }]}>{entry.dieselTax}</Text>
             <Text style={styles.quickLabel}>Diesel Tax/gal</Text>
           </View>
         </View>
