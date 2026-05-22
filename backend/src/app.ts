@@ -13,6 +13,9 @@ import documentsRoutes from './routes/documents';
 import revenueRoutes from './routes/revenue';
 import hosRoutes from './routes/hos';
 import detentionRoutes from './routes/detention';
+import triplogRoutes from './routes/triplog';
+import fuellogRoutes from './routes/fuellog';
+import brokernotesRoutes from './routes/brokernotes';
 
 const app = express();
 
@@ -30,6 +33,9 @@ app.use('/api/documents', documentsRoutes);
 app.use('/api/revenue', revenueRoutes);
 app.use('/api/hos', hosRoutes);
 app.use('/api/detention', detentionRoutes);
+app.use('/api/triplog', triplogRoutes);
+app.use('/api/fuellog', fuellogRoutes);
+app.use('/api/brokernotes', brokernotesRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });

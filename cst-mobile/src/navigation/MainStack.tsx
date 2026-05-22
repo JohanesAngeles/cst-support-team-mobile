@@ -18,6 +18,10 @@ import TicketDisputeScreen from '../screens/features/TicketDisputeScreen';
 import SmartFormsScreen from '../screens/features/SmartFormsScreen';
 import HOSTrackerScreen from '../screens/features/HOSTrackerScreen';
 import DetentionTrackerScreen from '../screens/features/DetentionTrackerScreen';
+import TripLogScreen from '../screens/features/TripLogScreen';
+import FuelLogScreen from '../screens/features/FuelLogScreen';
+import AxleWeightScreen from '../screens/features/AxleWeightScreen';
+import BrokerNotesScreen from '../screens/features/BrokerNotesScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -37,6 +41,10 @@ export type MainStackParamList = {
   SmartForms: undefined;
   HOSTracker: undefined;
   DetentionTracker: undefined;
+  TripLog: undefined;
+  FuelLog: undefined;
+  AxleWeight: undefined;
+  BrokerNotes: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -70,6 +78,10 @@ export default function MainStack() {
       <Stack.Screen name="SmartForms" component={SmartFormsScreen} options={{ title: 'Smart Forms' }} />
       <Stack.Screen name="HOSTracker" component={HOSTrackerScreen} options={{ title: 'HOS Tracker' }} />
       <Stack.Screen name="DetentionTracker" component={DetentionTrackerScreen} options={{ title: 'Detention Tracker' }} />
+      <Stack.Screen name="TripLog" component={TripLogScreen} options={{ title: 'Trip Log' }} />
+      <Stack.Screen name="FuelLog" component={FuelLogScreen} options={{ title: 'Fuel Log' }} />
+      <Stack.Screen name="AxleWeight" component={AxleWeightScreen} options={{ title: 'Axle Weight Calculator' }} />
+      <Stack.Screen name="BrokerNotes" component={BrokerNotesScreen} options={{ title: 'Broker Notes' }} />
     </Stack.Navigator>
   );
 }

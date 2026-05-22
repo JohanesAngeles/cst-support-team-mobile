@@ -1,0 +1,238 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { Colors } from '../../constants/colors';
+import { getTrips, addTrip, deleteTrip } from '../../api/features';
+
+interface Trip {
+  _id: string;
+  date: string;
+  origin: string;
+  destination: string;
+  miles: number;
+  loadNum: string;
+  rate: number;
+  broker: string;
+  notes: string;
+  status: 'Completed' | 'In Progress' | 'Cancelled';
+}
+
+const STATUS_COLORS = { Completed: Colors.success, 'In Progress': Colors.secondary, Cancelled: Colors.danger };
+const todayStr = () => new Date().toISOString().split('T')[0];
+const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+export default function TripLogScreen() {
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [date, setDate] = useState(todayStr());
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [miles, setMiles] = useState('');
+  const [loadNum, setLoadNum] = useState('');
+  const [rate, setRate] = useState('');
+  const [broker, setBroker] = useState('');
+  const [notes, setNotes] = useState('');
+  const [status, setStatus] = useState<Trip['status']>('Completed');
+
+  const load = useCallback(async () => {
+    try {
+      const data = await getTrips();
+      setTrips(data.trips ?? []);
+    } catch { Alert.alert('Error', 'Could not load trips'); }
+    finally { setLoading(false); setRefreshing(false); }
+  }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const openModal = () => {
+    setDate(todayStr()); setOrigin(''); setDestination('');
+    setMiles(''); setLoadNum(''); setRate(''); setBroker(''); setNotes('');
+    setStatus('Completed'); setModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!origin.trim() || !destination.trim() || !miles) {
+      Alert.alert('Error', 'Origin, destination, and miles are required'); return;
+    }
+    setSaving(true);
+    try {
+      await addTrip({
+        date, origin: origin.trim(), destination: destination.trim(),
+        miles: parseFloat(miles), loadNum, rate: parseFloat(rate) || 0,
+        broker, notes, status,
+      });
+      setModal(false);
+      load();
+    } catch (err: any) { Alert.alert('Error', err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = (trip: Trip) => {
+    Alert.alert('Delete Trip', `Remove ${trip.origin} → ${trip.destination}?`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteTrip(trip._id); load(); } },
+    ]);
+  };
+
+  const totalMiles = trips.reduce((s, t) => s + t.miles, 0);
+  const totalRevenue = trips.reduce((s, t) => s + t.rate, 0);
+  const completedTrips = trips.filter(t => t.status === 'Completed').length;
+
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Summary */}
+      <View style={styles.summaryRow}>
+        {[
+          { label: 'Total Trips', value: String(trips.length), icon: 'map-outline', color: Colors.secondary },
+          { label: 'Total Miles', value: totalMiles.toLocaleString(), icon: 'speedometer-outline', color: '#3498DB' },
+          { label: 'Revenue', value: totalRevenue > 0 ? `$${totalRevenue.toLocaleString()}` : '—', icon: 'cash-outline', color: Colors.success },
+        ].map(({ label, value, icon, color }) => (
+          <View key={label} style={styles.summaryCard}>
+            <Ionicons name={icon as any} size={18} color={color} />
+            <Text style={[styles.summaryValue, { color }]}>{value}</Text>
+            <Text style={styles.summaryLabel}>{label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <FlatList
+        data={trips}
+        keyExtractor={t => t._id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Colors.secondary} />}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="map-outline" size={48} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No trips logged yet</Text>
+            <Text style={styles.emptySub}>Tap + to log your first trip</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.card} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
+            <View style={styles.cardTop}>
+              <View style={styles.routeRow}>
+                <Text style={styles.origin} numberOfLines={1}>{item.origin}</Text>
+                <Ionicons name="arrow-forward" size={14} color={Colors.textMuted} />
+                <Text style={styles.dest} numberOfLines={1}>{item.destination}</Text>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '22' }]}>
+                <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{item.status}</Text>
+              </View>
+            </View>
+            <View style={styles.cardMeta}>
+              <Text style={styles.metaText}>{fmtDate(item.date)}</Text>
+              <Text style={styles.metaDot}>·</Text>
+              <Text style={styles.metaText}>{item.miles.toLocaleString()} mi</Text>
+              {item.rate > 0 && <><Text style={styles.metaDot}>·</Text><Text style={[styles.metaText, { color: Colors.success }]}>${item.rate.toLocaleString()}</Text></>}
+              {item.broker ? <><Text style={styles.metaDot}>·</Text><Text style={styles.metaText}>{item.broker}</Text></> : null}
+            </View>
+            {item.loadNum ? <Text style={styles.loadNum}>Load: {item.loadNum}</Text> : null}
+            {item.notes ? <Text style={styles.cardNotes}>{item.notes}</Text> : null}
+          </TouchableOpacity>
+        )}
+      />
+
+      <TouchableOpacity style={styles.fab} onPress={openModal}>
+        <Ionicons name="add" size={28} color={Colors.textDark} />
+      </TouchableOpacity>
+
+      <Modal visible={modal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Log Trip</Text>
+
+            {[
+              { label: 'Date', value: date, set: setDate, placeholder: 'YYYY-MM-DD' },
+              { label: 'Origin *', value: origin, set: setOrigin, placeholder: 'City, State' },
+              { label: 'Destination *', value: destination, set: setDestination, placeholder: 'City, State' },
+              { label: 'Miles *', value: miles, set: setMiles, placeholder: '0', keyboard: 'decimal-pad' as const },
+              { label: 'Load #', value: loadNum, set: setLoadNum, placeholder: 'Optional' },
+              { label: 'Rate ($)', value: rate, set: setRate, placeholder: '0.00', keyboard: 'decimal-pad' as const },
+              { label: 'Broker', value: broker, set: setBroker, placeholder: 'Broker name' },
+              { label: 'Notes', value: notes, set: setNotes, placeholder: 'Optional' },
+            ].map(({ label, value, set, placeholder, keyboard }) => (
+              <View key={label}>
+                <Text style={styles.modalLabel}>{label}</Text>
+                <TextInput
+                  style={styles.modalInput} value={value} onChangeText={set}
+                  placeholder={placeholder} placeholderTextColor={Colors.textMuted}
+                  keyboardType={keyboard ?? 'default'}
+                />
+              </View>
+            ))}
+
+            <Text style={styles.modalLabel}>Status</Text>
+            <View style={styles.statusRow}>
+              {(['Completed', 'In Progress', 'Cancelled'] as Trip['status'][]).map(s => (
+                <TouchableOpacity key={s} style={[styles.statusChip, status === s && { backgroundColor: STATUS_COLORS[s], borderColor: STATUS_COLORS[s] }]} onPress={() => setStatus(s)}>
+                  <Text style={[styles.statusChipText, status === s && { color: Colors.textDark }]}>{s}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Save</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+  summaryRow: { flexDirection: 'row', padding: 16, gap: 10 },
+  summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
+  summaryValue: { fontSize: 17, fontWeight: '900' },
+  summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+  list: { paddingHorizontal: 16, paddingBottom: 100 },
+  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 6 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+  origin: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1 },
+  dest: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1, textAlign: 'right' },
+  statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 },
+  statusText: { fontSize: 10, fontWeight: '700' },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
+  metaText: { color: Colors.textMuted, fontSize: 12 },
+  metaDot: { color: Colors.textMuted, fontSize: 12 },
+  loadNum: { color: Colors.textMuted, fontSize: 11 },
+  cardNotes: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic' },
+  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
+  emptySub: { color: Colors.textMuted, fontSize: 13 },
+  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4, maxHeight: '90%' },
+  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
+  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14, marginTop: 4 },
+  statusRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  statusChip: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center', backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border },
+  statusChipText: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
+  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+  cancelText: { color: Colors.textMuted, fontWeight: '700' },
+  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+  saveText: { color: Colors.textDark, fontWeight: '800' },
+});

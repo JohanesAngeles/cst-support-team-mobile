@@ -29,6 +29,10 @@ const features: { icon: string; label: string; color: string; desc: string; scre
   { icon: 'folder-outline',           label: 'Document Vault',     color: '#F5A623', desc: 'Store your docs',      screen: 'DocumentVault' },
   { icon: 'calculator-outline',       label: 'Tax Calculator',     color: '#27AE60', desc: 'One-button tax prep',  screen: 'TaxCalculator' },
   { icon: 'bar-chart-outline',        label: 'Profit & Loss',      color: '#9B59B6', desc: 'Revenue & expenses',   screen: 'ProfitLoss' },
+  { icon: 'map-outline',              label: 'Trip Log',           color: '#3498DB', desc: 'Log every load & run', screen: 'TripLog' },
+  { icon: 'water-outline',            label: 'Fuel Log',           color: '#1ABC9C', desc: 'Track fuel spend',     screen: 'FuelLog' },
+  { icon: 'scale-outline',            label: 'Axle Weight',        color: '#E67E22', desc: 'Weight limit checker', screen: 'AxleWeight' },
+  { icon: 'star-outline',             label: 'Broker Notes',       color: '#F1C40F', desc: 'Rate your brokers',    screen: 'BrokerNotes' },
 ];
 
 interface DashStats {

@@ -50,6 +50,26 @@ export const updateRevenue = (period: 'Week' | 'Month' | 'Quarter' | 'Year', dat
   expenses?: { label: string; amount: number; color: string }[]; trend?: number[];
 }) => client.put(`/revenue/${period}`, data).then(r => r.data);
 
+// Trip Log
+export const getTrips = () => client.get('/triplog').then(r => r.data);
+export const addTrip = (data: { date: string; origin: string; destination: string; miles: number; loadNum?: string; rate?: number; broker?: string; notes?: string; status?: string }) =>
+  client.post('/triplog', data).then(r => r.data);
+export const updateTrip = (id: string, data: object) => client.put(`/triplog/${id}`, data).then(r => r.data);
+export const deleteTrip = (id: string) => client.delete(`/triplog/${id}`).then(r => r.data);
+
+// Fuel Log
+export const getFuelStops = () => client.get('/fuellog').then(r => r.data);
+export const addFuelStop = (data: { date: string; location: string; state: string; gallons: number; pricePerGallon: number; odometer?: number; notes?: string }) =>
+  client.post('/fuellog', data).then(r => r.data);
+export const deleteFuelStop = (id: string) => client.delete(`/fuellog/${id}`).then(r => r.data);
+
+// Broker Notes
+export const getBrokerNotes = () => client.get('/brokernotes').then(r => r.data);
+export const addBrokerNote = (data: { brokerName: string; mcNum?: string; phone?: string; paySpeed: number; communication: number; loadQuality: number; wouldUseAgain: boolean; notes?: string }) =>
+  client.post('/brokernotes', data).then(r => r.data);
+export const updateBrokerNote = (id: string, data: object) => client.put(`/brokernotes/${id}`, data).then(r => r.data);
+export const deleteBrokerNote = (id: string) => client.delete(`/brokernotes/${id}`).then(r => r.data);
+
 // HOS
 export const getHOSEntries = () => client.get('/hos').then(r => r.data);
 export const logHOSEntry = (data: { date: string; drivingHours: number; onDutyHours: number; notes?: string }) =>
