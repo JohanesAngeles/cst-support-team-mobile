@@ -33,6 +33,8 @@ const features: { icon: string; label: string; color: string; desc: string; scre
   { icon: 'water-outline',            label: 'Fuel Log',           color: '#1ABC9C', desc: 'Track fuel spend',     screen: 'FuelLog' },
   { icon: 'scale-outline',            label: 'Axle Weight',        color: '#E67E22', desc: 'Weight limit checker', screen: 'AxleWeight' },
   { icon: 'star-outline',             label: 'Broker Notes',       color: '#F1C40F', desc: 'Rate your brokers',    screen: 'BrokerNotes' },
+  { icon: 'receipt-outline',          label: 'Expenses',           color: '#E74C3C', desc: 'Track all your costs',  screen: 'Expenses' },
+  { icon: 'globe-outline',            label: 'IFTA Tracker',       color: '#16A085', desc: 'Quarterly fuel tax',    screen: 'IFTATracker' },
 ];
 
 interface DashStats {
