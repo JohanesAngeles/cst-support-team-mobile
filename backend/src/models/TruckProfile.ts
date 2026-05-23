@@ -4,7 +4,7 @@ export interface ITruckProfile extends Document {
   userId: mongoose.Types.ObjectId;
   nickname: string;
   make: string;
-  model: string;
+  truckModel: string;
   truckYear: number;
   vin: string;
   plate: string;
@@ -23,7 +23,7 @@ const TruckProfileSchema = new Schema<ITruckProfile>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     nickname: { type: String, default: '' },
     make: { type: String, default: '' },
-    model: { type: String, default: '' },
+    truckModel: { type: String, default: '' },
     truckYear: { type: Number, default: 0 },
     vin: { type: String, default: '' },
     plate: { type: String, default: '' },

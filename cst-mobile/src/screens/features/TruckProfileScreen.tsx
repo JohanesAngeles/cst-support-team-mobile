@@ -12,7 +12,7 @@ import { getTruckProfile, updateTruckProfile } from '../../api/features';
 interface TruckProfile {
   nickname: string;
   make: string;
-  model: string;
+  truckModel: string;
   truckYear: number;
   vin: string;
   plate: string;
@@ -27,7 +27,7 @@ interface TruckProfile {
 }
 
 const EMPTY: TruckProfile = {
-  nickname: '', make: '', model: '', truckYear: 0,
+  nickname: '', make: '', truckModel: '', truckYear: 0,
   vin: '', plate: '', mcNumber: '', dotNumber: '', insuranceExpiry: '',
   currentMileage: 0, mpg: 0, cheapestFuelPrice: 0, idleHours: 0, fuelCardConnected: false,
 };
@@ -70,7 +70,7 @@ export default function TruckProfileScreen() {
     setSaving(true);
     try {
       const data = await updateTruckProfile({
-        nickname: form.nickname, make: form.make, model: form.model,
+        nickname: form.nickname, make: form.make, truckModel: form.truckModel,
         truckYear: form.truckYear || 0,
         vin: form.vin, plate: form.plate,
         mcNumber: form.mcNumber, dotNumber: form.dotNumber,
@@ -91,8 +91,8 @@ export default function TruckProfileScreen() {
   const set = (key: keyof TruckProfile) => (val: string | boolean) =>
     setForm(prev => ({ ...prev, [key]: val }));
 
-  const rigName = profile.nickname || (profile.make && profile.model
-    ? `${profile.truckYear > 0 ? profile.truckYear + ' ' : ''}${profile.make} ${profile.model}`
+  const rigName = profile.nickname || (profile.make && profile.truckModel
+    ? `${profile.truckYear > 0 ? profile.truckYear + ' ' : ''}${profile.make} ${profile.truckModel}`
     : 'My Truck');
 
   const insuranceColor = isInsuranceExpired(profile.insuranceExpiry)
@@ -146,7 +146,7 @@ export default function TruckProfileScreen() {
               <Field label="Nickname" value={form.nickname} onChangeText={set('nickname')} placeholder="Big Red, Old Faithful..." />
               <Row>
                 <Field label="Make" value={form.make} onChangeText={set('make')} placeholder="Kenworth" flex />
-                <Field label="Model" value={form.model} onChangeText={set('model')} placeholder="T680" flex />
+                <Field label="Model" value={form.truckModel} onChangeText={set('truckModel')} placeholder="T680" flex />
               </Row>
               <Field label="Year" value={form.truckYear > 0 ? String(form.truckYear) : ''} onChangeText={v => set('truckYear')(v)} placeholder="2022" keyboard="number-pad" />
               <Field label="VIN" value={form.vin} onChangeText={set('vin')} placeholder="17-character VIN" autoCapitalize="characters" />
@@ -196,7 +196,7 @@ export default function TruckProfileScreen() {
           <>
             <SectionHeader title="Rig Identity" icon="bus-outline" />
             <View style={styles.card}>
-              <InfoRow label="Make / Model" value={profile.make && profile.model ? `${profile.make} ${profile.model}` : '—'} />
+              <InfoRow label="Make / Model" value={profile.make && profile.truckModel ? `${profile.make} ${profile.truckModel}` : '—'} />
               <InfoRow label="Year" value={profile.truckYear > 0 ? String(profile.truckYear) : '—'} />
               <InfoRow label="VIN" value={profile.vin || '—'} mono />
               <InfoRow label="Plate" value={profile.plate || '—'} />

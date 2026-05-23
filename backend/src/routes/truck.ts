@@ -16,13 +16,13 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
 router.put('/', async (req: AuthRequest, res: Response) => {
   const {
-    nickname, make, model, truckYear, vin, plate, mcNumber, dotNumber, insuranceExpiry,
+    nickname, make, truckModel, truckYear, vin, plate, mcNumber, dotNumber, insuranceExpiry,
     currentMileage, mpg, cheapestFuelPrice, idleHours, fuelCardConnected,
   } = req.body;
   const update: Record<string, unknown> = {};
   if (nickname != null) update.nickname = nickname;
   if (make != null) update.make = make;
-  if (model != null) update.model = model;
+  if (truckModel != null) update.truckModel = truckModel;
   if (truckYear != null) update.truckYear = truckYear;
   if (vin != null) update.vin = vin;
   if (plate != null) update.plate = plate;
