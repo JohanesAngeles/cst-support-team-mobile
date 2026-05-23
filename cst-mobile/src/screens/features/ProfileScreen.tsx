@@ -5,12 +5,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import { Colors } from '../../constants/colors';
+import { MainStackParamList } from '../../navigation/MainStack';
+
+type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
+  const navigation = useNavigation<Nav>();
 
   const [editModal, setEditModal] = useState(false);
   const [pwModal, setPwModal] = useState(false);
@@ -65,10 +71,11 @@ export default function ProfileScreen() {
   };
 
   const menuItems = [
-    { icon: 'person-outline', label: 'Edit Profile',     onPress: openEdit },
-    { icon: 'lock-closed-outline', label: 'Change Password', onPress: () => setPwModal(true) },
-    { icon: 'notifications-outline', label: 'Notifications', onPress: () => Alert.alert('Coming Soon', 'Push notifications are coming in a future update.') },
-    { icon: 'help-circle-outline', label: 'Help & Support', onPress: () => Alert.alert('Support', 'Email us at support@cst-app.com') },
+    { icon: 'bus-outline',           label: 'My Truck',        onPress: () => navigation.navigate('TruckProfile') },
+    { icon: 'person-outline',        label: 'Edit Profile',    onPress: openEdit },
+    { icon: 'lock-closed-outline',   label: 'Change Password', onPress: () => setPwModal(true) },
+    { icon: 'notifications-outline', label: 'Notifications',   onPress: () => Alert.alert('Coming Soon', 'Push notifications are coming in a future update.') },
+    { icon: 'help-circle-outline',   label: 'Help & Support',  onPress: () => Alert.alert('Support', 'Email us at support@cst-app.com') },
     { icon: 'document-text-outline', label: 'Terms & Privacy', onPress: () => {} },
   ];
 

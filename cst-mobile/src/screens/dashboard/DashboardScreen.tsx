@@ -35,6 +35,7 @@ const features: { icon: string; label: string; color: string; desc: string; scre
   { icon: 'star-outline',             label: 'Broker Notes',       color: '#F1C40F', desc: 'Rate your brokers',    screen: 'BrokerNotes' },
   { icon: 'receipt-outline',          label: 'Expenses',           color: '#E74C3C', desc: 'Track all your costs',  screen: 'Expenses' },
   { icon: 'globe-outline',            label: 'IFTA Tracker',       color: '#16A085', desc: 'Quarterly fuel tax',    screen: 'IFTATracker' },
+  { icon: 'bus-outline',              label: 'My Truck',           color: '#8E44AD', desc: 'Rig profile & docs',    screen: 'TruckProfile' },
 ];
 
 interface DashStats {

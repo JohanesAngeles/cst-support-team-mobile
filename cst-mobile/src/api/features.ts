@@ -15,6 +15,8 @@ export const deleteIFTAEntry = (id: string) => client.delete(`/ifta/${id}`).then
 // Truck Profile (fuel stats + mileage)
 export const getTruckProfile = () => client.get('/truck').then(r => r.data);
 export const updateTruckProfile = (data: Partial<{
+  nickname: string; make: string; model: string; truckYear: number;
+  vin: string; plate: string; mcNumber: string; dotNumber: string; insuranceExpiry: string;
   currentMileage: number; mpg: number; cheapestFuelPrice: number;
   idleHours: number; fuelCardConnected: boolean;
 }>) => client.put('/truck', data).then(r => r.data);

@@ -24,6 +24,7 @@ import AxleWeightScreen from '../screens/features/AxleWeightScreen';
 import BrokerNotesScreen from '../screens/features/BrokerNotesScreen';
 import ExpensesScreen from '../screens/features/ExpensesScreen';
 import IFTATrackerScreen from '../screens/features/IFTATrackerScreen';
+import TruckProfileScreen from '../screens/features/TruckProfileScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -49,6 +50,7 @@ export type MainStackParamList = {
   BrokerNotes: undefined;
   Expenses: undefined;
   IFTATracker: undefined;
+  TruckProfile: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -88,6 +90,7 @@ export default function MainStack() {
       <Stack.Screen name="BrokerNotes" component={BrokerNotesScreen} options={{ title: 'Broker Notes' }} />
       <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: 'Expenses Tracker' }} />
       <Stack.Screen name="IFTATracker" component={IFTATrackerScreen} options={{ title: 'IFTA Tracker' }} />
+      <Stack.Screen name="TruckProfile" component={TruckProfileScreen} options={{ title: 'My Truck' }} />
     </Stack.Navigator>
   );
 }
