@@ -17,6 +17,7 @@ import detentionRoutes from './routes/detention';
 import triplogRoutes from './routes/triplog';
 import fuellogRoutes from './routes/fuellog';
 import brokernotesRoutes from './routes/brokernotes';
+import emergencyContactsRoutes from './routes/emergencycontacts';
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.use('/api/detention', detentionRoutes);
 app.use('/api/triplog', triplogRoutes);
 app.use('/api/fuellog', fuellogRoutes);
 app.use('/api/brokernotes', brokernotesRoutes);
+app.use('/api/emergency-contacts', emergencyContactsRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });
