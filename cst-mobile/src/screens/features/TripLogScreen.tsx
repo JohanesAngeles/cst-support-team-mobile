@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
+  Modal, TextInput, Alert, ActivityIndicator, RefreshControl, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
 import { getTrips, addTrip, updateTrip, deleteTrip } from '../../api/features';
 
@@ -27,6 +27,7 @@ const todayStr = () => new Date().toISOString().split('T')[0];
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function TripLogScreen() {
+  const navigation = useNavigation();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,6 +54,26 @@ export default function TripLogScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const exportCSV = useCallback(() => {
+    if (trips.length === 0) { Alert.alert('Nothing to export', 'Log some trips first.'); return; }
+    const q = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
+    const header = 'Date,Origin,Destination,Miles,Rate ($),Load #,Broker,Status,Notes';
+    const rows = trips.map(t =>
+      [t.date, q(t.origin), q(t.destination), t.miles, t.rate, q(t.loadNum), q(t.broker), t.status, q(t.notes)].join(',')
+    );
+    Share.share({ message: [header, ...rows].join('\n'), title: 'Trip Log.csv' });
+  }, [trips]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={exportCSV} style={{ marginRight: 4, padding: 6 }}>
+          <Ionicons name="share-outline" size={22} color={Colors.white} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, exportCSV]);
 
   const openModal = () => {
     setEditTarget(null);

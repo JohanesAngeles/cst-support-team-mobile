@@ -25,6 +25,7 @@ import BrokerNotesScreen from '../screens/features/BrokerNotesScreen';
 import ExpensesScreen from '../screens/features/ExpensesScreen';
 import IFTATrackerScreen from '../screens/features/IFTATrackerScreen';
 import TruckProfileScreen from '../screens/features/TruckProfileScreen';
+import EmergencyContactsScreen from '../screens/features/EmergencyContactsScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -51,6 +52,7 @@ export type MainStackParamList = {
   Expenses: undefined;
   IFTATracker: undefined;
   TruckProfile: undefined;
+  EmergencyContacts: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -91,6 +93,7 @@ export default function MainStack() {
       <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: 'Expenses Tracker' }} />
       <Stack.Screen name="IFTATracker" component={IFTATrackerScreen} options={{ title: 'IFTA Tracker' }} />
       <Stack.Screen name="TruckProfile" component={TruckProfileScreen} options={{ title: 'My Truck' }} />
+      <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.danger } }} />
     </Stack.Navigator>
   );
 }

@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView,
+  Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
 import { getExpenses, addExpense, updateExpense, deleteExpense } from '../../api/features';
 
@@ -33,6 +33,7 @@ const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function ExpensesScreen() {
+  const navigation = useNavigation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,6 +55,26 @@ export default function ExpensesScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const exportCSV = useCallback(() => {
+    if (expenses.length === 0) { Alert.alert('Nothing to export', 'Log some expenses first.'); return; }
+    const q = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
+    const header = 'Date,Category,Amount ($),Description';
+    const rows = expenses.map(e =>
+      [new Date(e.createdAt).toLocaleDateString('en-US'), e.category, e.amount.toFixed(2), q(e.description)].join(',')
+    );
+    Share.share({ message: [header, ...rows].join('\n'), title: 'Expenses.csv' });
+  }, [expenses]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={exportCSV} style={{ marginRight: 4, padding: 6 }}>
+          <Ionicons name="share-outline" size={22} color={Colors.white} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, exportCSV]);
 
   const openModal = () => {
     setEditTarget(null);

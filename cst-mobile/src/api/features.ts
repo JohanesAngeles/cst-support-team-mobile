@@ -86,6 +86,12 @@ export const addBrokerNote = (data: { brokerName: string; mcNum?: string; phone?
 export const updateBrokerNote = (id: string, data: object) => client.put(`/brokernotes/${id}`, data).then(r => r.data);
 export const deleteBrokerNote = (id: string) => client.delete(`/brokernotes/${id}`).then(r => r.data);
 
+// Emergency Contacts
+export const getEmergencyContacts = () => client.get('/emergency-contacts').then(r => r.data);
+export const addEmergencyContact = (data: { name: string; phone: string; relationship?: string }) =>
+  client.post('/emergency-contacts', data).then(r => r.data);
+export const deleteEmergencyContact = (id: string) => client.delete(`/emergency-contacts/${id}`).then(r => r.data);
+
 // HOS
 export const getHOSEntries = () => client.get('/hos').then(r => r.data);
 export const logHOSEntry = (data: { date: string; drivingHours: number; onDutyHours: number; notes?: string }) =>

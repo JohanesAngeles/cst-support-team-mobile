@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Alert, Linking, ActivityIndicator, ScrollView,
+  Alert, Linking, ActivityIndicator, ScrollView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors } from '../../constants/colors';
+import { MainStackParamList } from '../../navigation/MainStack';
+import { getEmergencyContacts } from '../../api/features';
+
+type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 interface LocationData {
   latitude: number;
   longitude: number;
   accuracy: number | null;
+}
+
+interface Contact {
+  _id: string;
+  name: string;
+  phone: string;
+  relationship: string;
 }
 
 const EMERGENCY_CONTACTS = [
@@ -24,9 +38,17 @@ const EMERGENCY_CONTACTS = [
 ];
 
 export default function EmergencySOSScreen() {
+  const navigation = useNavigation<Nav>();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [locLoading, setLocLoading] = useState(false);
   const [sosActive, setSosActive] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    getEmergencyContacts().then(data => {
+      if (Array.isArray(data)) setContacts(data);
+    }).catch(() => {});
+  }, []));
 
   const getLocation = async () => {
     setLocLoading(true);
@@ -73,6 +95,16 @@ export default function EmergencySOSScreen() {
     }
     const mapsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
     Linking.openURL(mapsUrl);
+  };
+
+  const textContact = (contact: Contact) => {
+    const body = location
+      ? `🚨 EMERGENCY — I need help! My location: https://maps.google.com/?q=${location.latitude},${location.longitude} (±${Math.round(location.accuracy ?? 0)}m accuracy)`
+      : '🚨 EMERGENCY — I need help! I am sending this from the CST app. Please call me immediately.';
+    const smsUrl = Platform.OS === 'ios'
+      ? `sms:${contact.phone}&body=${encodeURIComponent(body)}`
+      : `sms:${contact.phone}?body=${encodeURIComponent(body)}`;
+    Linking.openURL(smsUrl);
   };
 
   return (
@@ -128,8 +160,45 @@ export default function EmergencySOSScreen() {
           )}
         </View>
 
+        {/* Personal Emergency Contacts */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Contacts</Text>
+          <TouchableOpacity style={styles.manageBtn} onPress={() => navigation.navigate('EmergencyContacts')}>
+            <Ionicons name="settings-outline" size={15} color={Colors.secondary} />
+            <Text style={styles.manageBtnText}>Manage</Text>
+          </TouchableOpacity>
+        </View>
+
+        {contacts.length === 0 ? (
+          <TouchableOpacity style={styles.addContactPrompt} onPress={() => navigation.navigate('EmergencyContacts')}>
+            <Ionicons name="person-add-outline" size={20} color={Colors.secondary} />
+            <Text style={styles.addContactText}>Add emergency contacts to text your location in one tap</Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.personalContacts}>
+            {contacts.map(c => (
+              <View key={c._id} style={styles.personalCard}>
+                <View style={styles.personalInfo}>
+                  <View style={styles.personalAvatar}>
+                    <Text style={styles.personalAvatarText}>{c.name.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.personalName}>{c.name}</Text>
+                    <Text style={styles.personalRel}>{c.relationship} · {c.phone}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity style={styles.smsBtn} onPress={() => textContact(c)}>
+                  <Ionicons name="chatbubble-outline" size={15} color={Colors.white} />
+                  <Text style={styles.smsBtnText}>Text Location</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Emergency Contacts */}
-        <Text style={styles.sectionTitle}>Emergency Contacts</Text>
+        <Text style={styles.sectionTitle}>Emergency Services</Text>
         <View style={styles.contactGrid}>
           {EMERGENCY_CONTACTS.map((contact) => (
             <TouchableOpacity
@@ -202,7 +271,21 @@ const styles = StyleSheet.create({
   shareBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.secondary, borderRadius: 10, padding: 10, gap: 8, marginTop: 4 },
   shareBtnText: { color: Colors.textDark, fontWeight: '700', fontSize: 13 },
   noLocText: { color: Colors.textMuted, fontSize: 13 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { color: Colors.white, fontSize: 16, fontWeight: '800' },
+  manageBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  manageBtnText: { color: Colors.secondary, fontSize: 13, fontWeight: '700' },
+  addContactPrompt: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.secondary + '44', borderStyle: 'dashed' },
+  addContactText: { flex: 1, color: Colors.textMuted, fontSize: 13, lineHeight: 18 },
+  personalContacts: { gap: 10 },
+  personalCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border, gap: 10 },
+  personalInfo: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  personalAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.danger + '33', justifyContent: 'center', alignItems: 'center' },
+  personalAvatarText: { color: Colors.danger, fontSize: 17, fontWeight: '900' },
+  personalName: { color: Colors.white, fontSize: 14, fontWeight: '700' },
+  personalRel: { color: Colors.textMuted, fontSize: 12 },
+  smsBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.danger, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8 },
+  smsBtnText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
   contactGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   contactCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, width: '47%', alignItems: 'center', gap: 8, borderWidth: 1 },
   contactCardPrimary: { width: '100%', flexDirection: 'row', alignItems: 'center', gap: 14 },
