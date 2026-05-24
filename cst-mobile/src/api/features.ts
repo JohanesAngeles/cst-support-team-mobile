@@ -4,6 +4,8 @@ import client from './client';
 export const getExpenses = () => client.get('/expenses').then(r => r.data);
 export const addExpense = (data: { category: string; amount: number; description?: string }) =>
   client.post('/expenses', data).then(r => r.data);
+export const updateExpense = (id: string, data: { category: string; amount: number; description?: string }) =>
+  client.put(`/expenses/${id}`, data).then(r => r.data);
 export const deleteExpense = (id: string) => client.delete(`/expenses/${id}`).then(r => r.data);
 
 // IFTA
@@ -73,6 +75,8 @@ export const deleteTrip = (id: string) => client.delete(`/triplog/${id}`).then(r
 export const getFuelStops = () => client.get('/fuellog').then(r => r.data);
 export const addFuelStop = (data: { date: string; location: string; state: string; gallons: number; pricePerGallon: number; odometer?: number; notes?: string }) =>
   client.post('/fuellog', data).then(r => r.data);
+export const updateFuelStop = (id: string, data: { date: string; location: string; state: string; gallons: number; pricePerGallon: number; odometer?: number; notes?: string }) =>
+  client.put(`/fuellog/${id}`, data).then(r => r.data);
 export const deleteFuelStop = (id: string) => client.delete(`/fuellog/${id}`).then(r => r.data);
 
 // Broker Notes

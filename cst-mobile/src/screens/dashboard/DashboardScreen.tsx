@@ -9,7 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { Colors } from '../../constants/colors';
 import { MainStackParamList } from '../../navigation/MainStack';
-import { getRevenue } from '../../api/features';
+import { getLiveRevenue } from '../../api/features';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 type FeatureScreen = keyof MainStackParamList | null;
@@ -55,7 +55,7 @@ export default function DashboardScreen() {
   const [stats, setStats] = useState<DashStats>(EMPTY_STATS);
 
   useEffect(() => {
-    getRevenue('Month').then((d) => {
+    getLiveRevenue('Month').then((d) => {
       if (!d || d.grossRevenue === 0) return;
       const totalExp = d.grossRevenue - d.netProfit;
       const cpm = d.totalMiles > 0 ? `$${(totalExp / d.totalMiles).toFixed(2)}` : '—';

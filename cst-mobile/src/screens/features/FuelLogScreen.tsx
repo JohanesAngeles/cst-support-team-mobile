@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { getFuelStops, addFuelStop, deleteFuelStop } from '../../api/features';
+import { getFuelStops, addFuelStop, updateFuelStop, deleteFuelStop } from '../../api/features';
 
 interface FuelStop {
   _id: string;
@@ -32,6 +32,7 @@ export default function FuelLogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editTarget, setEditTarget] = useState<FuelStop | null>(null);
 
   const [date, setDate] = useState(todayStr());
   const [location, setLocation] = useState('');
@@ -55,8 +56,18 @@ export default function FuelLogScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const openModal = () => {
+    setEditTarget(null);
     setDate(todayStr()); setLocation(''); setState('');
     setGallons(''); setPrice(''); setOdometer(''); setNotes('');
+    setModal(true);
+  };
+
+  const openEdit = (stop: FuelStop) => {
+    setEditTarget(stop);
+    setDate(stop.date); setLocation(stop.location); setState(stop.state);
+    setGallons(String(stop.gallons)); setPrice(String(stop.pricePerGallon));
+    setOdometer(stop.odometer > 0 ? String(stop.odometer) : '');
+    setNotes(stop.notes ?? '');
     setModal(true);
   };
 
@@ -64,13 +75,18 @@ export default function FuelLogScreen() {
     if (!location.trim() || !state.trim() || !gallons || !price) {
       Alert.alert('Error', 'Location, state, gallons, and price are required'); return;
     }
+    const payload = {
+      date, location: location.trim(), state: state.trim().toUpperCase(),
+      gallons: parseFloat(gallons), pricePerGallon: parseFloat(price),
+      odometer: parseFloat(odometer) || 0, notes,
+    };
     setSaving(true);
     try {
-      await addFuelStop({
-        date, location: location.trim(), state: state.trim().toUpperCase(),
-        gallons: parseFloat(gallons), pricePerGallon: parseFloat(price),
-        odometer: parseFloat(odometer) || 0, notes,
-      });
+      if (editTarget) {
+        await updateFuelStop(editTarget._id, payload);
+      } else {
+        await addFuelStop(payload);
+      }
       setModal(false);
       load();
     } catch (err: any) { Alert.alert('Error', err.message); }
@@ -122,7 +138,7 @@ export default function FuelLogScreen() {
         renderItem={({ item }) => {
           const total = item.gallons * item.pricePerGallon;
           return (
-            <TouchableOpacity style={styles.card} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.card} onPress={() => openEdit(item)} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
               <View style={styles.cardTop}>
                 <View style={styles.cardLeft}>
                   <Text style={styles.cardLocation}>{item.location}</Text>
@@ -152,7 +168,7 @@ export default function FuelLogScreen() {
         <View style={styles.modalOverlay}>
           <ScrollView>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>Log Fuel Stop</Text>
+              <Text style={styles.modalTitle}>{editTarget ? 'Edit Fuel Stop' : 'Log Fuel Stop'}</Text>
 
               {[
                 { label: 'Date', value: date, set: setDate, placeholder: 'YYYY-MM-DD' },
@@ -187,7 +203,7 @@ export default function FuelLogScreen() {
                   <Text style={styles.cancelText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Save</Text>}
+                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
                 </TouchableOpacity>
               </View>
             </View>

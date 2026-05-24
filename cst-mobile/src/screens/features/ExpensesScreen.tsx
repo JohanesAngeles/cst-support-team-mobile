@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { getExpenses, addExpense, deleteExpense } from '../../api/features';
+import { getExpenses, addExpense, updateExpense, deleteExpense } from '../../api/features';
 
 interface Expense {
   _id: string;
@@ -39,6 +39,7 @@ export default function ExpensesScreen() {
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filterCat, setFilterCat] = useState<string | null>(null);
+  const [editTarget, setEditTarget] = useState<Expense | null>(null);
 
   const [category, setCategory] = useState('Fuel');
   const [amount, setAmount] = useState('');
@@ -55,7 +56,14 @@ export default function ExpensesScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const openModal = () => {
+    setEditTarget(null);
     setCategory('Fuel'); setAmount(''); setDescription('');
+    setModal(true);
+  };
+
+  const openEdit = (e: Expense) => {
+    setEditTarget(e);
+    setCategory(e.category); setAmount(String(e.amount)); setDescription(e.description ?? '');
     setModal(true);
   };
 
@@ -64,7 +72,11 @@ export default function ExpensesScreen() {
     if (!amt || amt <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
     setSaving(true);
     try {
-      await addExpense({ category, amount: amt, description });
+      if (editTarget) {
+        await updateExpense(editTarget._id, { category, amount: amt, description });
+      } else {
+        await addExpense({ category, amount: amt, description });
+      }
       setModal(false);
       load();
     } catch (err: any) { Alert.alert('Error', err.message); }
@@ -140,7 +152,7 @@ export default function ExpensesScreen() {
         renderItem={({ item }) => {
           const meta = catMeta(item.category);
           return (
-            <TouchableOpacity style={styles.card} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.card} onPress={() => openEdit(item)} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
               <View style={[styles.catIcon, { backgroundColor: meta.color + '22' }]}>
                 <Ionicons name={meta.icon as any} size={20} color={meta.color} />
               </View>
@@ -168,7 +180,7 @@ export default function ExpensesScreen() {
       <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Log Expense</Text>
+            <Text style={styles.modalTitle}>{editTarget ? 'Edit Expense' : 'Log Expense'}</Text>
 
             <Text style={styles.modalLabel}>Category</Text>
             <View style={styles.catGrid}>
@@ -202,7 +214,7 @@ export default function ExpensesScreen() {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Save</Text>}
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
               </TouchableOpacity>
             </View>
           </View>
