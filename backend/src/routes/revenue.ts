@@ -13,6 +13,37 @@ const CATEGORY_COLORS: Record<string, string> = {
   Permits: '#9B59B6', Food: '#F39C12', Tolls: '#E74C3C', Other: '#95A5A6',
 };
 
+function prevPeriodBounds(period: string, stepsBack: number): { startStr: string; endStr: string } {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  if (period === 'Week') {
+    const end = new Date(now); end.setDate(end.getDate() - stepsBack * 7);
+    const start = new Date(end); start.setDate(start.getDate() - 6);
+    return { startStr: start.toISOString().split('T')[0], endStr: end.toISOString().split('T')[0] };
+  }
+  if (period === 'Month') {
+    const raw = m - stepsBack;
+    const ty = y + Math.floor(raw / 12);
+    const tm = ((raw % 12) + 12) % 12;
+    const start = new Date(ty, tm, 1);
+    const end = new Date(ty, tm + 1, 0);
+    return { startStr: `${ty}-${pad(tm + 1)}-01`, endStr: end.toISOString().split('T')[0] };
+  }
+  if (period === 'Quarter') {
+    let tq = Math.floor(m / 3) - stepsBack;
+    let ty = y;
+    while (tq < 0) { tq += 4; ty--; }
+    const qm = tq * 3;
+    const end = new Date(ty, qm + 3, 0);
+    return { startStr: `${ty}-${pad(qm + 1)}-01`, endStr: end.toISOString().split('T')[0] };
+  }
+  // Year
+  return { startStr: `${y - stepsBack}-01-01`, endStr: `${y - stepsBack}-12-31` };
+}
+
 function periodBounds(period: string): { startStr: string; endStr: string; startDt: Date; endDt: Date } {
   const now = new Date();
   const y = now.getFullYear();
@@ -77,6 +108,16 @@ router.get('/live/:period', async (req: AuthRequest, res: Response) => {
   const fuelCost = expMap['Fuel'] ?? 0;
   const netProfit = grossRevenue - totalExpenses;
 
+  // Build 6-period trend: query the 5 prior periods then append current
+  const priorTrend = await Promise.all(
+    [5, 4, 3, 2, 1].map(async (i) => {
+      const { startStr: s, endStr: e } = prevPeriodBounds(period, i);
+      const t = await TripLog.find({ userId: uid, status: 'Completed', date: { $gte: s, $lte: e } });
+      return Math.round(t.reduce((sum, tr) => sum + (tr.rate || 0), 0) * 100) / 100;
+    })
+  );
+  const trend = [...priorTrend, Math.round(grossRevenue * 100) / 100];
+
   res.json({
     period,
     grossRevenue: Math.round(grossRevenue * 100) / 100,
@@ -84,7 +125,7 @@ router.get('/live/:period', async (req: AuthRequest, res: Response) => {
     totalMiles: Math.round(totalMiles * 10) / 10,
     fuelCost: Math.round(fuelCost * 100) / 100,
     expenses: expenseItems,
-    trend: [],
+    trend,
     isLive: true,
   });
 });

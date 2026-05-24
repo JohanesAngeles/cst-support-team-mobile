@@ -24,6 +24,17 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   res.status(201).json({ stop });
 });
 
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const { date, location, state, gallons, pricePerGallon, odometer, notes } = req.body;
+  const stop = await FuelStop.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user._id },
+    { $set: { date, location, state, gallons, pricePerGallon, odometer: odometer ?? 0, notes } },
+    { new: true }
+  );
+  if (!stop) { res.status(404).json({ message: 'Not found' }); return; }
+  res.json({ stop });
+});
+
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   await FuelStop.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
   res.json({ message: 'Deleted' });
