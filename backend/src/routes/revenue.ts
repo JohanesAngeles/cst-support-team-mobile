@@ -40,7 +40,7 @@ function periodBounds(period: string): { startStr: string; endStr: string; start
 }
 
 router.get('/live/:period', async (req: AuthRequest, res: Response) => {
-  const period = req.params.period;
+  const period = String(req.params.period);
   if (!['Week', 'Month', 'Quarter', 'Year'].includes(period)) {
     res.status(400).json({ message: 'Invalid period' }); return;
   }
