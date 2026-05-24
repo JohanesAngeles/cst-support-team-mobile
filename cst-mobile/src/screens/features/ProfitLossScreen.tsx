@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
-import { getRevenue, updateRevenue } from '../../api/features';
+import { getRevenue, getLiveRevenue, updateRevenue } from '../../api/features';
 
 type Period = 'Week' | 'Month' | 'Quarter' | 'Year';
 
@@ -29,6 +29,8 @@ const EMPTY: RevenueData = { period: 'Month', grossRevenue: 0, netProfit: 0, tot
 export default function ProfitLossScreen() {
   const [period, setPeriod] = useState<Period>('Month');
   const [data, setData] = useState<RevenueData>(EMPTY);
+  const [liveData, setLiveData] = useState<RevenueData | null>(null);
+  const [showLive, setShowLive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [editModal, setEditModal] = useState(false);
   const [grossRev, setGrossRev] = useState('');
@@ -40,8 +42,9 @@ export default function ProfitLossScreen() {
   const load = useCallback(async (p: Period) => {
     try {
       setLoading(true);
-      const d = await getRevenue(p);
-      setData({ ...EMPTY, ...d, period: p });
+      const [manual, live] = await Promise.allSettled([getRevenue(p), getLiveRevenue(p)]);
+      if (manual.status === 'fulfilled') setData({ ...EMPTY, ...manual.value, period: p });
+      if (live.status === 'fulfilled') setLiveData({ ...EMPTY, ...live.value, period: p });
     } catch {
       Alert.alert('Error', 'Failed to load revenue data');
     } finally {
@@ -82,13 +85,14 @@ export default function ProfitLossScreen() {
     }
   };
 
-  const d = data;
+  const d = (showLive && liveData) ? liveData : data;
   const totalExpenses = d.grossRevenue - d.netProfit;
   const margin = d.grossRevenue > 0 ? ((d.netProfit / d.grossRevenue) * 100).toFixed(1) : '0.0';
   const cpm = d.totalMiles > 0 ? (totalExpenses / d.totalMiles).toFixed(2) : '0.00';
   const fuelPct = d.grossRevenue > 0 ? Math.round((d.fuelCost / d.grossRevenue) * 100) : 0;
   const maxTrend = d.trend.length > 0 ? Math.max(...d.trend) : 1;
   const hasData = d.grossRevenue > 0;
+  const hasLive = liveData !== null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -106,16 +110,41 @@ export default function ProfitLossScreen() {
           ))}
         </View>
 
+        {hasLive && (
+          <View style={styles.toggleRow}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, showLive && styles.toggleBtnActive]}
+              onPress={() => setShowLive(true)}
+            >
+              <Ionicons name="flash-outline" size={13} color={showLive ? Colors.textDark : Colors.textMuted} />
+              <Text style={[styles.toggleText, showLive && styles.toggleTextActive]}>Live</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, !showLive && styles.toggleBtnActive]}
+              onPress={() => setShowLive(false)}
+            >
+              <Ionicons name="pencil-outline" size={13} color={!showLive ? Colors.textDark : Colors.textMuted} />
+              <Text style={[styles.toggleText, !showLive && styles.toggleTextActive]}>Manual</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {loading ? (
           <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>
         ) : !hasData ? (
           <View style={styles.empty}>
             <Ionicons name="bar-chart-outline" size={52} color={Colors.textMuted} />
             <Text style={styles.emptyText}>No data for this period</Text>
-            <Text style={styles.emptySubText}>Tap the button below to enter your revenue and expense numbers</Text>
-            <TouchableOpacity style={styles.emptyBtn} onPress={openEdit}>
-              <Text style={styles.emptyBtnText}>Enter {period} Data</Text>
-            </TouchableOpacity>
+            <Text style={styles.emptySubText}>
+              {showLive
+                ? 'Add trips in Trip Log and costs in Expenses to see auto-calculated P&L'
+                : 'Tap the button below to enter your revenue and expense numbers'}
+            </Text>
+            {!showLive && (
+              <TouchableOpacity style={styles.emptyBtn} onPress={openEdit}>
+                <Text style={styles.emptyBtnText}>Enter {period} Data</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <>
@@ -206,10 +235,17 @@ export default function ProfitLossScreen() {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.updateBtn} onPress={openEdit}>
-              <Ionicons name="pencil-outline" size={18} color={Colors.textDark} />
-              <Text style={styles.updateBtnText}>Update {period} Numbers</Text>
-            </TouchableOpacity>
+            {showLive ? (
+              <TouchableOpacity style={styles.updateBtn} onPress={() => { setShowLive(false); openEdit(); }}>
+                <Ionicons name="pencil-outline" size={18} color={Colors.textDark} />
+                <Text style={styles.updateBtnText}>Override with Manual Numbers</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.updateBtn} onPress={openEdit}>
+                <Ionicons name="pencil-outline" size={18} color={Colors.textDark} />
+                <Text style={styles.updateBtnText}>Update {period} Numbers</Text>
+              </TouchableOpacity>
+            )}
           </>
         )}
       </ScrollView>
@@ -246,6 +282,11 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   center: { paddingVertical: 60, alignItems: 'center' },
   content: { padding: 16, gap: 14, paddingBottom: 32 },
+  toggleRow: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 12, padding: 4, gap: 2 },
+  toggleBtn: { flex: 1, flexDirection: 'row', paddingVertical: 7, borderRadius: 10, alignItems: 'center', justifyContent: 'center', gap: 5 },
+  toggleBtnActive: { backgroundColor: Colors.secondary },
+  toggleText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
+  toggleTextActive: { color: Colors.textDark },
   periodRow: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 12, padding: 4, gap: 2 },
   periodBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
   periodBtnActive: { backgroundColor: Colors.secondary },

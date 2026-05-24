@@ -55,6 +55,8 @@ export const deleteDocument = (id: string) => client.delete(`/documents/${id}`).
 // Revenue / P&L
 export const getRevenue = (period: 'Week' | 'Month' | 'Quarter' | 'Year') =>
   client.get(`/revenue/${period}`).then(r => r.data);
+export const getLiveRevenue = (period: 'Week' | 'Month' | 'Quarter' | 'Year') =>
+  client.get(`/revenue/live/${period}`).then(r => r.data);
 export const updateRevenue = (period: 'Week' | 'Month' | 'Quarter' | 'Year', data: {
   grossRevenue?: number; netProfit?: number; totalMiles?: number; fuelCost?: number;
   expenses?: { label: string; amount: number; color: string }[]; trend?: number[];

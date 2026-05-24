@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { getTrips, addTrip, deleteTrip } from '../../api/features';
+import { getTrips, addTrip, updateTrip, deleteTrip } from '../../api/features';
 
 interface Trip {
   _id: string;
@@ -32,6 +32,7 @@ export default function TripLogScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editTarget, setEditTarget] = useState<Trip | null>(null);
 
   const [date, setDate] = useState(todayStr());
   const [origin, setOrigin] = useState('');
@@ -54,22 +55,37 @@ export default function TripLogScreen() {
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const openModal = () => {
+    setEditTarget(null);
     setDate(todayStr()); setOrigin(''); setDestination('');
     setMiles(''); setLoadNum(''); setRate(''); setBroker(''); setNotes('');
     setStatus('Completed'); setModal(true);
+  };
+
+  const openEdit = (trip: Trip) => {
+    setEditTarget(trip);
+    setDate(trip.date); setOrigin(trip.origin); setDestination(trip.destination);
+    setMiles(String(trip.miles)); setLoadNum(trip.loadNum ?? '');
+    setRate(trip.rate > 0 ? String(trip.rate) : '');
+    setBroker(trip.broker ?? ''); setNotes(trip.notes ?? '');
+    setStatus(trip.status); setModal(true);
   };
 
   const handleSave = async () => {
     if (!origin.trim() || !destination.trim() || !miles) {
       Alert.alert('Error', 'Origin, destination, and miles are required'); return;
     }
+    const payload = {
+      date, origin: origin.trim(), destination: destination.trim(),
+      miles: parseFloat(miles), loadNum, rate: parseFloat(rate) || 0,
+      broker, notes, status,
+    };
     setSaving(true);
     try {
-      await addTrip({
-        date, origin: origin.trim(), destination: destination.trim(),
-        miles: parseFloat(miles), loadNum, rate: parseFloat(rate) || 0,
-        broker, notes, status,
-      });
+      if (editTarget) {
+        await updateTrip(editTarget._id, payload);
+      } else {
+        await addTrip(payload);
+      }
       setModal(false);
       load();
     } catch (err: any) { Alert.alert('Error', err.message); }
@@ -121,7 +137,7 @@ export default function TripLogScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.card} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.card} onPress={() => openEdit(item)} onLongPress={() => handleDelete(item)} activeOpacity={0.8}>
             <View style={styles.cardTop}>
               <View style={styles.routeRow}>
                 <Text style={styles.origin} numberOfLines={1}>{item.origin}</Text>
@@ -152,7 +168,7 @@ export default function TripLogScreen() {
       <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Log Trip</Text>
+            <Text style={styles.modalTitle}>{editTarget ? 'Edit Trip' : 'Log Trip'}</Text>
 
             {[
               { label: 'Date', value: date, set: setDate, placeholder: 'YYYY-MM-DD' },
@@ -188,7 +204,7 @@ export default function TripLogScreen() {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Save</Text>}
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
               </TouchableOpacity>
             </View>
           </View>
