@@ -40,6 +40,14 @@ export const deleteDeadline = (id: string) => client.delete(`/deadlines/${id}`).
 
 // Documents
 export const getDocuments = () => client.get('/documents').then(r => r.data);
+export const uploadDocument = (name: string, file: { uri: string; type: string; name: string }) => {
+  const form = new FormData();
+  form.append('file', file as any);
+  form.append('name', name);
+  return client.post('/documents', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then(r => r.data);
+};
 export const addDocument = (data: { name: string; icon?: string; status?: string }) =>
   client.post('/documents', data).then(r => r.data);
 export const deleteDocument = (id: string) => client.delete(`/documents/${id}`).then(r => r.data);

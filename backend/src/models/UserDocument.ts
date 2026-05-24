@@ -5,10 +5,25 @@ export interface IUserDocument extends Document {
   name: string;
   icon: string;
   status: string;
+  fileUrl: string;
+  publicId: string;
+  resourceType: string;
+  fileType: string;
+  fileSize: number;
 }
 
 const UserDocumentSchema = new Schema<IUserDocument>(
-  { userId: { type: Schema.Types.ObjectId, ref: 'User', required: true }, name: { type: String, required: true }, icon: { type: String, default: 'document-outline' }, status: { type: String, default: 'Active' } },
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    icon: { type: String, default: 'document-outline' },
+    status: { type: String, default: 'Active' },
+    fileUrl: { type: String, default: '' },
+    publicId: { type: String, default: '' },
+    resourceType: { type: String, default: 'raw' },
+    fileType: { type: String, default: '' },
+    fileSize: { type: Number, default: 0 },
+  },
   { timestamps: true }
 );
 

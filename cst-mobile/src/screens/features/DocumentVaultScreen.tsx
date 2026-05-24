@@ -1,150 +1,279 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator,
+  Modal, TextInput, Alert, ActivityIndicator, Linking, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { getDocuments, addDocument, deleteDocument } from '../../api/features';
+import { getDocuments, uploadDocument, deleteDocument } from '../../api/features';
 
 interface Doc {
   _id: string;
   name: string;
   icon: string;
   status: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  createdAt: string;
 }
 
-const ICON_OPTIONS = [
-  { icon: 'shield-outline', label: 'Insurance' },
-  { icon: 'card-outline', label: 'License' },
-  { icon: 'document-outline', label: 'Document' },
-  { icon: 'reader-outline', label: 'Registration' },
-  { icon: 'checkmark-circle-outline', label: 'Confirmation' },
-  { icon: 'folder-outline', label: 'Folder' },
+const DOC_CATEGORIES = [
+  { icon: 'shield-outline',           label: 'Insurance',     color: '#27AE60' },
+  { icon: 'card-outline',             label: 'License',       color: '#3498DB' },
+  { icon: 'document-text-outline',    label: 'Registration',  color: '#9B59B6' },
+  { icon: 'reader-outline',           label: 'Permit',        color: '#E67E22' },
+  { icon: 'checkmark-circle-outline', label: 'BOL',           color: '#1ABC9C' },
+  { icon: 'folder-outline',           label: 'Other',         color: '#7F8C8D' },
 ];
+
+const catMeta = (icon: string) =>
+  DOC_CATEGORIES.find(c => c.icon === icon) ?? DOC_CATEGORIES[DOC_CATEGORIES.length - 1];
+
+const fmtSize = (bytes: number) => {
+  if (!bytes) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const fmtDate = (d: string) =>
+  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+const fileLabel = (type: string) => {
+  if (type.includes('pdf')) return 'PDF';
+  if (type.includes('png')) return 'PNG';
+  if (type.includes('jpg') || type.includes('jpeg')) return 'JPG';
+  if (type.includes('webp')) return 'WEBP';
+  return 'FILE';
+};
 
 export default function DocumentVaultScreen() {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [name, setName] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('document-outline');
-  const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const [docName, setDocName] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState('document-text-outline');
+  const [pickedFile, setPickedFile] = useState<{ uri: string; type: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      setLoading(true);
       const data = await getDocuments();
-      setDocs(data);
-    } catch {
-      Alert.alert('Error', 'Failed to load documents');
-    } finally {
-      setLoading(false);
-    }
+      setDocs(Array.isArray(data) ? data : []);
+    } catch { Alert.alert('Error', 'Failed to load documents'); }
+    finally { setLoading(false); setRefreshing(false); }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const handleAdd = async () => {
-    if (!name.trim()) { Alert.alert('Error', 'Document name is required'); return; }
-    setSaving(true);
+  const openPicker = async () => {
     try {
-      await addDocument({ name: name.trim(), icon: selectedIcon });
-      setName(''); setSelectedIcon('document-outline');
-      setModalVisible(false);
-      await load();
-    } catch {
-      Alert.alert('Error', 'Failed to add document');
-    } finally {
-      setSaving(false);
-    }
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.length) return;
+      const asset = result.assets[0];
+      setPickedFile({
+        uri: asset.uri,
+        type: asset.mimeType ?? 'application/octet-stream',
+        name: asset.name ?? 'document',
+      });
+      if (!docName.trim()) {
+        setDocName(asset.name?.replace(/\.[^.]+$/, '') ?? '');
+      }
+    } catch { Alert.alert('Error', 'Could not open file picker'); }
   };
 
-  const handleDelete = (id: string, docName: string) => {
-    Alert.alert('Delete Document', `Remove "${docName}"?`, [
+  const openModal = () => {
+    setDocName(''); setSelectedIcon('document-text-outline'); setPickedFile(null);
+    setModal(true);
+  };
+
+  const handleUpload = async () => {
+    if (!docName.trim()) { Alert.alert('Error', 'Document name is required'); return; }
+    if (!pickedFile) { Alert.alert('Error', 'Please pick a file to upload'); return; }
+    setUploading(true);
+    try {
+      await uploadDocument(docName.trim(), pickedFile);
+      setModal(false);
+      load();
+    } catch (err: any) {
+      Alert.alert('Upload Failed', err?.response?.data?.message ?? err.message ?? 'Unknown error');
+    } finally { setUploading(false); }
+  };
+
+  const handleOpen = async (doc: Doc) => {
+    if (!doc.fileUrl) { Alert.alert('No File', 'This document has no file attached.'); return; }
+    try { await Linking.openURL(doc.fileUrl); }
+    catch { Alert.alert('Error', 'Could not open document'); }
+  };
+
+  const handleDelete = (doc: Doc) => {
+    Alert.alert('Delete Document', `Remove "${doc.name}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
-        try { await deleteDocument(id); await load(); } catch { Alert.alert('Error', 'Failed to delete'); }
+        try { await deleteDocument(doc._id); load(); }
+        catch { Alert.alert('Error', 'Failed to delete'); }
       }},
     ]);
   };
 
-  if (loading) return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>
-    </SafeAreaView>
-  );
+  if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Document Vault</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
-          <Ionicons name="add" size={24} color={Colors.textDark} />
-        </TouchableOpacity>
-      </View>
-
-      {docs.length === 0 ? (
-        <View style={styles.empty}>
-          <Ionicons name="folder-open-outline" size={52} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No documents stored yet</Text>
-          <Text style={styles.emptySubText}>Add your CDL, insurance, permits, and more</Text>
-          <TouchableOpacity style={styles.emptyBtn} onPress={() => setModalVisible(true)}>
-            <Text style={styles.emptyBtnText}>Add First Document</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <FlatList
-          data={docs}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.docCard} onLongPress={() => handleDelete(item._id, item.name)}>
-              <View style={styles.docIcon}>
-                <Ionicons name={item.icon as any} size={24} color={Colors.secondary} />
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <FlatList
+        data={docs}
+        keyExtractor={d => d._id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Colors.secondary} />}
+        contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        ListHeaderComponent={
+          <View style={styles.summaryRow}>
+            <View style={styles.summaryCard}>
+              <Ionicons name="folder-outline" size={18} color={Colors.secondary} />
+              <Text style={styles.summaryValue}>{docs.length}</Text>
+              <Text style={styles.summaryLabel}>Documents</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Ionicons name="cloud-done-outline" size={18} color={Colors.success} />
+              <Text style={[styles.summaryValue, { color: Colors.success }]}>
+                {docs.filter(d => d.fileUrl).length}
+              </Text>
+              <Text style={styles.summaryLabel}>Uploaded</Text>
+            </View>
+            <View style={styles.summaryCard}>
+              <Ionicons name="shield-checkmark-outline" size={18} color='#3498DB' />
+              <Text style={[styles.summaryValue, { color: '#3498DB' }]}>
+                {docs.filter(d => d.status === 'Active').length}
+              </Text>
+              <Text style={styles.summaryLabel}>Active</Text>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="folder-open-outline" size={52} color={Colors.textMuted} />
+            <Text style={styles.emptyText}>No documents yet</Text>
+            <Text style={styles.emptySub}>Upload your CDL, insurance cards, permits, and BOLs</Text>
+          </View>
+        }
+        renderItem={({ item }) => {
+          const meta = catMeta(item.icon);
+          const hasFile = !!item.fileUrl;
+          return (
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => handleOpen(item)}
+              onLongPress={() => handleDelete(item)}
+              activeOpacity={0.8}
+            >
+              <View style={[styles.docIcon, { backgroundColor: meta.color + '22' }]}>
+                <Ionicons name={item.icon as any} size={24} color={meta.color} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.docName}>{item.name}</Text>
-                <Text style={styles.docStatus}>{item.status}</Text>
+              <View style={styles.cardBody}>
+                <View style={styles.cardTop}>
+                  <Text style={styles.docName} numberOfLines={1}>{item.name}</Text>
+                  {hasFile && (
+                    <View style={styles.fileTypeBadge}>
+                      <Text style={styles.fileTypeText}>{fileLabel(item.fileType)}</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.cardMeta}>
+                  <Text style={styles.metaText}>{fmtDate(item.createdAt)}</Text>
+                  {item.fileSize > 0 && (
+                    <><Text style={styles.metaDot}>·</Text><Text style={styles.metaText}>{fmtSize(item.fileSize)}</Text></>
+                  )}
+                </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+              {hasFile ? (
+                <View style={styles.openBtn}>
+                  <Ionicons name="open-outline" size={16} color={Colors.secondary} />
+                </View>
+              ) : (
+                <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+              )}
             </TouchableOpacity>
-          )}
-        />
-      )}
+          );
+        }}
+        ListFooterComponent={docs.length > 0 ? (
+          <Text style={styles.hint}>Tap to open · Long-press to delete</Text>
+        ) : null}
+      />
 
-      {docs.length > 0 && <Text style={styles.hint}>Long-press to delete a document</Text>}
+      <TouchableOpacity style={styles.fab} onPress={openModal}>
+        <Ionicons name="add" size={28} color={Colors.textDark} />
+      </TouchableOpacity>
 
-      <Modal visible={modalVisible} transparent animationType="slide">
+      <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add Document</Text>
+            <Text style={styles.modalTitle}>Upload Document</Text>
+
+            {/* File picker */}
+            <TouchableOpacity style={styles.filePicker} onPress={openPicker}>
+              {pickedFile ? (
+                <View style={styles.filePickedRow}>
+                  <Ionicons name="document-attach-outline" size={22} color={Colors.success} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.filePickedName} numberOfLines={1}>{pickedFile.name}</Text>
+                    <Text style={styles.filePickedType}>{fileLabel(pickedFile.type)}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => setPickedFile(null)}>
+                    <Ionicons name="close-circle" size={20} color={Colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.filePickerEmpty}>
+                  <Ionicons name="cloud-upload-outline" size={32} color={Colors.secondary} />
+                  <Text style={styles.filePickerText}>Tap to pick a PDF or image</Text>
+                  <Text style={styles.filePickerSub}>Max 15 MB</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
             <Text style={styles.modalLabel}>Document Name *</Text>
             <TextInput
-              style={styles.modalInput} value={name} onChangeText={setName}
-              placeholder="e.g. Insurance Card" placeholderTextColor={Colors.textMuted}
+              style={styles.modalInput} value={docName} onChangeText={setDocName}
+              placeholder="e.g. CDL License, Insurance Card..." placeholderTextColor={Colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Icon</Text>
-            <View style={styles.iconGrid}>
-              {ICON_OPTIONS.map(({ icon, label }) => (
+            <Text style={styles.modalLabel}>Category</Text>
+            <View style={styles.catGrid}>
+              {DOC_CATEGORIES.map(c => (
                 <TouchableOpacity
-                  key={icon}
-                  style={[styles.iconOption, selectedIcon === icon && styles.iconOptionActive]}
-                  onPress={() => setSelectedIcon(icon)}
+                  key={c.icon}
+                  style={[styles.catOption, selectedIcon === c.icon && { backgroundColor: c.color + '33', borderColor: c.color }]}
+                  onPress={() => setSelectedIcon(c.icon)}
                 >
-                  <Ionicons name={icon as any} size={22} color={selectedIcon === icon ? Colors.textDark : Colors.secondary} />
-                  <Text style={[styles.iconLabel, selectedIcon === icon && { color: Colors.textDark }]}>{label}</Text>
+                  <Ionicons name={c.icon as any} size={18} color={selectedIcon === c.icon ? c.color : Colors.textMuted} />
+                  <Text style={[styles.catLabel, selectedIcon === c.icon && { color: c.color }]}>{c.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.confirmBtn, saving && { opacity: 0.6 }]} onPress={handleAdd} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.confirmText}>Add</Text>}
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.uploadBtn, (uploading || !pickedFile) && { opacity: 0.5 }]}
+                onPress={handleUpload}
+                disabled={uploading || !pickedFile}
+              >
+                {uploading
+                  ? <ActivityIndicator size="small" color={Colors.textDark} />
+                  : <><Ionicons name="cloud-upload-outline" size={16} color={Colors.textDark} /><Text style={styles.uploadText}>Upload</Text></>
+                }
               </TouchableOpacity>
             </View>
           </View>
@@ -156,33 +285,46 @@ export default function DocumentVaultScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 12 },
-  title: { color: Colors.white, fontSize: 22, fontWeight: '800' },
-  addBtn: { backgroundColor: Colors.secondary, width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  list: { paddingHorizontal: 20, gap: 10 },
-  docCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.border },
-  docIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
-  docName: { color: Colors.white, fontSize: 15, fontWeight: '600' },
-  docStatus: { color: Colors.success, fontSize: 12, marginTop: 2 },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
-  emptyText: { color: Colors.white, fontSize: 18, fontWeight: '700' },
-  emptySubText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
-  emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
-  emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
-  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', paddingBottom: 12 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+  list: { padding: 16, paddingBottom: 100 },
+  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+  summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
+  summaryValue: { color: Colors.white, fontSize: 18, fontWeight: '900' },
+  summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  docIcon: { width: 46, height: 46, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  cardBody: { flex: 1, gap: 4 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  docName: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1 },
+  fileTypeBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: Colors.secondary },
+  fileTypeText: { color: Colors.secondary, fontSize: 9, fontWeight: '900' },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  metaText: { color: Colors.textMuted, fontSize: 11 },
+  metaDot: { color: Colors.textMuted, fontSize: 11 },
+  openBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
+  emptySub: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
+  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 14 },
+  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
   modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 16 },
+  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+  filePicker: { backgroundColor: Colors.surfaceLight, borderRadius: 14, borderWidth: 2, borderColor: Colors.border, borderStyle: 'dashed', overflow: 'hidden' },
+  filePickerEmpty: { alignItems: 'center', gap: 6, padding: 24 },
+  filePickerText: { color: Colors.white, fontSize: 14, fontWeight: '600' },
+  filePickerSub: { color: Colors.textMuted, fontSize: 12 },
+  filePickedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+  filePickedName: { color: Colors.white, fontSize: 13, fontWeight: '600' },
+  filePickedType: { color: Colors.secondary, fontSize: 11, fontWeight: '700' },
   modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 12, marginBottom: 6 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
-  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  iconOption: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 10, alignItems: 'center', gap: 4, width: '30%', borderWidth: 1, borderColor: Colors.border },
-  iconOptionActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  iconLabel: { color: Colors.textMuted, fontSize: 10, fontWeight: '600' },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
+  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  catOption: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 8 },
+  catLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
   cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
   cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  confirmText: { color: Colors.textDark, fontWeight: '800' },
+  uploadBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  uploadText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
 });
