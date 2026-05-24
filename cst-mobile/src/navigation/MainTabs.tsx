@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
-import IFTAScreen from '../screens/features/IFTAScreen';
-import FuelScreen from '../screens/features/FuelScreen';
+import IFTATrackerScreen from '../screens/features/IFTATrackerScreen';
+import FuelLogScreen from '../screens/features/FuelLogScreen';
 import ProfileScreen from '../screens/features/ProfileScreen';
 
 export type MainTabParamList = {
@@ -54,12 +54,12 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="IFTA"
-        component={IFTAScreen}
+        component={IFTATrackerScreen}
         options={{ tabBarIcon: tabIcon('map-outline', 'map') }}
       />
       <Tab.Screen
         name="Fuel"
-        component={FuelScreen}
+        component={FuelLogScreen}
         options={{ tabBarIcon: tabIcon('water-outline', 'water') }}
       />
       <Tab.Screen

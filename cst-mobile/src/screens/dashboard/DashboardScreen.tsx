@@ -138,10 +138,10 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Quick Access</Text>
         <View style={styles.quickRow}>
           {[
-            { label: 'Tax Calc',    icon: 'calculator-outline', screen: 'TaxCalculator' as const, color: '#27AE60' },
-            { label: 'Calendar',    icon: 'calendar-outline',   screen: 'Calendar' as const,      color: '#8E44AD' },
-            { label: 'P&L',         icon: 'bar-chart-outline',  screen: 'ProfitLoss' as const,    color: '#9B59B6' },
-            { label: 'Maintenance', icon: 'construct-outline',  screen: 'Maintenance' as const,   color: '#E67E22' },
+            { label: 'HOS',       icon: 'timer-outline',      screen: 'HOSTracker' as const,       color: '#16A085' },
+            { label: 'Trip Log',  icon: 'map-outline',        screen: 'TripLog' as const,          color: '#3498DB' },
+            { label: 'Detention', icon: 'stopwatch-outline',  screen: 'DetentionTracker' as const, color: '#C0392B' },
+            { label: 'Fuel Log',  icon: 'water-outline',      screen: 'FuelLog' as const,          color: '#1ABC9C' },
           ].map(({ label, icon, screen, color }) => (
             <TouchableOpacity key={label} style={styles.quickCard} onPress={() => navigation.navigate(screen)}>
               <Ionicons name={icon as any} size={24} color={color} />

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { getDeadlines, addDeadline, deleteDeadline } from '../../api/features';
+import { setupNotifications, scheduleDeadlineNotifications } from '../../utils/notifications';
 
 type DeadlineType = 'CDL Renewal' | 'IFTA Quarterly' | 'Registration' | 'Court Date' | 'DOT Inspection' | 'Insurance' | 'Maintenance' | 'Other';
 
@@ -49,6 +50,8 @@ export default function CalendarScreen() {
       setLoading(true);
       const data = await getDeadlines();
       setDeadlines(data);
+      const granted = await setupNotifications();
+      if (granted) await scheduleDeadlineNotifications(data);
     } catch {
       Alert.alert('Error', 'Failed to load deadlines');
     } finally {
