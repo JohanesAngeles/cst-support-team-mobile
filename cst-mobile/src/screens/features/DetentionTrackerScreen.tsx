@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../constants/colors';
-import { getDetentionEvents, startDetention, stopDetention, deleteDetentionEvent } from '../../api/features';
+import { getDetentionEvents, startDetention, stopDetention, updateDetentionEvent, deleteDetentionEvent } from '../../api/features';
 
 interface DetentionEvent {
   _id: string;
@@ -54,6 +54,9 @@ export default function DetentionTrackerScreen() {
   const [now, setNow] = useState(Date.now());
   const [clockInModal, setClockInModal] = useState(false);
   const [stopping, setStopping] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editEvent, setEditEvent] = useState<DetentionEvent | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
 
   // Clock-in form
   const [location, setLocation] = useState('');
@@ -62,6 +65,13 @@ export default function DetentionTrackerScreen() {
   const [freeHours, setFreeHours] = useState('2');
   const [rate, setRate] = useState('50');
   const [clocking, setClocking] = useState(false);
+
+  // Edit form fields (reuses same names with edit prefix)
+  const [editLocation, setEditLocation] = useState('');
+  const [editType, setEditType] = useState<'Shipper' | 'Receiver' | 'Other'>('Shipper');
+  const [editLoadNum, setEditLoadNum] = useState('');
+  const [editFreeHours, setEditFreeHours] = useState('2');
+  const [editRate, setEditRate] = useState('50');
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -124,6 +134,36 @@ export default function DetentionTrackerScreen() {
       Alert.alert('Error', err.message);
     } finally {
       setStopping(false);
+    }
+  };
+
+  const openEditModal = (event: DetentionEvent) => {
+    setEditEvent(event);
+    setEditLocation(event.location);
+    setEditType(event.type);
+    setEditLoadNum(event.loadNum ?? '');
+    setEditFreeHours(String(event.freeHours));
+    setEditRate(String(event.ratePerHour));
+    setEditModal(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editEvent || !editLocation.trim()) { Alert.alert('Error', 'Location is required'); return; }
+    setEditSaving(true);
+    try {
+      await updateDetentionEvent(editEvent._id, {
+        location: editLocation.trim(),
+        type: editType,
+        loadNum: editLoadNum.trim(),
+        freeHours: parseFloat(editFreeHours) || 2,
+        ratePerHour: parseFloat(editRate) || 50,
+      });
+      setEditModal(false);
+      load();
+    } catch (err: any) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -227,7 +267,7 @@ export default function DetentionTrackerScreen() {
             {completed.map((event) => {
               const { totalHours, detentionHours, pay } = calcPay(event);
               return (
-                <TouchableOpacity key={event._id} style={styles.historyRow} onLongPress={() => handleDelete(event)}>
+                <TouchableOpacity key={event._id} style={styles.historyRow} onPress={() => openEditModal(event)} onLongPress={() => handleDelete(event)}>
                   <View style={styles.historyLeft}>
                     <View style={styles.historyTopRow}>
                       <Text style={styles.historyLocation}>{event.location}</Text>
@@ -251,7 +291,7 @@ export default function DetentionTrackerScreen() {
                 </TouchableOpacity>
               );
             })}
-            <Text style={styles.longPressHint}>Long-press to delete</Text>
+            <Text style={styles.longPressHint}>Tap to edit · Long-press to delete</Text>
           </View>
         )}
 
@@ -263,6 +303,66 @@ export default function DetentionTrackerScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal visible={editModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Edit Event</Text>
+
+            <Text style={styles.modalLabel}>Location *</Text>
+            <TextInput
+              style={styles.modalInput} value={editLocation} onChangeText={setEditLocation}
+              placeholder="Company name or address" placeholderTextColor={Colors.textMuted}
+            />
+
+            <Text style={styles.modalLabel}>Type</Text>
+            <View style={styles.typeRow}>
+              {TYPES.map((t) => (
+                <TouchableOpacity
+                  key={t}
+                  style={[styles.typeChip, editType === t && styles.typeChipActive]}
+                  onPress={() => setEditType(t)}
+                >
+                  <Text style={[styles.typeChipText, editType === t && styles.typeChipTextActive]}>{t}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.modalLabel}>Load # (optional)</Text>
+            <TextInput
+              style={styles.modalInput} value={editLoadNum} onChangeText={setEditLoadNum}
+              placeholder="Load or PO number" placeholderTextColor={Colors.textMuted}
+            />
+
+            <View style={styles.twoCol}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Free Hours</Text>
+                <TextInput
+                  style={styles.modalInput} value={editFreeHours} onChangeText={setEditFreeHours}
+                  keyboardType="decimal-pad" placeholder="2" placeholderTextColor={Colors.textMuted}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.modalLabel}>Rate ($/hr)</Text>
+                <TextInput
+                  style={styles.modalInput} value={editRate} onChangeText={setEditRate}
+                  keyboardType="decimal-pad" placeholder="50" placeholderTextColor={Colors.textMuted}
+                />
+              </View>
+            </View>
+
+            <View style={styles.modalBtns}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModal(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, editSaving && { opacity: 0.6 }]} onPress={handleEditSave} disabled={editSaving}>
+                {editSaving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Update</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Clock In Modal */}
       <Modal visible={clockInModal} transparent animationType="slide">

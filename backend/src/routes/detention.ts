@@ -43,6 +43,24 @@ router.put('/:id/stop', async (req: AuthRequest, res: Response) => {
   res.json({ event });
 });
 
+// PUT — edit completed event metadata (not timestamps)
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const { location, type, loadNum, freeHours, ratePerHour } = req.body;
+  const update: Record<string, unknown> = {};
+  if (location    != null) update.location    = location;
+  if (type        != null) update.type        = type;
+  if (loadNum     != null) update.loadNum     = loadNum;
+  if (freeHours   != null) update.freeHours   = freeHours;
+  if (ratePerHour != null) update.ratePerHour = ratePerHour;
+  const event = await DetentionEvent.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user._id },
+    { $set: update },
+    { new: true }
+  );
+  if (!event) { res.status(404).json({ message: 'Not found' }); return; }
+  res.json({ event });
+});
+
 // DELETE
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   await DetentionEvent.findOneAndDelete({ _id: req.params.id, userId: req.user._id });

@@ -39,6 +39,7 @@ export default function HOSTrackerScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [modal, setModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editEntry, setEditEntry] = useState<HOSEntry | null>(null);
 
   const [drivingHours, setDrivingHours] = useState('');
   const [onDutyHours, setOnDutyHours] = useState('');
@@ -72,9 +73,18 @@ export default function HOSTrackerScreen() {
   const todayEntry = entries.find(e => e.date === todayStr());
 
   const openModal = () => {
+    setEditEntry(null);
     setDrivingHours(todayEntry ? String(todayEntry.drivingHours) : '');
     setOnDutyHours(todayEntry ? String(todayEntry.onDutyHours) : '');
     setNotes(todayEntry?.notes ?? '');
+    setModal(true);
+  };
+
+  const openEditModal = (entry: HOSEntry) => {
+    setEditEntry(entry);
+    setDrivingHours(String(entry.drivingHours));
+    setOnDutyHours(String(entry.onDutyHours));
+    setNotes(entry.notes ?? '');
     setModal(true);
   };
 
@@ -87,7 +97,8 @@ export default function HOSTrackerScreen() {
     if (d > o)  { Alert.alert('Error', 'Driving hours cannot exceed on-duty hours'); return; }
     setSaving(true);
     try {
-      await logHOSEntry({ date: todayStr(), drivingHours: d, onDutyHours: o, notes });
+      const date = editEntry ? editEntry.date : todayStr();
+      await logHOSEntry({ date, drivingHours: d, onDutyHours: o, notes });
       setModal(false);
       load();
     } catch (err: any) {
@@ -226,7 +237,7 @@ export default function HOSTrackerScreen() {
           <View style={styles.historyCard}>
             <Text style={styles.historyTitle}>Recent Log ({cycleDays}-Day Window)</Text>
             {entries.slice(0, cycleDays).map((entry) => (
-              <TouchableOpacity key={entry._id} style={styles.historyRow} onLongPress={() => handleDelete(entry)}>
+              <TouchableOpacity key={entry._id} style={styles.historyRow} onPress={() => openEditModal(entry)} onLongPress={() => handleDelete(entry)}>
                 <View style={styles.historyLeft}>
                   <Text style={styles.historyDate}>{fmtDate(entry.date)}</Text>
                   {entry.notes ? <Text style={styles.historyNotes}>{entry.notes}</Text> : null}
@@ -241,7 +252,7 @@ export default function HOSTrackerScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-            <Text style={styles.longPressHint}>Long-press to delete</Text>
+            <Text style={styles.longPressHint}>Tap to edit · Long-press to delete</Text>
           </View>
         )}
       </ScrollView>
@@ -250,8 +261,8 @@ export default function HOSTrackerScreen() {
       <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Log Today's Hours</Text>
-            <Text style={styles.modalDate}>{fmtDate(todayStr())}</Text>
+            <Text style={styles.modalTitle}>{editEntry ? 'Edit Hours' : 'Log Today\'s Hours'}</Text>
+            <Text style={styles.modalDate}>{editEntry ? fmtDate(editEntry.date) : fmtDate(todayStr())}</Text>
 
             <Text style={styles.modalLabel}>Driving Hours (max 11)</Text>
             <TextInput
@@ -276,7 +287,7 @@ export default function HOSTrackerScreen() {
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Save</Text>}
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editEntry ? 'Update' : 'Save'}</Text>}
               </TouchableOpacity>
             </View>
           </View>

@@ -1,7 +1,7 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator, RefreshControl, Share,
+  Modal, TextInput, Alert, ActivityIndicator, RefreshControl, Share, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,9 @@ export default function TripLogScreen() {
   const [saving, setSaving] = useState(false);
   const [editTarget, setEditTarget] = useState<Trip | null>(null);
 
+  type DatePreset = 'All' | 'Week' | 'Month' | 'Last Month';
+  const [datePreset, setDatePreset] = useState<DatePreset>('All');
+
   const [date, setDate] = useState(todayStr());
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -55,15 +58,35 @@ export default function TripLogScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  const filteredTrips = useMemo(() => {
+    if (datePreset === 'All') return trips;
+    const now = new Date();
+    let from: Date;
+    let to: Date = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    if (datePreset === 'Week') {
+      from = new Date(now); from.setDate(now.getDate() - 6); from.setHours(0, 0, 0, 0);
+    } else if (datePreset === 'Month') {
+      from = new Date(now.getFullYear(), now.getMonth(), 1);
+      to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    } else {
+      from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    }
+    return trips.filter(t => {
+      const d = new Date(t.date + 'T12:00:00');
+      return d >= from && d <= to;
+    });
+  }, [trips, datePreset]);
+
   const exportCSV = useCallback(() => {
-    if (trips.length === 0) { Alert.alert('Nothing to export', 'Log some trips first.'); return; }
+    if (filteredTrips.length === 0) { Alert.alert('Nothing to export', 'No trips in selected range.'); return; }
     const q = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
     const header = 'Date,Origin,Destination,Miles,Rate ($),Load #,Broker,Status,Notes';
-    const rows = trips.map(t =>
+    const rows = filteredTrips.map(t =>
       [t.date, q(t.origin), q(t.destination), t.miles, t.rate, q(t.loadNum), q(t.broker), t.status, q(t.notes)].join(',')
     );
     Share.share({ message: [header, ...rows].join('\n'), title: 'Trip Log.csv' });
-  }, [trips]);
+  }, [filteredTrips]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -120,9 +143,9 @@ export default function TripLogScreen() {
     ]);
   };
 
-  const totalMiles = trips.reduce((s, t) => s + t.miles, 0);
-  const totalRevenue = trips.reduce((s, t) => s + t.rate, 0);
-  const completedTrips = trips.filter(t => t.status === 'Completed').length;
+  const totalMiles = filteredTrips.reduce((s, t) => s + t.miles, 0);
+  const totalRevenue = filteredTrips.reduce((s, t) => s + t.rate, 0);
+  const completedTrips = filteredTrips.filter(t => t.status === 'Completed').length;
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
 
@@ -131,7 +154,7 @@ export default function TripLogScreen() {
       {/* Summary */}
       <View style={styles.summaryRow}>
         {[
-          { label: 'Total Trips', value: String(trips.length), icon: 'map-outline', color: Colors.secondary },
+          { label: 'Total Trips', value: String(filteredTrips.length), icon: 'map-outline', color: Colors.secondary },
           { label: 'Total Miles', value: totalMiles.toLocaleString(), icon: 'speedometer-outline', color: '#3498DB' },
           { label: 'Revenue', value: totalRevenue > 0 ? `$${totalRevenue.toLocaleString()}` : '—', icon: 'cash-outline', color: Colors.success },
         ].map(({ label, value, icon, color }) => (
@@ -144,17 +167,30 @@ export default function TripLogScreen() {
       </View>
 
       <FlatList
-        data={trips}
+        data={filteredTrips}
         keyExtractor={t => t._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Colors.secondary} />}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+        ListHeaderComponent={
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
+            {(['All', 'Week', 'Month', 'Last Month'] as const).map(p => (
+              <TouchableOpacity
+                key={p}
+                style={[styles.filterChip, datePreset === p && styles.filterChipActive]}
+                onPress={() => setDatePreset(p)}
+              >
+                <Text style={[styles.filterChipText, datePreset === p && styles.filterChipTextActive]}>{p}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="map-outline" size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No trips logged yet</Text>
-            <Text style={styles.emptySub}>Tap + to log your first trip</Text>
+            <Text style={styles.emptyText}>{datePreset === 'All' ? 'No trips logged yet' : `No trips in ${datePreset}`}</Text>
+            <Text style={styles.emptySub}>{datePreset === 'All' ? 'Tap + to log your first trip' : 'Try a different date range'}</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -242,7 +278,11 @@ const styles = StyleSheet.create({
   summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
   summaryValue: { fontSize: 17, fontWeight: '900' },
   summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+  list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  filterChipActive: { backgroundColor: Colors.secondary + '22', borderColor: Colors.secondary },
+  filterChipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+  filterChipTextActive: { color: Colors.secondary },
   card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 6 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   routeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },

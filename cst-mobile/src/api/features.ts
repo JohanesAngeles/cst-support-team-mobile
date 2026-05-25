@@ -103,4 +103,6 @@ export const getDetentionEvents = () => client.get('/detention').then(r => r.dat
 export const startDetention = (data: { location: string; type: string; loadNum?: string; freeHours: number; ratePerHour: number }) =>
   client.post('/detention/start', data).then(r => r.data);
 export const stopDetention = (id: string) => client.put(`/detention/${id}/stop`, {}).then(r => r.data);
+export const updateDetentionEvent = (id: string, data: { location?: string; type?: string; loadNum?: string; freeHours?: number; ratePerHour?: number }) =>
+  client.put(`/detention/${id}`, data).then(r => r.data);
 export const deleteDetentionEvent = (id: string) => client.delete(`/detention/${id}`).then(r => r.data);
