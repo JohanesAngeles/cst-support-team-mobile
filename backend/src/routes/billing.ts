@@ -5,7 +5,7 @@ import User from '../models/User';
 
 const router = Router();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2025-05-28.basil' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2026-04-22.dahlia' });
 
 const PLANS: Record<string, { priceId: string; name: string; amount: number }> = {
   monthly: {
@@ -85,7 +85,7 @@ router.post('/webhook', express_raw_body, async (req: Request, res: Response) =>
   const sig = req.headers['stripe-signature'] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? '';
 
-  let event: Stripe.Event;
+  let event: ReturnType<typeof stripe.webhooks.constructEvent>;
   try {
     event = stripe.webhooks.constructEvent((req as any).rawBody, sig, webhookSecret);
   } catch (err: any) {
