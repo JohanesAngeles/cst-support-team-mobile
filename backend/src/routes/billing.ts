@@ -5,7 +5,14 @@ import User from '../models/User';
 
 const router = Router();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2026-04-22.dahlia' });
+let _stripe: InstanceType<typeof Stripe> | null = null;
+function getStripe(): InstanceType<typeof Stripe> {
+  if (!_stripe) {
+    if (!process.env.STRIPE_SECRET_KEY) throw new Error('Stripe not configured — set STRIPE_SECRET_KEY');
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-04-22.dahlia' });
+  }
+  return _stripe;
+}
 
 const PLANS: Record<string, { priceId: string; name: string; amount: number }> = {
   monthly: {
@@ -46,12 +53,12 @@ router.post('/checkout', protect, async (req: AuthRequest, res: Response) => {
   let customerId = (user as any).stripeCustomerId as string | undefined;
 
   if (!customerId) {
-    const customer = await stripe.customers.create({ email: user.email, name: user.name, metadata: { userId: String(user._id) } });
+    const customer = await getStripe().customers.create({ email: user.email, name: user.name, metadata: { userId: String(user._id) } });
     customerId = customer.id;
     await User.findByIdAndUpdate(user._id, { stripeCustomerId: customerId });
   }
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await getStripe().checkout.sessions.create({
     customer: customerId,
     payment_method_types: ['card'],
     line_items: [{ price: PLANS[plan].priceId, quantity: 1 }],
@@ -72,7 +79,7 @@ router.post('/portal', protect, async (req: AuthRequest, res: Response) => {
 
   if (!customerId) { res.status(400).json({ message: 'No billing account found. Subscribe first.' }); return; }
 
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl ?? 'cst://profile',
   });
@@ -85,9 +92,9 @@ router.post('/webhook', express_raw_body, async (req: Request, res: Response) =>
   const sig = req.headers['stripe-signature'] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? '';
 
-  let event: ReturnType<typeof stripe.webhooks.constructEvent>;
+  let event: ReturnType<InstanceType<typeof Stripe>['webhooks']['constructEvent']>;
   try {
-    event = stripe.webhooks.constructEvent((req as any).rawBody, sig, webhookSecret);
+    event = getStripe().webhooks.constructEvent((req as any).rawBody, sig, webhookSecret);
   } catch (err: any) {
     res.status(400).json({ message: `Webhook error: ${err.message}` });
     return;
