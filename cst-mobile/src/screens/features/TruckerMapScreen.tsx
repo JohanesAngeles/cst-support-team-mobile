@@ -5,7 +5,7 @@ import {
   KeyboardAvoidingView, Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Callout, Region, PROVIDER_GOOGLE } from 'react-native-maps';
+import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -42,11 +42,11 @@ interface MapReport {
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 const REPORT_TYPES: { key: ReportType; label: string; icon: string; color: string; emoji: string }[] = [
-  { key: 'truck_stop',    label: 'Truck Stop',     icon: 'business-outline',   color: '#3498DB', emoji: '🏪' },
-  { key: 'hazard',        label: 'Road Hazard',    icon: 'warning-outline',    color: '#E74C3C', emoji: '⚠️' },
-  { key: 'weigh_station', label: 'Weigh Station',  icon: 'scale-outline',      color: '#9B59B6', emoji: '⚖️' },
-  { key: 'parking',       label: 'Parking',        icon: 'car-outline',        color: '#2ECC71', emoji: '🅿️' },
-  { key: 'fuel',          label: 'Fuel Price',     icon: 'water-outline',      color: '#F39C12', emoji: '⛽' },
+  { key: 'truck_stop',    label: 'Truck Stop',    icon: 'business-outline',  color: '#3498DB', emoji: '🏪' },
+  { key: 'hazard',        label: 'Road Hazard',   icon: 'warning-outline',   color: '#E74C3C', emoji: '⚠️' },
+  { key: 'weigh_station', label: 'Weigh Station', icon: 'scale-outline',     color: '#9B59B6', emoji: '⚖️' },
+  { key: 'parking',       label: 'Parking',       icon: 'car-outline',       color: '#2ECC71', emoji: '🅿️' },
+  { key: 'fuel',          label: 'Fuel Price',    icon: 'water-outline',     color: '#F39C12', emoji: '⛽' },
 ];
 
 const HAZARD_TYPES = ['Construction', 'Accident', 'Low Bridge', 'Rough Road', 'Road Closure', 'Other'];
@@ -63,38 +63,125 @@ const timeAgo = (iso: string) => {
   return `${Math.floor(h / 24)}d ago`;
 };
 
+// ─── Leaflet HTML ─────────────────────────────────────────────────────────────
+
+const buildMapHTML = () => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body,#map{width:100%;height:100%;background:#121212}
+    .mkr{display:flex;align-items:center;justify-content:center;
+         width:36px;height:36px;border-radius:50%;border:2.5px solid #fff;
+         font-size:17px;box-shadow:0 2px 8px rgba(0,0,0,.6)}
+    .leaflet-control-attribution{display:none}
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<script>
+  const COLORS={truck_stop:'#3498DB',hazard:'#E74C3C',weigh_station:'#9B59B6',parking:'#2ECC71',fuel:'#F39C12'};
+  const EMOJI={truck_stop:'🏪',hazard:'⚠️',weigh_station:'⚖️',parking:'🅿️',fuel:'⛽'};
+
+  const map=L.map('map',{zoomControl:true}).setView([39.8283,-98.5795],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+
+  let markerMap={};
+  let lastReports=[];
+  let activeFilters=new Set(['truck_stop','hazard','weigh_station','parking','fuel']);
+
+  function icon(type){
+    return L.divIcon({
+      html:'<div class="mkr" style="background:'+COLORS[type]+'">'+EMOJI[type]+'</div>',
+      className:'',iconSize:[36,36],iconAnchor:[18,18]
+    });
+  }
+
+  function renderMarkers(reports){
+    lastReports=reports;
+    Object.values(markerMap).forEach(m=>map.removeLayer(m));
+    markerMap={};
+    reports.forEach(r=>{
+      if(!activeFilters.has(r.type))return;
+      const m=L.marker([r.lat,r.lng],{icon:icon(r.type)});
+      m.on('click',()=>post({type:'tap',report:r}));
+      m.addTo(map);
+      markerMap[r._id]=m;
+    });
+  }
+
+  function post(obj){
+    window.ReactNativeWebView&&window.ReactNativeWebView.postMessage(JSON.stringify(obj));
+  }
+
+  // Long-press via Leaflet contextmenu (fires on mobile hold + desktop right-click)
+  map.on('contextmenu',e=>post({type:'longpress',lat:e.latlng.lat,lng:e.latlng.lng}));
+
+  // Fallback touch-hold for older Android
+  let holdTimer=null;
+  let holdLatLng=null;
+  map.on('mousedown',e=>{holdLatLng=e.latlng;holdTimer=setTimeout(()=>post({type:'longpress',lat:holdLatLng.lat,lng:holdLatLng.lng}),700);});
+  map.on('mouseup mousemove',()=>{clearTimeout(holdTimer);});
+
+  map.on('moveend',()=>{
+    const c=map.getCenter();
+    post({type:'region',lat:c.lat,lng:c.lng,zoom:map.getZoom()});
+  });
+
+  // Messages from React Native
+  function onMsg(e){
+    try{
+      const d=JSON.parse(e.data);
+      if(d.action==='reports') renderMarkers(d.reports);
+      if(d.action==='location') map.setView([d.lat,d.lng],12,{animate:true});
+      if(d.action==='filters'){activeFilters=new Set(d.filters);renderMarkers(lastReports);}
+      if(d.action==='removeMarker'&&markerMap[d.id]){map.removeLayer(markerMap[d.id]);delete markerMap[d.id];}
+      if(d.action==='addMarker'){
+        const r=d.report;
+        if(!activeFilters.has(r.type))return;
+        const m=L.marker([r.lat,r.lng],{icon:icon(r.type)});
+        m.on('click',()=>post({type:'tap',report:r}));
+        m.addTo(map);
+        markerMap[r._id]=m;
+        lastReports=[r,...lastReports];
+      }
+    }catch(err){}
+  }
+  document.addEventListener('message',onMsg);
+  window.addEventListener('message',onMsg);
+</script>
+</body>
+</html>
+`;
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function TruckerMapScreen() {
   const { user } = useAuth();
-  const mapRef = useRef<MapView>(null);
+  const webRef = useRef<WebView>(null);
 
-  const [region, setRegion] = useState<Region>({
-    latitude: 39.8283,
-    longitude: -98.5795,
-    latitudeDelta: 8,
-    longitudeDelta: 8,
-  });
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [reports, setReports] = useState<MapReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [locLoading, setLocLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
-  // Filters
   const [activeFilters, setActiveFilters] = useState<Set<ReportType>>(
     new Set(['truck_stop', 'hazard', 'weigh_station', 'parking', 'fuel'])
   );
 
-  // Selected report (callout detail)
   const [selected, setSelected] = useState<MapReport | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
 
-  // Add report modal
   const [addVisible, setAddVisible] = useState(false);
   const [pendingLat, setPendingLat] = useState<number | null>(null);
   const [pendingLng, setPendingLng] = useState<number | null>(null);
 
-  // Add report form state
   const [formType, setFormType] = useState<ReportType>('hazard');
   const [formTitle, setFormTitle] = useState('');
   const [formDesc, setFormDesc] = useState('');
@@ -108,7 +195,19 @@ export default function TruckerMapScreen() {
   const [formParking, setFormParking] = useState('');
   const [formSaving, setFormSaving] = useState(false);
 
-  // ── Location ────────────────────────────────────────────────────────────────
+  // ── Send message to WebView ──────────────────────────────────────────────────
+
+  const send = useCallback((obj: object) => {
+    webRef.current?.injectJavaScript(`
+      (function(){
+        var e=new MessageEvent('message',{data:${JSON.stringify(JSON.stringify(obj))}});
+        window.dispatchEvent(e);
+        document.dispatchEvent(e);
+      })();true;
+    `);
+  }, []);
+
+  // ── Location + initial load ──────────────────────────────────────────────────
 
   const goToMyLocation = useCallback(async () => {
     setLocLoading(true);
@@ -118,15 +217,13 @@ export default function TruckerMapScreen() {
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const { latitude, longitude } = pos.coords;
       setUserLocation({ latitude, longitude });
-      const newRegion = { latitude, longitude, latitudeDelta: 0.5, longitudeDelta: 0.5 };
-      setRegion(newRegion);
-      mapRef.current?.animateToRegion(newRegion, 600);
+      send({ action: 'location', lat: latitude, lng: longitude });
       loadReports(latitude, longitude);
     } catch { Alert.alert('Error', 'Could not get location.'); }
     finally { setLocLoading(false); }
-  }, []);
+  }, [send]);
 
-  useEffect(() => { goToMyLocation(); }, []);
+  useEffect(() => { if (mapReady) goToMyLocation(); }, [mapReady]);
 
   // ── Load reports ─────────────────────────────────────────────────────────────
 
@@ -134,55 +231,48 @@ export default function TruckerMapScreen() {
     setLoading(true);
     try {
       const data = await getMapReports(lat, lng, 100);
-      setReports(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setReports(list);
+      send({ action: 'reports', reports: list });
     } catch { /* silent */ }
     finally { setLoading(false); }
-  }, []);
+  }, [send]);
 
-  const onRegionChangeComplete = useCallback((r: Region) => {
-    setRegion(r);
-    if (r.latitudeDelta < 3) loadReports(r.latitude, r.longitude);
-  }, [loadReports]);
-
-  // ── Filter ───────────────────────────────────────────────────────────────────
+  // ── Filter toggle ────────────────────────────────────────────────────────────
 
   const toggleFilter = (type: ReportType) => {
     setActiveFilters(prev => {
       const next = new Set(prev);
       next.has(type) ? next.delete(type) : next.add(type);
+      send({ action: 'filters', filters: Array.from(next) });
       return next;
     });
   };
 
-  const visibleReports = reports.filter(r => activeFilters.has(r.type));
+  // ── WebView messages ─────────────────────────────────────────────────────────
 
-  // ── Map long-press → add report ──────────────────────────────────────────────
+  const onWebMessage = useCallback((e: any) => {
+    try {
+      const msg = JSON.parse(e.nativeEvent.data);
+      if (msg.type === 'tap') {
+        setSelected(msg.report);
+        setDetailVisible(true);
+      }
+      if (msg.type === 'longpress') {
+        setPendingLat(msg.lat);
+        setPendingLng(msg.lng);
+        resetForm();
+        setAddVisible(true);
+      }
+      if (msg.type === 'region') {
+        if (msg.zoom >= 9) loadReports(msg.lat, msg.lng);
+      }
+    } catch { /* ignore */ }
+  }, [loadReports]);
 
-  const onLongPress = (e: any) => {
-    const { latitude, longitude } = e.nativeEvent.coordinate;
-    setPendingLat(latitude);
-    setPendingLng(longitude);
-    resetForm();
-    setAddVisible(true);
-  };
+  // ── Add report ───────────────────────────────────────────────────────────────
 
-  const resetForm = () => {
-    setFormType('hazard');
-    setFormTitle('');
-    setFormDesc('');
-    setFormFuelPrice('');
-    setFormFuelStation('');
-    setFormIsOpen(true);
-    setFormWait('');
-    setFormRating(0);
-    setFormHazardType('Construction');
-    setFormAmenities([]);
-    setFormParking('');
-  };
-
-  // ── Add report at user location ──────────────────────────────────────────────
-
-  const addAtMyLocation = async () => {
+  const addAtMyLocation = () => {
     if (!userLocation) { Alert.alert('No location', 'Enable location first.'); return; }
     setPendingLat(userLocation.latitude);
     setPendingLng(userLocation.longitude);
@@ -190,87 +280,64 @@ export default function TruckerMapScreen() {
     setAddVisible(true);
   };
 
-  // ── Submit report ────────────────────────────────────────────────────────────
+  const resetForm = () => {
+    setFormType('hazard'); setFormTitle(''); setFormDesc('');
+    setFormFuelPrice(''); setFormFuelStation(''); setFormIsOpen(true);
+    setFormWait(''); setFormRating(0); setFormHazardType('Construction');
+    setFormAmenities([]); setFormParking('');
+  };
 
   const submitReport = async () => {
     if (!pendingLat || !pendingLng) return;
     if (!formTitle.trim()) { Alert.alert('Title required', 'Give this report a short title.'); return; }
-
     setFormSaving(true);
     try {
       const payload: any = {
-        type: formType,
-        lat: pendingLat,
-        lng: pendingLng,
+        type: formType, lat: pendingLat, lng: pendingLng,
         title: formTitle.trim(),
         description: formDesc.trim() || undefined,
       };
-
-      if (formType === 'fuel') {
-        payload.fuelPrice = parseFloat(formFuelPrice) || undefined;
-        payload.fuelStation = formFuelStation.trim() || undefined;
-      }
-      if (formType === 'weigh_station') {
-        payload.isOpen = formIsOpen;
-        payload.waitMinutes = parseInt(formWait) || undefined;
-      }
-      if (formType === 'truck_stop') {
-        payload.rating = formRating || undefined;
-        payload.amenities = formAmenities.length > 0 ? formAmenities : undefined;
-      }
-      if (formType === 'hazard') {
-        payload.hazardType = formHazardType;
-      }
-      if (formType === 'parking') {
-        payload.parkingSpots = parseInt(formParking) || undefined;
-      }
+      if (formType === 'fuel') { payload.fuelPrice = parseFloat(formFuelPrice) || undefined; payload.fuelStation = formFuelStation.trim() || undefined; }
+      if (formType === 'weigh_station') { payload.isOpen = formIsOpen; payload.waitMinutes = parseInt(formWait) || undefined; }
+      if (formType === 'truck_stop') { payload.rating = formRating || undefined; payload.amenities = formAmenities.length > 0 ? formAmenities : undefined; }
+      if (formType === 'hazard') { payload.hazardType = formHazardType; }
+      if (formType === 'parking') { payload.parkingSpots = parseInt(formParking) || undefined; }
 
       const newReport = await createMapReport(payload);
       setReports(prev => [newReport, ...prev]);
+      send({ action: 'addMarker', report: newReport });
       setAddVisible(false);
-      mapRef.current?.animateToRegion({ latitude: pendingLat, longitude: pendingLng, latitudeDelta: 0.1, longitudeDelta: 0.1 }, 400);
       Alert.alert('Posted!', 'Your report is now visible to all CST truckers nearby.');
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message ?? 'Could not post report.');
-    } finally {
-      setFormSaving(false);
-    }
+    } finally { setFormSaving(false); }
   };
 
-  // ── Navigate via truck-friendly app ─────────────────────────────────────────
+  // ── Navigate ─────────────────────────────────────────────────────────────────
 
   const navigateTo = (lat: number, lng: number, label: string) => {
-    Alert.alert(
-      'Navigate to ' + label,
-      'Choose your navigation app:',
-      [
-        {
-          text: 'Google Maps (Truck Mode)',
-          onPress: () => {
-            const url = Platform.OS === 'ios'
-              ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`
-              : `google.navigation:q=${lat},${lng}&mode=d`;
-            Linking.canOpenURL(url).then(can =>
-              can ? Linking.openURL(url)
-                  : Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`)
-            );
-          },
+    Alert.alert('Navigate to ' + label, 'Choose your navigation app:', [
+      {
+        text: 'Google Maps (Truck Mode)',
+        onPress: () => {
+          const url = Platform.OS === 'ios'
+            ? `comgooglemaps://?daddr=${lat},${lng}&directionsmode=driving`
+            : `google.navigation:q=${lat},${lng}&mode=d`;
+          Linking.canOpenURL(url).then(can =>
+            can ? Linking.openURL(url)
+                : Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`)
+          );
         },
-        {
-          text: Platform.OS === 'ios' ? 'Apple Maps' : 'Default Maps',
-          onPress: () => {
-            const url = Platform.OS === 'ios'
-              ? `maps://?daddr=${lat},${lng}`
-              : `geo:${lat},${lng}?q=${lat},${lng}`;
-            Linking.openURL(url);
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    );
+      },
+      {
+        text: Platform.OS === 'ios' ? 'Apple Maps' : 'Default Maps',
+        onPress: () => Linking.openURL(Platform.OS === 'ios' ? `maps://?daddr=${lat},${lng}` : `geo:${lat},${lng}?q=${lat},${lng}`),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
-  // ── Upvote ───────────────────────────────────────────────────────────────────
+  // ── Upvote / Delete ──────────────────────────────────────────────────────────
 
   const handleUpvote = async (report: MapReport) => {
     try {
@@ -289,6 +356,7 @@ export default function TruckerMapScreen() {
           try {
             await deleteMapReport(report._id);
             setReports(prev => prev.filter(r => r._id !== report._id));
+            send({ action: 'removeMarker', id: report._id });
             setDetailVisible(false);
           } catch { Alert.alert('Error', 'Could not delete report.'); }
         },
@@ -296,7 +364,7 @@ export default function TruckerMapScreen() {
     ]);
   };
 
-  // ─── Render helpers ──────────────────────────────────────────────────────────
+  // ── Detail card ──────────────────────────────────────────────────────────────
 
   const renderStars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
@@ -311,7 +379,6 @@ export default function TruckerMapScreen() {
         <View style={styles.detailBody}>
           <Text style={styles.detailTitle}>{report.title}</Text>
           {report.description ? <Text style={styles.detailDesc}>{report.description}</Text> : null}
-
           {report.type === 'fuel' && report.fuelPrice && (
             <View style={styles.detailChip}>
               <Text style={styles.detailChipLabel}>⛽ Diesel</Text>
@@ -349,12 +416,10 @@ export default function TruckerMapScreen() {
               <Text style={styles.detailChipValue}>{report.parkingSpots}</Text>
             </View>
           )}
-
           <View style={styles.detailMeta}>
             <Text style={styles.detailMetaText}>by {report.userName}  ·  {timeAgo(report.createdAt)}</Text>
             {report.distanceMiles != null && <Text style={styles.detailMetaText}>{report.distanceMiles} mi away</Text>}
           </View>
-
           <View style={styles.detailActions}>
             <TouchableOpacity style={styles.detailActionBtn} onPress={() => handleUpvote(report)}>
               <Ionicons name="thumbs-up-outline" size={16} color={Colors.secondary} />
@@ -382,35 +447,19 @@ export default function TruckerMapScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Map */}
-      <MapView
-        ref={mapRef}
+      {/* Leaflet map via WebView */}
+      <WebView
+        ref={webRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        region={region}
-        onRegionChangeComplete={onRegionChangeComplete}
-        onLongPress={onLongPress}
-        showsUserLocation
-        showsMyLocationButton={false}
-        showsTraffic
-        showsCompass
-      >
-        {visibleReports.map(report => {
-          const cfg = typeConfig(report.type);
-          return (
-            <Marker
-              key={report._id}
-              coordinate={{ latitude: report.lat, longitude: report.lng }}
-              pinColor={cfg.color}
-              onPress={() => { setSelected(report); setDetailVisible(true); }}
-            >
-              <View style={[styles.markerBubble, { backgroundColor: cfg.color }]}>
-                <Text style={styles.markerEmoji}>{cfg.emoji}</Text>
-              </View>
-            </Marker>
-          );
-        })}
-      </MapView>
+        source={{ html: buildMapHTML() }}
+        originWhitelist={['*']}
+        javaScriptEnabled
+        domStorageEnabled
+        onLoadEnd={() => setMapReady(true)}
+        onMessage={onWebMessage}
+        allowsInlineMediaPlayback
+        mixedContentMode="always"
+      />
 
       {/* Top filter bar */}
       <SafeAreaView style={styles.filterBar} edges={['top']}>
@@ -447,7 +496,7 @@ export default function TruckerMapScreen() {
       {/* Long-press hint */}
       <View style={styles.hintBar}>
         <Ionicons name="finger-print-outline" size={14} color={Colors.textMuted} />
-        <Text style={styles.hintText}>Long-press anywhere on map to drop a report · {visibleReports.length} reports visible</Text>
+        <Text style={styles.hintText}>Long-press map to drop a report · {reports.length} reports nearby</Text>
       </View>
 
       {/* Report detail bottom sheet */}
@@ -464,12 +513,9 @@ export default function TruckerMapScreen() {
             <View style={styles.addSheetHandle} />
             <Text style={styles.addSheetTitle}>Report to Truckers</Text>
             {pendingLat && (
-              <Text style={styles.addSheetCoords}>
-                📍 {pendingLat.toFixed(5)}, {pendingLng?.toFixed(5)}
-              </Text>
+              <Text style={styles.addSheetCoords}>📍 {pendingLat.toFixed(5)}, {pendingLng?.toFixed(5)}</Text>
             )}
 
-            {/* Type selector */}
             <Text style={styles.addLabel}>Report Type</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
               {REPORT_TYPES.map(rt => (
@@ -485,7 +531,6 @@ export default function TruckerMapScreen() {
             </ScrollView>
 
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {/* Title */}
               <Text style={styles.addLabel}>Title *</Text>
               <TextInput
                 style={styles.addInput}
@@ -502,7 +547,6 @@ export default function TruckerMapScreen() {
                 maxLength={80}
               />
 
-              {/* Type-specific fields */}
               {formType === 'fuel' && (
                 <>
                   <Text style={styles.addLabel}>Diesel Price ($/gal)</Text>
@@ -519,8 +563,7 @@ export default function TruckerMapScreen() {
                   <View style={styles.switchRow}>
                     <Text style={styles.addLabel}>Scale is OPEN</Text>
                     <Switch value={formIsOpen} onValueChange={setFormIsOpen}
-                      trackColor={{ false: Colors.success, true: Colors.danger }}
-                      thumbColor={Colors.white} />
+                      trackColor={{ false: Colors.success, true: Colors.danger }} thumbColor={Colors.white} />
                   </View>
                   <Text style={[styles.switchStatus, { color: formIsOpen ? Colors.danger : Colors.success }]}>
                     {formIsOpen ? '🔴 Currently OPEN — truckers must stop' : '🟢 Currently CLOSED — pass through'}
@@ -585,7 +628,6 @@ export default function TruckerMapScreen() {
                 </>
               )}
 
-              {/* Description */}
               <Text style={styles.addLabel}>Notes (optional)</Text>
               <TextInput
                 style={[styles.addInput, { height: 72, textAlignVertical: 'top' }]}
@@ -626,12 +668,7 @@ export default function TruckerMapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   map: { flex: 1 },
-
-  // Filter bar
-  filterBar: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    flexDirection: 'row', alignItems: 'center',
-  },
+  filterBar: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
   filterScroll: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -641,53 +678,27 @@ const styles = StyleSheet.create({
   },
   filterEmoji: { fontSize: 14 },
   filterLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
-
-  // Markers
-  markerBubble: {
-    width: 36, height: 36, borderRadius: 18,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: Colors.white,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4, shadowRadius: 3, elevation: 5,
-  },
-  markerEmoji: { fontSize: 16 },
-
-  // Controls
-  controls: {
-    position: 'absolute', right: 16, bottom: 80,
-    gap: 10, alignItems: 'center',
-  },
+  controls: { position: 'absolute', right: 16, bottom: 80, gap: 10, alignItems: 'center' },
   controlBtn: {
     width: 48, height: 48, borderRadius: 24,
     backgroundColor: Colors.surface + 'EE',
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1, borderColor: Colors.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
   },
   addBtn: { backgroundColor: Colors.secondary, borderColor: Colors.secondary, width: 56, height: 56, borderRadius: 28 },
-
-  // Hint
   hintBar: {
     position: 'absolute', bottom: 20, left: 16, right: 80,
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: Colors.surface + 'DD', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: Colors.border,
   },
   hintText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
-
-  // Modal backdrop
   modalBackdrop: { flex: 1, backgroundColor: '#00000066' },
-
-  // Detail card
   detailCard: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.3, shadowRadius: 10, elevation: 10,
+    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10,
   },
   detailTypeBar: { paddingHorizontal: 20, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between' },
   detailTypeText: { color: Colors.white, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
@@ -711,23 +722,16 @@ const styles = StyleSheet.create({
     borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
   },
   detailActionText: { color: Colors.secondary, fontSize: 13, fontWeight: '700' },
-
-  // Add report sheet
   addSheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 20, maxHeight: '85%',
   },
   addSheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   addSheetTitle: { color: Colors.white, fontSize: 20, fontWeight: '900', marginBottom: 4 },
   addSheetCoords: { color: Colors.textMuted, fontSize: 11, marginBottom: 14 },
   addLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 6, marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  addInput: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 12, color: Colors.white, fontSize: 14,
-  },
+  addInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
   addNote: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 4 },
   typeChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -741,19 +745,12 @@ const styles = StyleSheet.create({
   starsRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   starBtn: { fontSize: 32, color: Colors.border },
   amenityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-  amenityToggle: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 6,
-    borderWidth: 1, borderColor: Colors.border,
-  },
+  amenityToggle: { backgroundColor: Colors.surfaceLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: Colors.border },
   amenityToggleOn: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
   amenityToggleText: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
   addBtns: { flexDirection: 'row', gap: 10, marginTop: 20, marginBottom: 10 },
   addCancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center' },
   addCancelText: { color: Colors.textMuted, fontWeight: '700' },
-  addSubmitBtn: {
-    flex: 2, backgroundColor: Colors.secondary, borderRadius: 12,
-    padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-  },
+  addSubmitBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   addSubmitText: { color: Colors.textDark, fontWeight: '900', fontSize: 14 },
 });
