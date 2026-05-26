@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/colors';
-import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import MainStack from './MainStack';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
 import IFTATrackerScreen from '../screens/features/IFTATrackerScreen';
 import FuelLogScreen from '../screens/features/FuelLogScreen';
@@ -44,7 +44,7 @@ export default function MainTabs() {
     >
       <Tab.Screen
         name="Dashboard"
-        component={DashboardScreen}
+        component={MainStack}
         options={{ tabBarIcon: tabIcon('home-outline', 'home') }}
       />
       <Tab.Screen

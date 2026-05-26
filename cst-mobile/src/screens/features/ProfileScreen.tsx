@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import { Colors } from '../../constants/colors';
@@ -70,6 +71,11 @@ export default function ProfileScreen() {
     }
   };
 
+  const replayOnboarding = async () => {
+    await AsyncStorage.removeItem('@cst_onboarded');
+    logout();
+  };
+
   const menuItems = [
     { icon: 'bus-outline',           label: 'My Truck',        onPress: () => navigation.navigate('TruckProfile') },
     { icon: 'card-outline',          label: 'Subscription',    onPress: () => navigation.navigate('Subscription') },
@@ -79,6 +85,7 @@ export default function ProfileScreen() {
     { icon: 'help-circle-outline',   label: 'Help & Support',  onPress: () => Alert.alert('Support', 'Email us at support@cst-app.com') },
     { icon: 'document-text-outline', label: 'Terms of Service', onPress: () => navigation.navigate('Terms') },
     { icon: 'shield-outline',        label: 'Privacy Policy',   onPress: () => navigation.navigate('Privacy') },
+    { icon: 'play-circle-outline',   label: 'Replay App Tour',  onPress: replayOnboarding },
   ];
 
   return (

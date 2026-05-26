@@ -1,7 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Colors } from '../constants/colors';
-import MainTabs from './MainTabs';
+import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import TaxCalculatorScreen from '../screens/features/TaxCalculatorScreen';
 import AILegalScreen from '../screens/features/AILegalScreen';
 import CalendarScreen from '../screens/features/CalendarScreen';
@@ -33,7 +33,7 @@ import TermsScreen from '../screens/legal/TermsScreen';
 import PrivacyScreen from '../screens/legal/PrivacyScreen';
 
 export type MainStackParamList = {
-  MainTabs: undefined;
+  Dashboard: undefined;
   TaxCalculator: undefined;
   AILegal: undefined;
   Calendar: undefined;
@@ -79,7 +79,7 @@ export default function MainStack() {
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
-      <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} />
+      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TaxCalculator" component={TaxCalculatorScreen} options={{ title: 'Tax Calculator' }} />
       <Stack.Screen name="AILegal" component={AILegalScreen} options={{ title: 'AI Legal Assistant' }} />
       <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Driver Calendar' }} />

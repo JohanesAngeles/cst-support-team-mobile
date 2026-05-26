@@ -4,7 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
-import MainStack from './MainStack';
+import MainTabs from './MainTabs';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import OfflineBanner from '../components/OfflineBanner';
 import { Colors } from '../constants/colors';
@@ -36,7 +36,7 @@ export default function AppNavigator() {
     <View style={{ flex: 1 }}>
       <OfflineBanner />
       <NavigationContainer>
-        {!user ? <AuthStack /> : <MainStack />}
+        {!user ? <AuthStack /> : <MainTabs />}
       </NavigationContainer>
     </View>
   );
