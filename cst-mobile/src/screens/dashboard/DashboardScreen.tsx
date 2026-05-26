@@ -36,6 +36,8 @@ const features: { icon: string; label: string; color: string; desc: string; scre
   { icon: 'receipt-outline',          label: 'Expenses',           color: '#E74C3C', desc: 'Track all your costs',  screen: 'Expenses' },
   { icon: 'globe-outline',            label: 'IFTA Tracker',       color: '#16A085', desc: 'Quarterly fuel tax',    screen: 'IFTATracker' },
   { icon: 'bus-outline',              label: 'My Truck',           color: '#8E44AD', desc: 'Rig profile & docs',    screen: 'TruckProfile' },
+  { icon: 'location-outline',         label: 'Find Help',          color: '#E74C3C', desc: 'Truck stops & repair',  screen: 'FindHelp' },
+  { icon: 'earth-outline',            label: 'Trucker Map',        color: '#E74C3C', desc: 'Community intel map',   screen: 'TruckerMap' },
 ];
 
 interface DashStats {

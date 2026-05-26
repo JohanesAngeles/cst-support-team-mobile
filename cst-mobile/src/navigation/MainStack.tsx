@@ -26,6 +26,11 @@ import ExpensesScreen from '../screens/features/ExpensesScreen';
 import IFTATrackerScreen from '../screens/features/IFTATrackerScreen';
 import TruckProfileScreen from '../screens/features/TruckProfileScreen';
 import EmergencyContactsScreen from '../screens/features/EmergencyContactsScreen';
+import FindHelpScreen from '../screens/features/FindHelpScreen';
+import SubscriptionScreen from '../screens/features/SubscriptionScreen';
+import TruckerMapScreen from '../screens/features/TruckerMapScreen';
+import TermsScreen from '../screens/legal/TermsScreen';
+import PrivacyScreen from '../screens/legal/PrivacyScreen';
 
 export type MainStackParamList = {
   MainTabs: undefined;
@@ -53,6 +58,11 @@ export type MainStackParamList = {
   IFTATracker: undefined;
   TruckProfile: undefined;
   EmergencyContacts: undefined;
+  FindHelp: undefined;
+  Subscription: undefined;
+  TruckerMap: undefined;
+  Terms: undefined;
+  Privacy: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -94,6 +104,11 @@ export default function MainStack() {
       <Stack.Screen name="IFTATracker" component={IFTATrackerScreen} options={{ title: 'IFTA Tracker' }} />
       <Stack.Screen name="TruckProfile" component={TruckProfileScreen} options={{ title: 'My Truck' }} />
       <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.danger } }} />
+      <Stack.Screen name="FindHelp" component={FindHelpScreen} options={{ title: 'Find Help Near Me' }} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'CST Subscription' }} />
+      <Stack.Screen name="TruckerMap" component={TruckerMapScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
+      <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
     </Stack.Navigator>
   );
 }

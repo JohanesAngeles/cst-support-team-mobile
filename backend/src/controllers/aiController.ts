@@ -26,8 +26,13 @@ Guidelines:
 - Never give advice that could endanger public safety
 - Remind users this is general guidance, not a substitute for a licensed attorney`;
 
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export const legalChat = async (req: AuthRequest, res: Response) => {
-  const { message } = req.body;
+  const { message, history } = req.body;
 
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
     res.status(400).json({ message: 'Message is required' });
@@ -39,12 +44,21 @@ export const legalChat = async (req: AuthRequest, res: Response) => {
     return;
   }
 
+  const prior: ChatMessage[] = Array.isArray(history)
+    ? history
+        .filter((m: any) => m.role === 'user' || m.role === 'assistant')
+        .slice(-10)
+        .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
+    : [];
+
+  const messages: ChatMessage[] = [...prior, { role: 'user', content: message.trim() }];
+
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: message.trim() }],
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      messages,
     });
 
     const reply = response.content[0].type === 'text' ? response.content[0].text : '';

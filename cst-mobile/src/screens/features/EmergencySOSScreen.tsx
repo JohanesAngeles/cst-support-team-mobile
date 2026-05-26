@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   Alert, Linking, ActivityIndicator, ScrollView, Platform,
@@ -42,7 +42,15 @@ export default function EmergencySOSScreen() {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [locLoading, setLocLoading] = useState(false);
   const [sosActive, setSosActive] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
 
   useFocusEffect(useCallback(() => {
     getEmergencyContacts().then(data => {
@@ -50,35 +58,88 @@ export default function EmergencySOSScreen() {
     }).catch(() => {});
   }, []));
 
-  const getLocation = async () => {
+  const fetchLocation = async (): Promise<LocationData | null> => {
     setLocLoading(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission Denied', 'Location permission is required for emergency services to find you.');
-        return;
+        return null;
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      setLocation({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-      });
+      const loc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude, accuracy: pos.coords.accuracy };
+      setLocation(loc);
+      return loc;
     } catch {
       Alert.alert('Error', 'Could not retrieve location. Please try again.');
+      return null;
     } finally {
       setLocLoading(false);
     }
   };
 
-  const activateSOS = async () => {
-    setSosActive(true);
-    await getLocation();
-    Alert.alert(
-      '🚨 SOS ACTIVATED',
-      'Your location has been recorded. Tap a contact below to connect with emergency services.',
-      [{ text: 'OK' }]
-    );
+  const getLocation = fetchLocation;
+
+  const buildSMSBody = (loc: LocationData | null) =>
+    loc
+      ? `🚨 EMERGENCY — I need help! My location: https://maps.google.com/?q=${loc.latitude},${loc.longitude} (±${Math.round(loc.accuracy ?? 0)}m)`
+      : '🚨 EMERGENCY — I need help! I am sending this from the CST app. Please call me immediately.';
+
+  const textContactWithLocation = (contact: Contact, loc: LocationData | null) => {
+    const body = buildSMSBody(loc);
+    const smsUrl = Platform.OS === 'ios'
+      ? `sms:${contact.phone}&body=${encodeURIComponent(body)}`
+      : `sms:${contact.phone}?body=${encodeURIComponent(body)}`;
+    Linking.openURL(smsUrl);
+  };
+
+  const broadcastToAllContacts = async (loc: LocationData | null) => {
+    if (contacts.length === 0) {
+      Alert.alert('No Contacts', 'Add emergency contacts to broadcast your location.', [
+        { text: 'Add Contacts', onPress: () => navigation.navigate('EmergencyContacts') },
+        { text: 'OK', style: 'cancel' },
+      ]);
+      return;
+    }
+    for (let i = 0; i < contacts.length; i++) {
+      const c = contacts[i];
+      await new Promise<void>((resolve) => {
+        Alert.alert(
+          `Texting ${i + 1} of ${contacts.length}`,
+          `Sending location to ${c.name} (${c.phone})`,
+          [{ text: 'Send', onPress: () => { textContactWithLocation(c, loc); resolve(); } },
+           { text: 'Skip', style: 'cancel', onPress: () => resolve() }]
+        );
+      });
+    }
+  };
+
+  const activateSOS = () => {
+    if (sosActive) return;
+    if (countdownRef.current) clearInterval(countdownRef.current);
+
+    let tick = 3;
+    setCountdown(tick);
+
+    countdownRef.current = setInterval(async () => {
+      tick -= 1;
+      if (tick > 0) {
+        setCountdown(tick);
+      } else {
+        clearInterval(countdownRef.current!);
+        countdownRef.current = null;
+        setCountdown(null);
+        setSosActive(true);
+        const loc = await fetchLocation();
+        broadcastToAllContacts(loc);
+      }
+    }, 1000);
+  };
+
+  const cancelSOS = () => {
+    if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
+    setCountdown(null);
+    setSosActive(false);
   };
 
   const callNumber = (number: string, label: string) => {
@@ -97,15 +158,7 @@ export default function EmergencySOSScreen() {
     Linking.openURL(mapsUrl);
   };
 
-  const textContact = (contact: Contact) => {
-    const body = location
-      ? `🚨 EMERGENCY — I need help! My location: https://maps.google.com/?q=${location.latitude},${location.longitude} (±${Math.round(location.accuracy ?? 0)}m accuracy)`
-      : '🚨 EMERGENCY — I need help! I am sending this from the CST app. Please call me immediately.';
-    const smsUrl = Platform.OS === 'ios'
-      ? `sms:${contact.phone}&body=${encodeURIComponent(body)}`
-      : `sms:${contact.phone}?body=${encodeURIComponent(body)}`;
-    Linking.openURL(smsUrl);
-  };
+  const textContact = (contact: Contact) => textContactWithLocation(contact, location);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -114,20 +167,34 @@ export default function EmergencySOSScreen() {
         {/* SOS Button */}
         <View style={styles.sosSection}>
           <TouchableOpacity
-            style={[styles.sosButton, sosActive && styles.sosButtonActive]}
+            style={[styles.sosButton, (sosActive || countdown !== null) && styles.sosButtonActive]}
             onPress={activateSOS}
-            disabled={locLoading}
+            disabled={locLoading || sosActive || countdown !== null}
           >
             {locLoading
               ? <ActivityIndicator size="large" color={Colors.white} />
-              : <>
-                  <Text style={styles.sosText}>SOS</Text>
-                  <Text style={styles.sosSubText}>{sosActive ? 'ACTIVATED' : 'PRESS & HOLD'}</Text>
-                </>
+              : countdown !== null
+                ? <>
+                    <Text style={styles.sosText}>{countdown}</Text>
+                    <Text style={styles.sosSubText}>SENDING...</Text>
+                  </>
+                : <>
+                    <Text style={styles.sosText}>SOS</Text>
+                    <Text style={styles.sosSubText}>{sosActive ? 'ACTIVATED' : 'TAP TO ACTIVATE'}</Text>
+                  </>
             }
           </TouchableOpacity>
+          {countdown !== null && (
+            <TouchableOpacity style={styles.cancelBtn} onPress={cancelSOS}>
+              <Text style={styles.cancelBtnText}>CANCEL</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.sosHint}>
-            {sosActive ? 'SOS is active — your location is ready to share' : 'Tap to activate emergency mode and get your GPS location'}
+            {sosActive
+              ? 'SOS active — location captured. Contacts have been alerted.'
+              : countdown !== null
+                ? `Activating in ${countdown}s — tap CANCEL to abort`
+                : 'Tap to activate. Will auto-text all emergency contacts with your GPS location.'}
           </Text>
         </View>
 
@@ -261,6 +328,8 @@ const styles = StyleSheet.create({
   sosText: { color: Colors.white, fontSize: 42, fontWeight: '900', letterSpacing: 2 },
   sosSubText: { color: '#FFB3B3', fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
   sosHint: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', maxWidth: 280 },
+  cancelBtn: { backgroundColor: Colors.surfaceLight, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 10, borderWidth: 1, borderColor: Colors.danger },
+  cancelBtnText: { color: Colors.danger, fontSize: 13, fontWeight: '800', letterSpacing: 1 },
   locationCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.border, gap: 8 },
   locationHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   locationTitle: { color: Colors.white, fontSize: 15, fontWeight: '700', flex: 1 },

@@ -4,6 +4,7 @@ import Revenue from '../models/Revenue';
 import TripLog from '../models/TripLog';
 import Expense from '../models/Expense';
 import FuelStop from '../models/FuelStop';
+import IFTAEntry from '../models/IFTAEntry';
 
 const router = Router();
 router.use(protect);
@@ -158,6 +159,65 @@ router.put('/:period', async (req: AuthRequest, res: Response) => {
     { upsert: true, new: true }
   );
   res.json(revenue);
+});
+
+// Tax report: aggregate full-year financial data for tax prep export
+router.get('/tax/report', async (req: AuthRequest, res: Response) => {
+  const year = parseInt(String(req.query.year)) || new Date().getFullYear();
+  const uid = req.user._id;
+  const startStr = `${year}-01-01`;
+  const endStr = `${year}-12-31`;
+  const startDt = new Date(year, 0, 1);
+  const endDt = new Date(year, 11, 31, 23, 59, 59, 999);
+
+  const [trips, expenses, fuelStops, iftaEntries] = await Promise.all([
+    TripLog.find({ userId: uid, date: { $gte: startStr, $lte: endStr } }).sort({ date: 1 }),
+    Expense.find({ userId: uid, createdAt: { $gte: startDt, $lte: endDt } }).sort({ createdAt: 1 }),
+    FuelStop.find({ userId: uid, date: { $gte: startStr, $lte: endStr } }).sort({ date: 1 }),
+    IFTAEntry.find({ userId: uid, year }),
+  ]);
+
+  const grossRevenue = trips.filter(t => t.status === 'Completed').reduce((s, t) => s + (t.rate || 0), 0);
+  const totalMiles = trips.reduce((s, t) => s + (t.miles || 0), 0);
+
+  const expByCategory: Record<string, number> = {};
+  for (const e of expenses) {
+    expByCategory[e.category] = (expByCategory[e.category] || 0) + e.amount;
+  }
+
+  const fuelTotal = fuelStops.reduce((s, f) => s + f.gallons * f.pricePerGallon, 0);
+  if (fuelTotal > 0) expByCategory['Fuel (Fuel Log)'] = fuelTotal;
+
+  const totalDeductions = Object.values(expByCategory).reduce((s, v) => s + v, 0);
+  const netIncome = Math.max(0, grossRevenue - totalDeductions);
+  const seTax = netIncome * 0.1413;
+  const incomeTax = netIncome * 0.22;
+  const iftaTotalTax = iftaEntries.reduce((s, e) => s + e.taxAmount, 0);
+
+  const quarterlyBreakdown = [1, 2, 3, 4].map((q) => {
+    const qTrips = trips.filter(t => {
+      const m = new Date(t.date + 'T00:00:00').getMonth();
+      return Math.floor(m / 3) + 1 === q && t.status === 'Completed';
+    });
+    return { quarter: q, revenue: qTrips.reduce((s, t) => s + (t.rate || 0), 0) };
+  });
+
+  res.json({
+    year,
+    generatedAt: new Date().toISOString(),
+    grossRevenue: Math.round(grossRevenue * 100) / 100,
+    totalDeductions: Math.round(totalDeductions * 100) / 100,
+    netIncome: Math.round(netIncome * 100) / 100,
+    seTax: Math.round(seTax * 100) / 100,
+    incomeTax: Math.round(incomeTax * 100) / 100,
+    estimatedTotal: Math.round((seTax + incomeTax) * 100) / 100,
+    iftaTax: Math.round(iftaTotalTax * 100) / 100,
+    totalMiles: Math.round(totalMiles * 10) / 10,
+    totalTrips: trips.length,
+    totalFuelGallons: Math.round(fuelStops.reduce((s, f) => s + f.gallons, 0) * 100) / 100,
+    expenseBreakdown: expByCategory,
+    quarterlyBreakdown,
+  });
 });
 
 export default router;

@@ -39,12 +39,18 @@ export default function AILegalScreen() {
     if (!userText || loading) return;
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: userText };
-    setMessages((prev) => [...prev, userMsg]);
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
     setInput('');
     setLoading(true);
 
+    const history = updatedMessages
+      .filter((m) => m.id !== '0')
+      .slice(0, -1)
+      .map((m) => ({ role: m.role, content: m.content }));
+
     try {
-      const res = await client.post('/ai/legal', { message: userText });
+      const res = await client.post('/ai/legal', { message: userText, history });
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',

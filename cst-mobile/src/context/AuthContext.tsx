@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../api/auth';
+import { registerPushToken, unregisterPushToken } from '../utils/notifications';
 
 interface User {
   _id: string;
@@ -52,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await AsyncStorage.setItem('token', t);
     setToken(t);
     setUser(u);
+    registerPushToken();
   };
 
   const register = async (name: string, email: string, password: string, phone?: string) => {
@@ -60,9 +62,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await AsyncStorage.setItem('token', t);
     setToken(t);
     setUser(u);
+    registerPushToken();
   };
 
   const logout = async () => {
+    unregisterPushToken();
     await AsyncStorage.removeItem('token');
     setToken(null);
     setUser(null);

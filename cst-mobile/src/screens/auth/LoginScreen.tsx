@@ -105,6 +105,15 @@ export default function LoginScreen({ navigation }: Props) {
         </View>
 
         <Text style={styles.footer}>Built for Truckers. Backed by Purpose.</Text>
+        <View style={styles.legalRow}>
+          <TouchableOpacity onPress={() => navigation.navigate('Terms')}>
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDot}>·</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Privacy')}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -143,5 +152,8 @@ const styles = StyleSheet.create({
   link: { alignItems: 'center', marginTop: 8 },
   linkText: { color: Colors.textMuted, fontSize: 14 },
   linkBold: { color: Colors.secondary, fontWeight: '700' },
-  footer: { color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginBottom: 8 },
+  footer: { color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginBottom: 4 },
+  legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 12 },
+  legalLink: { color: Colors.textMuted, fontSize: 11, textDecorationLine: 'underline' },
+  legalDot: { color: Colors.border, fontSize: 11 },
 });

@@ -1,5 +1,49 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import client from '../api/client';
+
+export interface UpcomingAlert {
+  type: 'deadline' | 'maintenance';
+  title: string;
+  date: string;
+  daysAway: number;
+}
+
+export async function registerPushToken(): Promise<void> {
+  try {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    let finalStatus = existing;
+    if (existing !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== 'granted') return;
+
+    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'android' ? 'android' : 'web';
+    await client.post('/notifications/token', { token: tokenData.data, platform });
+  } catch {
+    // Silent — push token registration is best-effort
+  }
+}
+
+export async function unregisterPushToken(): Promise<void> {
+  try {
+    const tokenData = await Notifications.getExpoPushTokenAsync();
+    await client.delete('/notifications/token', { data: { token: tokenData.data } });
+  } catch {
+    // Silent
+  }
+}
+
+export async function getUpcomingAlerts(): Promise<UpcomingAlert[]> {
+  try {
+    const res = await client.get('/notifications/alerts');
+    return Array.isArray(res.data) ? res.data : [];
+  } catch {
+    return [];
+  }
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

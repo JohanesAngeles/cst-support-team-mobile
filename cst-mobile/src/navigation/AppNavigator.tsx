@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import MainStack from './MainStack';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
+import OfflineBanner from '../components/OfflineBanner';
 import { Colors } from '../constants/colors';
 
 export default function AppNavigator() {
@@ -32,8 +33,11 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      {!user ? <AuthStack /> : <MainStack />}
-    </NavigationContainer>
+    <View style={{ flex: 1 }}>
+      <OfflineBanner />
+      <NavigationContainer>
+        {!user ? <AuthStack /> : <MainStack />}
+      </NavigationContainer>
+    </View>
   );
 }

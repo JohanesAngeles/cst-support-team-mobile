@@ -72,11 +72,13 @@ export default function ProfileScreen() {
 
   const menuItems = [
     { icon: 'bus-outline',           label: 'My Truck',        onPress: () => navigation.navigate('TruckProfile') },
+    { icon: 'card-outline',          label: 'Subscription',    onPress: () => navigation.navigate('Subscription') },
     { icon: 'person-outline',        label: 'Edit Profile',    onPress: openEdit },
     { icon: 'lock-closed-outline',   label: 'Change Password', onPress: () => setPwModal(true) },
     { icon: 'notifications-outline', label: 'Notifications',   onPress: () => Alert.alert('Coming Soon', 'Push notifications are coming in a future update.') },
     { icon: 'help-circle-outline',   label: 'Help & Support',  onPress: () => Alert.alert('Support', 'Email us at support@cst-app.com') },
-    { icon: 'document-text-outline', label: 'Terms & Privacy', onPress: () => {} },
+    { icon: 'document-text-outline', label: 'Terms of Service', onPress: () => navigation.navigate('Terms') },
+    { icon: 'shield-outline',        label: 'Privacy Policy',   onPress: () => navigation.navigate('Privacy') },
   ];
 
   return (
