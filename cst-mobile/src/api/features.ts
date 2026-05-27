@@ -141,6 +141,40 @@ export const deleteDetentionEvent = (id: string) => client.delete(`/detention/${
 export const getTaxReport = (year?: number) =>
   client.get('/revenue/tax/report', { params: year ? { year } : undefined }).then(r => r.data);
 
+// ELD Status
+export const getELDEntries = (date?: string) =>
+  client.get('/eld', { params: date ? { date } : undefined }).then(r => r.data);
+export const startELDStatus = (data: { status: string; location?: string; notes?: string }) =>
+  client.post('/eld', data).then(r => r.data);
+export const closeELDStatus = () => client.patch('/eld/close', {}).then(r => r.data);
+export const syncELDtoHOS = (date?: string) =>
+  client.post('/eld/sync-hos', {}, { params: date ? { date } : undefined }).then(r => r.data);
+export const deleteELDEntry = (id: string) => client.delete(`/eld/${id}`).then(r => r.data);
+
+// Driver Scorecard
+export const getScorecard = (weekOffset = 0) =>
+  client.get('/scorecard', { params: { week: weekOffset } }).then(r => r.data);
+
+// Loads
+export const getLoads = (status?: string) =>
+  client.get('/loads', { params: status ? { status } : undefined }).then(r => r.data);
+export const getLoad = (id: string) => client.get(`/loads/${id}`).then(r => r.data);
+export const addLoad = (data: object) => client.post('/loads', data).then(r => r.data);
+export const updateLoad = (id: string, data: object) => client.put(`/loads/${id}`, data).then(r => r.data);
+export const updateLoadStatus = (id: string, status: string) =>
+  client.patch(`/loads/${id}/status`, { status }).then(r => r.data);
+export const deleteLoad = (id: string) => client.delete(`/loads/${id}`).then(r => r.data);
+
+// Dispatch Contacts
+export const getDispatchContacts = () => client.get('/dispatch-contacts').then(r => r.data);
+export const addDispatchContact = (data: object) => client.post('/dispatch-contacts', data).then(r => r.data);
+export const updateDispatchContact = (id: string, data: object) =>
+  client.put(`/dispatch-contacts/${id}`, data).then(r => r.data);
+export const toggleContactFavorite = (id: string) =>
+  client.patch(`/dispatch-contacts/${id}/favorite`, {}).then(r => r.data);
+export const deleteDispatchContact = (id: string) =>
+  client.delete(`/dispatch-contacts/${id}`).then(r => r.data);
+
 // Trucker Community Map
 export const getMapReports = (lat: number, lng: number, radius = 50, type?: string) =>
   client.get('/map/reports', { params: { lat, lng, radius, ...(type ? { type } : {}) } }).then(r => r.data);

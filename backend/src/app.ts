@@ -21,6 +21,11 @@ import emergencyContactsRoutes from './routes/emergencycontacts';
 import notificationsRoutes from './routes/notifications';
 import billingRoutes from './routes/billing';
 import mapRoutes from './routes/map';
+import loadsRoutes from './routes/loads';
+import dispatchContactsRoutes from './routes/dispatchcontacts';
+import eldRoutes from './routes/eld';
+import scorecardRoutes from './routes/scorecard';
+import { initCronJobs } from './cron/notificationCron';
 
 const app = express();
 
@@ -55,6 +60,10 @@ app.use('/api/emergency-contacts', emergencyContactsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/map', mapRoutes);
+app.use('/api/loads', loadsRoutes);
+app.use('/api/dispatch-contacts', dispatchContactsRoutes);
+app.use('/api/eld', eldRoutes);
+app.use('/api/scorecard', scorecardRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });
@@ -67,6 +76,7 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log('MongoDB connected');
+    initCronJobs();
     app.listen(PORT, () => console.log(`CST API running on port ${PORT}`));
   })
   .catch((err) => {

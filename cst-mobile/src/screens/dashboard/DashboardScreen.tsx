@@ -38,6 +38,16 @@ const features: { icon: string; label: string; color: string; desc: string; scre
   { icon: 'bus-outline',              label: 'My Truck',           color: '#8E44AD', desc: 'Rig profile & docs',    screen: 'TruckProfile' },
   { icon: 'location-outline',         label: 'Find Help',          color: '#E74C3C', desc: 'Truck stops & repair',  screen: 'FindHelp' },
   { icon: 'earth-outline',            label: 'Trucker Map',        color: '#E74C3C', desc: 'Community intel map',   screen: 'TruckerMap' },
+  { icon: 'cube-outline',             label: 'Load Board',         color: '#F39C12', desc: 'Track your loads',      screen: 'LoadBoard' },
+  { icon: 'people-circle-outline',    label: 'Dispatch Contacts',  color: '#3498DB', desc: 'Dispatchers & brokers', screen: 'DispatchContacts' },
+  { icon: 'flame-outline',            label: 'Fuel Finder',        color: '#E67E22', desc: 'Cheapest fuel near you', screen: 'FuelFinder' },
+  { icon: 'document-outline',         label: 'Doc Generator',      color: '#9B59B6', desc: 'Rate conf, POD, invoice', screen: 'DocGenerator' },
+  { icon: 'partly-sunny-outline',     label: 'Route Weather',      color: '#3498DB', desc: 'Conditions before you roll', screen: 'Weather' },
+  { icon: 'navigate-outline',         label: 'Mileage Calculator', color: '#1ABC9C', desc: 'Distance, fuel & pay',      screen: 'MileageCalculator' },
+  { icon: 'scale-outline',            label: 'Weigh Stations',     color: '#E67E22', desc: 'Known WS on your route',    screen: 'WeighStation' },
+  { icon: 'radio-button-on-outline',  label: 'ELD Status',         color: '#E74C3C', desc: 'Duty status + HOS sync',    screen: 'ELDStatus' },
+  { icon: 'trophy-outline',           label: 'Driver Scorecard',   color: '#F1C40F', desc: 'Weekly performance grade',  screen: 'Scorecard' },
+  { icon: 'game-controller-outline',  label: 'Driver Games',       color: '#9B59B6', desc: 'Trivia & crosswords',        screen: 'Games' },
 ];
 
 interface DashStats {

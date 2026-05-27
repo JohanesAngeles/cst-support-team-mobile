@@ -29,6 +29,18 @@ import EmergencyContactsScreen from '../screens/features/EmergencyContactsScreen
 import FindHelpScreen from '../screens/features/FindHelpScreen';
 import SubscriptionScreen from '../screens/features/SubscriptionScreen';
 import TruckerMapScreen from '../screens/features/TruckerMapScreen';
+import LoadBoardScreen from '../screens/features/LoadBoardScreen';
+import DispatchContactsScreen from '../screens/features/DispatchContactsScreen';
+import FuelFinderScreen from '../screens/features/FuelFinderScreen';
+import DocGeneratorScreen from '../screens/features/DocGeneratorScreen';
+import WeatherScreen from '../screens/features/WeatherScreen';
+import MileageCalculatorScreen from '../screens/features/MileageCalculatorScreen';
+import WeighStationScreen from '../screens/features/WeighStationScreen';
+import ELDStatusScreen from '../screens/features/ELDStatusScreen';
+import ScorecardScreen from '../screens/features/ScorecardScreen';
+import GamesScreen from '../screens/features/GamesScreen';
+import TruckerCrosswordScreen from '../screens/features/TruckerCrosswordScreen';
+import TruckingTriviaScreen from '../screens/features/TruckingTriviaScreen';
 import TermsScreen from '../screens/legal/TermsScreen';
 import PrivacyScreen from '../screens/legal/PrivacyScreen';
 
@@ -61,6 +73,18 @@ export type MainStackParamList = {
   FindHelp: undefined;
   Subscription: undefined;
   TruckerMap: undefined;
+  LoadBoard: undefined;
+  DispatchContacts: undefined;
+  FuelFinder: undefined;
+  DocGenerator: undefined;
+  Weather: undefined;
+  MileageCalculator: undefined;
+  WeighStation: undefined;
+  ELDStatus: undefined;
+  Scorecard: undefined;
+  Games: undefined;
+  TruckerCrossword: undefined;
+  TruckingTrivia: undefined;
   Terms: undefined;
   Privacy: undefined;
 };
@@ -107,6 +131,18 @@ export default function MainStack() {
       <Stack.Screen name="FindHelp" component={FindHelpScreen} options={{ title: 'Find Help Near Me' }} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'CST Subscription' }} />
       <Stack.Screen name="TruckerMap" component={TruckerMapScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="LoadBoard" component={LoadBoardScreen} options={{ title: 'Load Board' }} />
+      <Stack.Screen name="DispatchContacts" component={DispatchContactsScreen} options={{ title: 'Dispatch Contacts' }} />
+      <Stack.Screen name="FuelFinder" component={FuelFinderScreen} options={{ title: 'Fuel Finder' }} />
+      <Stack.Screen name="DocGenerator" component={DocGeneratorScreen} options={{ title: 'Doc Generator' }} />
+      <Stack.Screen name="Weather" component={WeatherScreen} options={{ title: 'Route Weather' }} />
+      <Stack.Screen name="MileageCalculator" component={MileageCalculatorScreen} options={{ title: 'Mileage Calculator' }} />
+      <Stack.Screen name="WeighStation" component={WeighStationScreen} options={{ title: 'Weigh Stations' }} />
+      <Stack.Screen name="ELDStatus" component={ELDStatusScreen} options={{ title: 'ELD Status' }} />
+      <Stack.Screen name="Scorecard" component={ScorecardScreen} options={{ title: 'Driver Scorecard' }} />
+      <Stack.Screen name="Games" component={GamesScreen} options={{ title: 'Driver Games' }} />
+      <Stack.Screen name="TruckerCrossword" component={TruckerCrosswordScreen} options={{ title: 'Trucker Crossword' }} />
+      <Stack.Screen name="TruckingTrivia" component={TruckingTriviaScreen} options={{ title: 'Trucking Trivia' }} />
       <Stack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
       <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
     </Stack.Navigator>
