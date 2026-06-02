@@ -2,10 +2,16 @@ import { Response } from 'express';
 import OpenAI from 'openai';
 import { AuthRequest } from '../middleware/auth';
 
-const xai = new OpenAI({
-  baseURL: 'https://api.x.ai/v1',
-  apiKey: process.env.GROK_API_KEY,
-});
+let _xai: OpenAI | null = null;
+function getXai(): OpenAI {
+  if (!_xai) {
+    _xai = new OpenAI({
+      baseURL: 'https://api.x.ai/v1',
+      apiKey: process.env.GROK_API_KEY ?? 'missing',
+    });
+  }
+  return _xai;
+}
 
 const SYSTEM_PROMPT = `You are an AI Legal Assistant specializing in commercial trucking law, FMCSA regulations, and driver rights in the United States. You work for Commercial Support Technologies (CST), a platform built for truckers.
 
@@ -69,7 +75,7 @@ Evaluate this load offer for a commercial truck driver (dry van assumed unless l
 }`;
 
   try {
-    const response = await xai.chat.completions.create({
+    const response = await getXai().chat.completions.create({
       model: 'grok-3',
       max_tokens: 300,
       messages: [
@@ -122,7 +128,7 @@ Respond in this EXACT JSON format with no extra text:
 }`;
 
   try {
-    const response = await xai.chat.completions.create({
+    const response = await getXai().chat.completions.create({
       model: 'grok-3',
       max_tokens: 300,
       messages: [
@@ -172,7 +178,7 @@ export const legalChat = async (req: AuthRequest, res: Response) => {
   const messages: ChatMessage[] = [...prior, { role: 'user', content: message.trim() }];
 
   try {
-    const response = await xai.chat.completions.create({
+    const response = await getXai().chat.completions.create({
       model: 'grok-3',
       max_tokens: 1024,
       messages: [
