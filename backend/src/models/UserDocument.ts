@@ -10,6 +10,7 @@ export interface IUserDocument extends Document {
   resourceType: string;
   fileType: string;
   fileSize: number;
+  expiryDate?: string;
 }
 
 const UserDocumentSchema = new Schema<IUserDocument>(
@@ -23,6 +24,7 @@ const UserDocumentSchema = new Schema<IUserDocument>(
     resourceType: { type: String, default: 'raw' },
     fileType: { type: String, default: '' },
     fileSize: { type: Number, default: 0 },
+    expiryDate: { type: String },
   },
   { timestamps: true }
 );

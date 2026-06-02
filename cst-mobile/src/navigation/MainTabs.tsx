@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
+import { useColors } from '../constants/colors';
 import MainStack from './MainStack';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
 import IFTATrackerScreen from '../screens/features/IFTATrackerScreen';
@@ -21,11 +22,12 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const tabIcon = (name: IoniconsName, focusedName: IoniconsName) =>
-  ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-    <Ionicons name={focused ? focusedName : name} size={size} color={color} />
+  ({ focused, color }: { focused: boolean; color: string; size: number }) => (
+    <Ionicons name={focused ? focusedName : name} size={28} color={color} />
   );
 
 export default function MainTabs() {
+  const Colors = useColors();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -34,12 +36,18 @@ export default function MainTabs() {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 65,
-          paddingBottom: 10,
+          // Taller bar + proper safe-area padding so it never clips on iPhone
+          height:        Platform.OS === 'ios' ? 94 : 78,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+          paddingTop: 10,
         },
-        tabBarActiveTintColor: Colors.secondary,
+        tabBarActiveTintColor:   Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: 2,
+        },
       }}
     >
       <Tab.Screen

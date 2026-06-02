@@ -1,12 +1,16 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, ScrollView,
   TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useColors } from '../../constants/colors';
 import client from '../../api/client';
+import { useAnalytics, EVENTS } from '../../utils/analytics';
+import { MainStackParamList } from '../../navigation/MainStack';
 
 interface Message {
   id: string;
@@ -22,7 +26,45 @@ const QUICK_QUESTIONS = [
   'What do I need for a cargo claim?',
 ];
 
+type Nav = NativeStackNavigationProp<MainStackParamList>;
+
 export default function AILegalScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    banner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, paddingHorizontal: 16, backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border },
+    bannerText: { color: Colors.textMuted, fontSize: 12 },
+    messageList: { padding: 16, gap: 12, paddingBottom: 8 },
+    bubble: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 4 },
+    userBubble: { justifyContent: 'flex-end' },
+    assistantBubble: { justifyContent: 'flex-start', gap: 8 },
+    avatarIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
+    bubbleContent: { maxWidth: '80%', borderRadius: 16, padding: 12 },
+    userContent: { backgroundColor: Colors.primary, borderBottomRightRadius: 4 },
+    assistantContent: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderBottomLeftRadius: 4 },
+    bubbleText: { color: Colors.text, fontSize: 14, lineHeight: 20 },
+    userText: { color: Colors.text },
+    quickWrap: { paddingVertical: 10 },
+    quickTitle: { color: Colors.textMuted, fontSize: 12, fontWeight: '600', paddingHorizontal: 16, marginBottom: 8 },
+    chip: { backgroundColor: Colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: Colors.border },
+    chipText: { color: Colors.text, fontSize: 13 },
+    typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
+    typingText: { color: Colors.textMuted, fontSize: 13 },
+    inputBar: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, paddingHorizontal: 16, gap: 10, backgroundColor: Colors.surface, borderTopWidth: 1, borderTopColor: Colors.border },
+    input: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: Colors.text, fontSize: 14, maxHeight: 100, borderWidth: 1, borderColor: Colors.border },
+    sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+    sendBtnDisabled: { backgroundColor: Colors.border },
+    premiumGate: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 },
+    premiumIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.secondary + '1A', borderWidth: 2, borderColor: Colors.secondary + '44', justifyContent: 'center', alignItems: 'center' },
+    premiumTitle: { color: Colors.text, fontSize: 22, fontWeight: '900', textAlign: 'center' },
+    premiumSub: { color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 22 },
+    upgradeBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.secondary, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 28, marginTop: 8 },
+    upgradeBtnText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
+    premiumNote: { color: Colors.textMuted, fontSize: 12, textAlign: 'center', marginTop: 4 },
+  }), [Colors]);
+  const { track } = useAnalytics();
+  const navigation = useNavigation<Nav>();
+  const [premiumRequired, setPremiumRequired] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '0',
@@ -38,6 +80,7 @@ export default function AILegalScreen() {
     const userText = text.trim();
     if (!userText || loading) return;
 
+    track(EVENTS.AI_QUERY_SENT, { queryLength: userText.length });
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: userText };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
@@ -57,11 +100,18 @@ export default function AILegalScreen() {
         content: res.data.reply,
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Sorry, I\'m having trouble connecting right now. Please try again.' },
-      ]);
+    } catch (err: any) {
+      if (err?.status === 403 || err?.code === 'PREMIUM_REQUIRED') {
+        setPremiumRequired(true);
+      } else {
+        const errContent = err?.status === 503
+          ? 'The AI service is temporarily unavailable. Please try again in a few minutes.'
+          : 'Connection error. Please check your internet and try again.';
+        setMessages((prev) => [
+          ...prev,
+          { id: (Date.now() + 1).toString(), role: 'assistant', content: errContent },
+        ]);
+      }
     } finally {
       setLoading(false);
       setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
@@ -83,6 +133,32 @@ export default function AILegalScreen() {
       </View>
     );
   };
+
+  if (premiumRequired) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.premiumGate}>
+          <View style={styles.premiumIcon}>
+            <Ionicons name="star" size={36} color={Colors.secondary} />
+          </View>
+          <Text style={styles.premiumTitle}>CST Pro Required</Text>
+          <Text style={styles.premiumSub}>
+            The AI Legal Assistant is included in your CST Pro subscription. Upgrade to get unlimited access to trucking law guidance, FMCSA regulations, and driver rights advice.
+          </Text>
+          <TouchableOpacity
+            style={styles.upgradeBtn}
+            onPress={() => navigation.navigate('Subscription')}
+          >
+            <Ionicons name="arrow-up-circle-outline" size={18} color={Colors.textDark} />
+            <Text style={styles.upgradeBtnText}>View Plans</Text>
+          </TouchableOpacity>
+          <Text style={styles.premiumNote}>
+            Already subscribed? Make sure your payment is active in the Subscription screen.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -140,39 +216,18 @@ export default function AILegalScreen() {
 }
 
 function ScrollHorizontalChips({ items, onPress }: { items: string[]; onPress: (s: string) => void }) {
+  const Colors = useColors();
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 16 }}>
       {items.map((q) => (
-        <TouchableOpacity key={q} style={styles.chip} onPress={() => onPress(q)}>
-          <Text style={styles.chipText}>{q}</Text>
+        <TouchableOpacity
+          key={q}
+          style={{ backgroundColor: Colors.secondary + '18', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8, borderWidth: 1, borderColor: Colors.secondary + '44' }}
+          onPress={() => onPress(q)}
+        >
+          <Text style={{ color: Colors.secondary, fontSize: 12, fontWeight: '600' }}>{q}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, paddingHorizontal: 16, backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  bannerText: { color: Colors.textMuted, fontSize: 12 },
-  messageList: { padding: 16, gap: 12, paddingBottom: 8 },
-  bubble: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 4 },
-  userBubble: { justifyContent: 'flex-end' },
-  assistantBubble: { justifyContent: 'flex-start', gap: 8 },
-  avatarIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', marginBottom: 2 },
-  bubbleContent: { maxWidth: '80%', borderRadius: 16, padding: 12 },
-  userContent: { backgroundColor: Colors.primary, borderBottomRightRadius: 4 },
-  assistantContent: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderBottomLeftRadius: 4 },
-  bubbleText: { color: Colors.white, fontSize: 14, lineHeight: 20 },
-  userText: { color: Colors.white },
-  quickWrap: { paddingVertical: 10 },
-  quickTitle: { color: Colors.textMuted, fontSize: 12, fontWeight: '600', paddingHorizontal: 16, marginBottom: 8 },
-  chip: { backgroundColor: Colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: Colors.border },
-  chipText: { color: Colors.white, fontSize: 13 },
-  typingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 6 },
-  typingText: { color: Colors.textMuted, fontSize: 13 },
-  inputBar: { flexDirection: 'row', alignItems: 'flex-end', padding: 12, paddingHorizontal: 16, gap: 10, backgroundColor: Colors.surface, borderTopWidth: 1, borderTopColor: Colors.border },
-  input: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, color: Colors.white, fontSize: 14, maxHeight: 100, borderWidth: 1, borderColor: Colors.border },
-  sendBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
-  sendBtnDisabled: { backgroundColor: Colors.border },
-});

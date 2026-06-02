@@ -7,17 +7,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { authAPI } from '../../api/auth';
-import { Colors } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'> };
 
 export default function ForgotPasswordScreen({ navigation }: Props) {
-  const [email, setEmail] = useState('');
+  const { theme, isDark } = useTheme();
+  const [email,   setEmail]   = useState('');
+  const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSend = async () => {
-    if (!email.trim()) { Alert.alert('Error', 'Enter your email address'); return; }
+    if (!email.trim()) { Alert.alert('Required', 'Enter your email address.'); return; }
     setLoading(true);
     try {
       await authAPI.forgotPassword(email.trim().toLowerCase());
@@ -30,67 +32,113 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inner}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.back}>
-          <Ionicons name="arrow-back" size={24} color={Colors.white} />
-        </TouchableOpacity>
+    <SafeAreaView style={[s.safe, { backgroundColor: theme.background }]}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
+        <View style={s.inner}>
 
-        <View style={styles.iconWrap}>
-          <Ionicons name="lock-open-outline" size={56} color={Colors.secondary} />
+          {/* Back */}
+          <TouchableOpacity
+            style={[s.backBtn, { backgroundColor: isDark ? theme.surface : theme.surfaceLight, borderColor: theme.border }]}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={20} color={theme.text} />
+          </TouchableOpacity>
+
+          {/* Icon + heading */}
+          <View style={s.top}>
+            <View style={[s.iconCircle, { backgroundColor: theme.secondary + '1A', borderColor: theme.secondary + '40' }]}>
+              <Ionicons name="lock-open-outline" size={38} color={theme.secondary} />
+            </View>
+            <Text style={[s.title, { color: theme.text }]}>Forgot Password?</Text>
+            <Text style={[s.subtitle, { color: theme.textMuted }]}>
+              Enter your email and we'll send you a 6-digit reset code.
+            </Text>
+          </View>
+
+          {/* Form */}
+          <View style={s.form}>
+            <View style={[
+              s.inputBox,
+              { backgroundColor: isDark ? theme.inputBg : '#F0F4F8', borderColor: focused ? theme.secondary : theme.border, borderWidth: focused ? 1.5 : 1 },
+            ]}>
+              <Ionicons name="mail-outline" size={18} color={focused ? theme.secondary : theme.textMuted} style={s.icon} />
+              <TextInput
+                style={[s.input, { color: theme.text }]}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Email address"
+                placeholderTextColor={theme.textMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onFocus={() => setFocused(true)}
+                onBlur={() => setFocused(false)}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[s.btn, { backgroundColor: theme.secondary }, loading && s.disabled]}
+              onPress={handleSend}
+              disabled={loading}
+              activeOpacity={0.87}
+            >
+              {loading
+                ? <ActivityIndicator color="#021B3A" />
+                : <Text style={s.btnText}>Send Reset Code</Text>
+              }
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={s.linkBtn}
+              onPress={() => navigation.navigate('ResetPassword', { email: '' })}
+            >
+              <Text style={[s.linkText, { color: theme.textMuted }]}>
+                Already have a code?{'  '}
+                <Text style={[s.linkBold, { color: theme.secondary }]}>Enter it here</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+
         </View>
-
-        <Text style={styles.title}>Forgot Password?</Text>
-        <Text style={styles.subtitle}>Enter your email and we'll send you a 6-digit reset code.</Text>
-
-        <View style={styles.inputWrapper}>
-          <Ionicons name="mail-outline" size={20} color={Colors.textMuted} style={styles.icon} />
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Email address"
-            placeholderTextColor={Colors.textMuted}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleSend} disabled={loading}>
-          {loading
-            ? <ActivityIndicator color={Colors.textDark} />
-            : <Text style={styles.buttonText}>SEND RESET CODE</Text>
-          }
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => navigation.navigate('ResetPassword', { email: '' })} style={styles.link}>
-          <Text style={styles.linkText}>Already have a code? <Text style={styles.linkBold}>Enter it here</Text></Text>
-        </TouchableOpacity>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  inner: { flex: 1, justifyContent: 'center', padding: 28, gap: 16 },
-  back: { position: 'absolute', top: 16, left: 28 },
-  iconWrap: { alignItems: 'center', marginBottom: 8 },
-  title: { color: Colors.white, fontSize: 28, fontWeight: '800' },
-  subtitle: { color: Colors.textMuted, fontSize: 14, lineHeight: 21 },
-  inputWrapper: {
+const s = StyleSheet.create({
+  safe: { flex: 1 },
+  kav:  { flex: 1 },
+  inner: { flex: 1, paddingHorizontal: 26, paddingTop: 16, paddingBottom: 32, justifyContent: 'space-between' },
+
+  backBtn: {
+    width: 40, height: 40, borderRadius: 20, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start',
+  },
+
+  top: { alignItems: 'center', gap: 12, paddingTop: 12 },
+  iconCircle: {
+    width: 88, height: 88, borderRadius: 44, borderWidth: 2,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
+  },
+  title:    { fontSize: 28, fontWeight: '800', textAlign: 'center' },
+  subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 21, maxWidth: 280 },
+
+  form: { gap: 14 },
+  inputBox: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 14, height: 52,
+    borderRadius: 14, paddingHorizontal: 14, height: 54,
   },
-  icon: { marginRight: 10 },
-  input: { flex: 1, color: Colors.white, fontSize: 15 },
-  button: {
-    backgroundColor: Colors.secondary, borderRadius: 12,
-    height: 52, justifyContent: 'center', alignItems: 'center',
+  icon:  { marginRight: 10 },
+  input: { flex: 1, fontSize: 15 },
+
+  btn: {
+    height: 54, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center',
   },
-  buttonText: { color: Colors.textDark, fontSize: 16, fontWeight: '800', letterSpacing: 1 },
-  link: { alignItems: 'center' },
-  linkText: { color: Colors.textMuted, fontSize: 14 },
-  linkBold: { color: Colors.secondary, fontWeight: '700' },
+  btnText:  { color: '#021B3A', fontSize: 16, fontWeight: '800', letterSpacing: 0.4 },
+  disabled: { opacity: 0.6 },
+
+  linkBtn:  { alignItems: 'center', paddingVertical: 4 },
+  linkText: { fontSize: 14 },
+  linkBold: { fontWeight: '700' },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ActivityIndicator, Alert,
   TouchableOpacity, FlatList, ScrollView,
@@ -7,8 +7,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { Colors } from '../../constants/colors';
-import { getMapReports } from '../../api/features';
+import { useColors } from '../../constants/colors';
+import { getMapReports, getEIADieselPrices } from '../../api/features';
+
+interface EIAPrice {
+  region: string;
+  regionLabel: string;
+  price: number | null;
+  period: string;
+}
 
 interface FuelReport {
   _id: string;
@@ -54,8 +61,48 @@ reports.forEach(r=>{
 }
 
 export default function FuelFinderScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background, gap: 12 },
+    loadingText: { color: Colors.textMuted, fontSize: 14 },
+    toggle: { flexDirection: 'row', margin: 12, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+    toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 6 },
+    toggleActive: { backgroundColor: Colors.secondary, borderRadius: 10 },
+    toggleText: { color: Colors.textMuted, fontWeight: '700', fontSize: 13 },
+    toggleTextActive: { color: Colors.textDark },
+    list: { padding: 16, paddingBottom: 80 },
+    listHeader: { color: Colors.textMuted, fontSize: 12, marginBottom: 12 },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8 },
+    bestBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary },
+    bestText: { color: Colors.secondary, fontSize: 10, fontWeight: '900' },
+    cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    stationName: { color: Colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
+    cardSub: { color: Colors.textMuted, fontSize: 12 },
+    priceBlock: { alignItems: 'flex-end' },
+    priceText: { color: '#F1C40F', fontSize: 22, fontWeight: '900' },
+    priceUnit: { color: Colors.textMuted, fontSize: 11 },
+    noPriceText: { color: Colors.textMuted, fontSize: 13 },
+    openBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    dot: { width: 8, height: 8, borderRadius: 4 },
+    openText: { color: Colors.textMuted, fontSize: 12 },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
+    footer: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: Colors.border },
+    footerText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
+    eiaBanner: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 10, marginBottom: 12 },
+    eiaHeader: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 2 },
+    eiaTitle: { color: Colors.text, fontSize: 12, fontWeight: '700', flex: 1 },
+    eiaDate: { color: Colors.textMuted, fontSize: 10 },
+    eiaChip: { backgroundColor: Colors.surfaceLight, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+    eiaChipNational: { borderColor: Colors.secondary, backgroundColor: Colors.secondary + '18' },
+    eiaChipLabel: { color: Colors.textMuted, fontSize: 10, marginBottom: 2 },
+    eiaChipPrice: { color: '#F1C40F', fontSize: 15, fontWeight: '900' },
+  }), [Colors]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [reports, setReports] = useState<FuelReport[]>([]);
+  const [eiaPrices, setEiaPrices] = useState<EIAPrice[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'map' | 'list'>('map');
   const webRef = useRef<WebView>(null);
@@ -71,10 +118,14 @@ export default function FuelFinderScreen() {
           lng = pos.coords.longitude;
         }
         setLocation({ lat, lng });
-        const data = await getMapReports(lat, lng, 100, 'fuel');
-        setReports(data.reports ?? []);
+        const [mapData, eiaData] = await Promise.allSettled([
+          getMapReports(lat, lng, 100, 'fuel'),
+          getEIADieselPrices(),
+        ]);
+        if (mapData.status === 'fulfilled') setReports(mapData.value.reports ?? []);
+        if (eiaData.status === 'fulfilled') setEiaPrices(eiaData.value.prices ?? []);
       } catch (err: any) {
-        Alert.alert('Error', err.message ?? 'Could not load fuel reports');
+        Alert.alert('Error', err.message ?? 'Could not load fuel data');
       } finally {
         setLoading(false);
       }
@@ -94,6 +145,7 @@ export default function FuelFinderScreen() {
       <Text style={s.loadingText}>Finding fuel near you...</Text>
     </View>
   );
+
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -127,16 +179,44 @@ export default function FuelFinderScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           ListEmptyComponent={
             <View style={s.empty}>
-              <Ionicons name="fuel-outline" size={48} color={Colors.textMuted} />
+              <Ionicons name="funnel-outline" size={48} color={Colors.textMuted} />
               <Text style={s.emptyText}>No fuel reports nearby</Text>
               <Text style={s.emptySub}>Community reports will appear here</Text>
               <Text style={s.emptySub}>Add fuel prices via the Trucker Map</Text>
             </View>
           }
           ListHeaderComponent={
-            sorted.length > 0 ? (
-              <Text style={s.listHeader}>Sorted by price · community reports</Text>
-            ) : null
+            <>
+              {eiaPrices.length > 0 && (
+                <View style={s.eiaBanner}>
+                  <View style={s.eiaHeader}>
+                    <Ionicons name="stats-chart-outline" size={13} color={Colors.secondary} />
+                    <Text style={s.eiaTitle}>EIA Weekly Diesel Avg</Text>
+                    <Text style={s.eiaDate}>
+                      {eiaPrices[0]?.period ? `Week of ${eiaPrices[0].period}` : ''}
+                    </Text>
+                  </View>
+                  <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={eiaPrices as EIAPrice[]}
+                    keyExtractor={p => p.region}
+                    contentContainerStyle={{ gap: 8, paddingVertical: 6 }}
+                    renderItem={({ item }) => (
+                      <View style={[s.eiaChip, item.region === 'NUS' && s.eiaChipNational]}>
+                        <Text style={s.eiaChipLabel}>{item.regionLabel}</Text>
+                        <Text style={s.eiaChipPrice}>
+                          {item.price != null ? `$${item.price.toFixed(3)}` : 'N/A'}
+                        </Text>
+                      </View>
+                    )}
+                  />
+                </View>
+              )}
+              {sorted.length > 0 && (
+                <Text style={s.listHeader}>Sorted by price · community reports</Text>
+              )}
+            </>
           }
           renderItem={({ item, index }) => (
             <View style={s.card}>
@@ -178,34 +258,3 @@ export default function FuelFinderScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background, gap: 12 },
-  loadingText: { color: Colors.textMuted, fontSize: 14 },
-  toggle: { flexDirection: 'row', margin: 12, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
-  toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 6 },
-  toggleActive: { backgroundColor: Colors.secondary, borderRadius: 10 },
-  toggleText: { color: Colors.textMuted, fontWeight: '700', fontSize: 13 },
-  toggleTextActive: { color: Colors.textDark },
-  list: { padding: 16, paddingBottom: 80 },
-  listHeader: { color: Colors.textMuted, fontSize: 12, marginBottom: 12 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8 },
-  bestBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary },
-  bestText: { color: Colors.secondary, fontSize: 10, fontWeight: '900' },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  stationName: { color: Colors.white, fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  cardSub: { color: Colors.textMuted, fontSize: 12 },
-  priceBlock: { alignItems: 'flex-end' },
-  priceText: { color: '#F1C40F', fontSize: 22, fontWeight: '900' },
-  priceUnit: { color: Colors.textMuted, fontSize: 11 },
-  noPriceText: { color: Colors.textMuted, fontSize: 13 },
-  openBadge: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  openText: { color: Colors.textMuted, fontSize: 12 },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
-  footer: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 1, borderColor: Colors.border },
-  footerText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
-});

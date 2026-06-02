@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface ClueEntry {
   clue: string;
@@ -90,6 +90,58 @@ function buildAnswerMap(clues: ClueEntry[], size = 9): Record<string, string> {
 }
 
 export default function TruckerCrosswordScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40 },
+    topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    puzzleTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+    clueBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    clueBtnText: { color: Colors.secondary, fontWeight: '700' },
+    solvedBanner: {
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      backgroundColor: '#2ECC7122', borderRadius: 10, padding: 12, marginBottom: 12,
+      borderWidth: 1, borderColor: '#2ECC71',
+    },
+    solvedText: { color: '#2ECC71', fontWeight: '800', fontSize: 15 },
+    gridWrapper: { alignSelf: 'center', borderWidth: 2, borderColor: Colors.border, marginBottom: 20 },
+    gridRow: { flexDirection: 'row' },
+    cell: {
+      borderWidth: 0.5, borderColor: Colors.border,
+      justifyContent: 'center', alignItems: 'center',
+      backgroundColor: Colors.surface,
+    },
+    filledCell: { backgroundColor: '#0a1520' },
+    selectedCell: { backgroundColor: Colors.secondary + '44', borderColor: Colors.secondary },
+    correctCell: { backgroundColor: '#2ECC7133' },
+    wrongCell: { backgroundColor: '#E74C3C33' },
+    cellNumber: { position: 'absolute', top: 1, left: 2, fontSize: 7, color: Colors.textMuted },
+    cellLetter: { color: Colors.text, fontWeight: '800', fontSize: 16 },
+    keyboard: { marginBottom: 16, gap: 6 },
+    keyRow: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
+    key: {
+      backgroundColor: Colors.surface, borderRadius: 6, paddingVertical: 8, paddingHorizontal: 10,
+      borderWidth: 1, borderColor: Colors.border, minWidth: 30, alignItems: 'center',
+    },
+    keyWide: { paddingHorizontal: 18 },
+    keyText: { color: Colors.text, fontWeight: '700', fontSize: 13 },
+    nextBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: Colors.primary, borderRadius: 12, padding: 14, gap: 8,
+      borderWidth: 1, borderColor: Colors.secondary,
+    },
+    nextBtnText: { color: Colors.white, fontWeight: '800', fontSize: 15 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000aa', justifyContent: 'flex-end' },
+    modalBox: {
+      backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+      padding: 20, maxHeight: '70%',
+    },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+    modalTitle: { color: Colors.text, fontSize: 17, fontWeight: '800' },
+    clueSection: { color: Colors.secondary, fontWeight: '900', fontSize: 13, marginTop: 12, marginBottom: 6, letterSpacing: 1 },
+    clueItem: { color: Colors.textMuted, fontSize: 13, marginBottom: 6, lineHeight: 18 },
+    clueNum: { color: Colors.text, fontWeight: '700' },
+  }), [Colors]);
   const [puzzleIndex, setPuzzleIndex] = useState(0);
   const puzzle = PUZZLES[puzzleIndex];
   const GRID_SIZE = 9;
@@ -173,6 +225,7 @@ export default function TruckerCrosswordScreen() {
 
   const acrossClues = puzzle.clues.filter(c => c.direction === 'across');
   const downClues = puzzle.clues.filter(c => c.direction === 'down');
+
 
   return (
     <View style={styles.container}>
@@ -286,55 +339,3 @@ export default function TruckerCrosswordScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40 },
-  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  puzzleTitle: { color: Colors.white, fontSize: 18, fontWeight: '800' },
-  clueBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  clueBtnText: { color: Colors.secondary, fontWeight: '700' },
-  solvedBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#2ECC7122', borderRadius: 10, padding: 12, marginBottom: 12,
-    borderWidth: 1, borderColor: '#2ECC71',
-  },
-  solvedText: { color: '#2ECC71', fontWeight: '800', fontSize: 15 },
-  gridWrapper: { alignSelf: 'center', borderWidth: 2, borderColor: Colors.border, marginBottom: 20 },
-  gridRow: { flexDirection: 'row' },
-  cell: {
-    borderWidth: 0.5, borderColor: Colors.border,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  filledCell: { backgroundColor: '#0a1520' },
-  selectedCell: { backgroundColor: Colors.secondary + '44', borderColor: Colors.secondary },
-  correctCell: { backgroundColor: '#2ECC7133' },
-  wrongCell: { backgroundColor: '#E74C3C33' },
-  cellNumber: { position: 'absolute', top: 1, left: 2, fontSize: 7, color: Colors.textMuted },
-  cellLetter: { color: Colors.white, fontWeight: '800', fontSize: 16 },
-  keyboard: { marginBottom: 16, gap: 6 },
-  keyRow: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
-  key: {
-    backgroundColor: Colors.surface, borderRadius: 6, paddingVertical: 8, paddingHorizontal: 10,
-    borderWidth: 1, borderColor: Colors.border, minWidth: 30, alignItems: 'center',
-  },
-  keyWide: { paddingHorizontal: 18 },
-  keyText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
-  nextBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.primary, borderRadius: 12, padding: 14, gap: 8,
-    borderWidth: 1, borderColor: Colors.secondary,
-  },
-  nextBtnText: { color: Colors.white, fontWeight: '800', fontSize: 15 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000aa', justifyContent: 'flex-end' },
-  modalBox: {
-    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    padding: 20, maxHeight: '70%',
-  },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { color: Colors.white, fontSize: 17, fontWeight: '800' },
-  clueSection: { color: Colors.secondary, fontWeight: '900', fontSize: 13, marginTop: 12, marginBottom: 6, letterSpacing: 1 },
-  clueItem: { color: Colors.textMuted, fontSize: 13, marginBottom: 6, lineHeight: 18 },
-  clueNum: { color: Colors.white, fontWeight: '700' },
-});

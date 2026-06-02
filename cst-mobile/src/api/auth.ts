@@ -23,4 +23,15 @@ export const authAPI = {
 
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     client.put('/auth/change-password', data),
+
+  uploadAvatar: (uri: string, mimeType = 'image/jpeg') => {
+    const form = new FormData();
+    form.append('avatar', { uri, name: 'avatar.jpg', type: mimeType } as any);
+    return client.put('/auth/avatar', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteAccount: (password: string) =>
+    client.delete('/auth/me', { data: { password } }),
 };

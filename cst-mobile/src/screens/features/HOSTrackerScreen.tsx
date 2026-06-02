@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getHOSEntries, logHOSEntry, deleteHOSEntry } from '../../api/features';
 
 type Cycle = '70' | '60';
@@ -27,12 +27,98 @@ const fmtDate = (d: string) => {
 };
 
 const statusColor = (driving: number, onDuty: number) => {
-  if (driving >= 10 || onDuty >= 13) return Colors.danger;
+  if (driving >= 10 || onDuty >= 13) return '#CC0000';
   if (driving >= 8 || onDuty >= 11) return '#E67E22';
-  return Colors.success;
+  return '#27AE60';
 };
 
 export default function HOSTrackerScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40, gap: 14 },
+    cycleRow: { flexDirection: 'row', gap: 10 },
+    cycleBtn: {
+      flex: 1, paddingVertical: 12, borderRadius: 12,
+      backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+      alignItems: 'center',
+    },
+    cycleBtnActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    cycleBtnText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
+    cycleBtnTextActive: { color: Colors.textDark },
+    summaryCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12,
+    },
+    summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+    summaryLabel: { color: Colors.textMuted, fontSize: 12 },
+    summaryValue: { fontSize: 38, fontWeight: '900' },
+    summaryUsed: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    progressBar: { height: 8, backgroundColor: Colors.surfaceLight, borderRadius: 4, overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 4 },
+    warningBadge: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      backgroundColor: Colors.danger + '18', borderRadius: 8, padding: 8,
+      borderWidth: 1, borderColor: Colors.danger + '44',
+    },
+    warningText: { color: Colors.danger, fontSize: 12, fontWeight: '600', flex: 1 },
+    todayCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16,
+    },
+    todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+    todayTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    logBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
+    },
+    logBtnText: { color: Colors.textDark, fontSize: 13, fontWeight: '700' },
+    todayStats: { flexDirection: 'row', alignItems: 'center' },
+    todayStat: { flex: 1, alignItems: 'center', gap: 2 },
+    statDivider: { width: 1, height: 40, backgroundColor: Colors.border },
+    todayStatLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    todayStatValue: { fontSize: 22, fontWeight: '900' },
+    todayStatUnit: { color: Colors.textMuted, fontSize: 10 },
+    rulesCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 10,
+    },
+    rulesTitle: { color: Colors.text, fontSize: 14, fontWeight: '800', marginBottom: 2 },
+    ruleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.border },
+    ruleLabel: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+    ruleValue: { color: Colors.textMuted, fontSize: 12, marginTop: 1 },
+    historyCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 2,
+    },
+    historyTitle: { color: Colors.text, fontSize: 14, fontWeight: '800', marginBottom: 8 },
+    historyRow: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      paddingVertical: 10, borderTopWidth: 1, borderTopColor: Colors.border,
+    },
+    historyLeft: { flex: 1 },
+    historyDate: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+    historyNotes: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
+    historyRight: { alignItems: 'flex-end' },
+    historyHours: { fontSize: 13 },
+    historySlash: { color: Colors.textMuted },
+    longPressHint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 8 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+    modalDate: { color: Colors.secondary, fontSize: 13, marginBottom: 4 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10 },
+    modalInput: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1,
+      borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 15, marginTop: 4,
+    },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [cycle, setCycle] = useState<Cycle>('70');
   const [entries, setEntries] = useState<HOSEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +181,29 @@ export default function HOSTrackerScreen() {
     if (d > 11) { Alert.alert('Error', 'Driving hours cannot exceed 11'); return; }
     if (o > 14) { Alert.alert('Error', 'On-duty hours cannot exceed 14'); return; }
     if (d > o)  { Alert.alert('Error', 'Driving hours cannot exceed on-duty hours'); return; }
+
+    // 34-hr restart enforcement: block if cycle is already exhausted
+    const existingToday = editEntry ? entries.filter(e => e._id !== editEntry._id) : entries;
+    const otherDays = existingToday.slice(0, cycleDays - 1);
+    const projectedCycle = otherDays.reduce((sum, e) => sum + e.onDutyHours, 0) + o;
+    if (projectedCycle > cycleLimit) {
+      Alert.alert(
+        '34-Hour Restart Required',
+        `Adding ${o} on-duty hours would put your ${cycle}-hour cycle at ${projectedCycle.toFixed(1)} hrs — over the limit.\n\nYou must take a 34-consecutive-hour restart before logging more on-duty time.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    // Warn (but allow) when within 10 hrs of the limit
+    if (projectedCycle > cycleLimit - 10 && projectedCycle <= cycleLimit) {
+      await new Promise<void>(resolve =>
+        Alert.alert(
+          'Low Cycle Hours',
+          `You will have only ${(cycleLimit - projectedCycle).toFixed(1)} hrs remaining in your ${cycle}-hr cycle after this entry.`,
+          [{ text: 'Continue', onPress: () => resolve() }, { text: 'Cancel', style: 'cancel', onPress: () => { setSaving(false); } }]
+        )
+      );
+    }
     setSaving(true);
     try {
       const date = editEntry ? editEntry.date : todayStr();
@@ -125,6 +234,7 @@ export default function HOSTrackerScreen() {
       <ActivityIndicator size="large" color={Colors.secondary} />
     </View>
   );
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -246,7 +356,7 @@ export default function HOSTrackerScreen() {
                   <Text style={styles.historyHours}>
                     <Text style={{ color: Colors.secondary }}>{entry.drivingHours}h</Text>
                     <Text style={styles.historySlash}> drive · </Text>
-                    <Text style={{ color: Colors.white }}>{entry.onDutyHours}h</Text>
+                    <Text style={{ color: Colors.text }}>{entry.onDutyHours}h</Text>
                     <Text style={styles.historySlash}> duty</Text>
                   </Text>
                 </View>
@@ -296,89 +406,3 @@ export default function HOSTrackerScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40, gap: 14 },
-  cycleRow: { flexDirection: 'row', gap: 10 },
-  cycleBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center',
-  },
-  cycleBtnActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  cycleBtnText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
-  cycleBtnTextActive: { color: Colors.textDark },
-  summaryCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12,
-  },
-  summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  summaryLabel: { color: Colors.textMuted, fontSize: 12 },
-  summaryValue: { fontSize: 38, fontWeight: '900' },
-  summaryUsed: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  progressBar: { height: 8, backgroundColor: Colors.surfaceLight, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4 },
-  warningBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.danger + '18', borderRadius: 8, padding: 8,
-    borderWidth: 1, borderColor: Colors.danger + '44',
-  },
-  warningText: { color: Colors.danger, fontSize: 12, fontWeight: '600', flex: 1 },
-  todayCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
-  },
-  todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  todayTitle: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  logBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
-  },
-  logBtnText: { color: Colors.textDark, fontSize: 13, fontWeight: '700' },
-  todayStats: { flexDirection: 'row', alignItems: 'center' },
-  todayStat: { flex: 1, alignItems: 'center', gap: 2 },
-  statDivider: { width: 1, height: 40, backgroundColor: Colors.border },
-  todayStatLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  todayStatValue: { fontSize: 22, fontWeight: '900' },
-  todayStatUnit: { color: Colors.textMuted, fontSize: 10 },
-  rulesCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 10,
-  },
-  rulesTitle: { color: Colors.white, fontSize: 14, fontWeight: '800', marginBottom: 2 },
-  ruleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: Colors.border },
-  ruleLabel: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  ruleValue: { color: Colors.textMuted, fontSize: 12, marginTop: 1 },
-  historyCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 2,
-  },
-  historyTitle: { color: Colors.white, fontSize: 14, fontWeight: '800', marginBottom: 8 },
-  historyRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  historyLeft: { flex: 1 },
-  historyDate: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  historyNotes: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
-  historyRight: { alignItems: 'flex-end' },
-  historyHours: { fontSize: 13 },
-  historySlash: { color: Colors.textMuted },
-  longPressHint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 8 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800' },
-  modalDate: { color: Colors.secondary, fontSize: 13, marginBottom: 4 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10 },
-  modalInput: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1,
-    borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 15, marginTop: 4,
-  },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-});

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
+﻿import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView, Share,
@@ -6,15 +6,25 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
-import { getExpenses, addExpense, updateExpense, deleteExpense } from '../../api/features';
+import { useColors } from '../../constants/colors';
+import * as ImagePicker from 'expo-image-picker';
+import { getExpenses, addExpense, updateExpense, deleteExpense, getTrips, uploadReceipt } from '../../api/features';
 
 interface Expense {
   _id: string;
   category: string;
   amount: number;
   description: string;
+  tripId?: string;
   createdAt: string;
+}
+
+interface Trip {
+  _id: string;
+  date: string;
+  origin: string;
+  destination: string;
+  loadNum: string;
 }
 
 const CATEGORIES: { label: string; icon: string; color: string }[] = [
@@ -33,6 +43,48 @@ const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function ExpensesScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    list: { padding: 16, paddingBottom: 100 },
+    totalBanner: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, alignItems: 'center', marginBottom: 12 },
+    totalLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+    totalValue: { color: Colors.text, fontSize: 32, fontWeight: '900', marginTop: 4 },
+    catScroll: { marginBottom: 14 },
+    catRow: { gap: 8, paddingRight: 8 },
+    catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.surface, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 6 },
+    catChipActive: { backgroundColor: Colors.secondary + '22', borderColor: Colors.secondary },
+    catChipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+    catChipTextActive: { color: Colors.secondary },
+    catChipAmt: { fontSize: 11, fontWeight: '800' },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+    catIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+    cardBody: { flex: 1, gap: 4 },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardCat: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    cardAmount: { fontSize: 17, fontWeight: '900' },
+    cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardDesc: { color: Colors.textMuted, fontSize: 12, flex: 1, marginRight: 8 },
+    cardDate: { color: Colors.textMuted, fontSize: 11 },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 6 },
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    catOption: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 8 },
+    catOptionText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const navigation = useNavigation();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,14 +94,20 @@ export default function ExpensesScreen() {
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Expense | null>(null);
 
+  const [trips, setTrips] = useState<Trip[]>([]);
   const [category, setCategory] = useState('Fuel');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [tripId, setTripId] = useState<string | null>(null);
+  const [receiptUri, setReceiptUri] = useState<string | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const data = await getExpenses();
-      setExpenses(Array.isArray(data) ? data : []);
+      const [expData, tripData] = await Promise.all([getExpenses(), getTrips()]);
+      setExpenses(Array.isArray(expData) ? expData : []);
+      const t = tripData?.trips ?? tripData;
+      setTrips(Array.isArray(t) ? t.slice(0, 30) : []);
     } catch { Alert.alert('Error', 'Could not load expenses'); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
@@ -76,15 +134,23 @@ export default function ExpensesScreen() {
     });
   }, [navigation, exportCSV]);
 
+  const pickReceipt = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access to attach receipts'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    if (!result.canceled && result.assets?.length) setReceiptUri(result.assets[0].uri);
+  };
+
   const openModal = () => {
     setEditTarget(null);
-    setCategory('Fuel'); setAmount(''); setDescription('');
+    setCategory('Fuel'); setAmount(''); setDescription(''); setTripId(null); setReceiptUri(null);
     setModal(true);
   };
 
   const openEdit = (e: Expense) => {
     setEditTarget(e);
     setCategory(e.category); setAmount(String(e.amount)); setDescription(e.description ?? '');
+    setTripId(e.tripId ?? null); setReceiptUri(null);
     setModal(true);
   };
 
@@ -93,10 +159,19 @@ export default function ExpensesScreen() {
     if (!amt || amt <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
     setSaving(true);
     try {
+      let receiptUrl: string | undefined;
+      if (receiptUri) {
+        setUploadingReceipt(true);
+        try {
+          const ext = receiptUri.split('.').pop() ?? 'jpg';
+          const res = await uploadReceipt({ uri: receiptUri, type: `image/${ext}`, name: `receipt.${ext}` });
+          receiptUrl = res.url;
+        } finally { setUploadingReceipt(false); }
+      }
       if (editTarget) {
-        await updateExpense(editTarget._id, { category, amount: amt, description });
+        await updateExpense(editTarget._id, { category, amount: amt, description, tripId: tripId ?? undefined, receiptUrl });
       } else {
-        await addExpense({ category, amount: amt, description });
+        await addExpense({ category, amount: amt, description, tripId: tripId ?? undefined, receiptUrl });
       }
       setModal(false);
       load();
@@ -121,6 +196,7 @@ export default function ExpensesScreen() {
   const filtered = filterCat ? expenses.filter(e => e.category === filterCat) : expenses;
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -188,6 +264,14 @@ export default function ExpensesScreen() {
                   {item.description ? <Text style={styles.cardDesc} numberOfLines={1}>{item.description}</Text> : null}
                   <Text style={styles.cardDate}>{fmtDate(item.createdAt)}</Text>
                 </View>
+                {item.tripId ? (() => {
+                  const t = trips.find(tr => tr._id === item.tripId);
+                  return t ? (
+                    <Text style={{ color: Colors.secondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
+                      Trip: {t.origin} → {t.destination}{t.loadNum ? ` #${t.loadNum}` : ''}
+                    </Text>
+                  ) : null;
+                })() : null}
               </View>
             </TouchableOpacity>
           );
@@ -230,12 +314,49 @@ export default function ExpensesScreen() {
               placeholder="What was it for?" placeholderTextColor={Colors.textMuted}
             />
 
+            {trips.length > 0 && (
+              <>
+                <Text style={styles.modalLabel}>Link to Trip (optional)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.catOption, !tripId && { backgroundColor: Colors.secondary + '33', borderColor: Colors.secondary }]}
+                      onPress={() => setTripId(null)}
+                    >
+                      <Text style={[styles.catOptionText, !tripId && { color: Colors.secondary }]}>None</Text>
+                    </TouchableOpacity>
+                    {trips.map(t => (
+                      <TouchableOpacity
+                        key={t._id}
+                        style={[styles.catOption, tripId === t._id && { backgroundColor: Colors.secondary + '33', borderColor: Colors.secondary }]}
+                        onPress={() => setTripId(t._id)}
+                      >
+                        <Text style={[styles.catOptionText, tripId === t._id && { color: Colors.secondary }]} numberOfLines={1}>
+                          {t.origin} → {t.destination}{t.loadNum ? ` #${t.loadNum}` : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </>
+            )}
+
+            <TouchableOpacity
+              onPress={pickReceipt}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, marginTop: 4 }}
+            >
+              <Ionicons name={receiptUri ? 'checkmark-circle' : 'camera-outline'} size={20} color={receiptUri ? Colors.success : Colors.secondary} />
+              <Text style={{ color: receiptUri ? Colors.success : Colors.secondary, fontSize: 13, fontWeight: '700' }}>
+                {receiptUri ? 'Receipt photo selected' : 'Attach Receipt Photo'}
+              </Text>
+            </TouchableOpacity>
+
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
+              <TouchableOpacity style={[styles.saveBtn, (saving || uploadingReceipt) && { opacity: 0.6 }]} onPress={handleSave} disabled={saving || uploadingReceipt}>
+                {(saving || uploadingReceipt) ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -244,45 +365,3 @@ export default function ExpensesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  list: { padding: 16, paddingBottom: 100 },
-  totalBanner: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, alignItems: 'center', marginBottom: 12 },
-  totalLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
-  totalValue: { color: Colors.white, fontSize: 32, fontWeight: '900', marginTop: 4 },
-  catScroll: { marginBottom: 14 },
-  catRow: { gap: 8, paddingRight: 8 },
-  catChip: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.surface, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 6 },
-  catChipActive: { backgroundColor: Colors.secondary + '22', borderColor: Colors.secondary },
-  catChipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
-  catChipTextActive: { color: Colors.secondary },
-  catChipAmt: { fontSize: 11, fontWeight: '800' },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  catIcon: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  cardBody: { flex: 1, gap: 4 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardCat: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  cardAmount: { fontSize: 17, fontWeight: '900' },
-  cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardDesc: { color: Colors.textMuted, fontSize: 12, flex: 1, marginRight: 8 },
-  cardDate: { color: Colors.textMuted, fontSize: 11 },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 6 },
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  catOption: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 8 },
-  catOptionText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-});

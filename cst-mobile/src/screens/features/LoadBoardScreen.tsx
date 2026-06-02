@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getLoads, addLoad, updateLoad, updateLoadStatus, deleteLoad } from '../../api/features';
 
 type LoadStatus = 'booked' | 'in_transit' | 'delivered' | 'invoiced' | 'paid';
@@ -51,6 +51,57 @@ const blank = () => ({
 });
 
 export default function LoadBoardScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    filterBar: { maxHeight: 52, paddingVertical: 10 },
+    chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+    chipActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    chipText: { color: Colors.textMuted, fontSize: 13, fontWeight: '600' },
+    chipTextActive: { color: Colors.textDark },
+    list: { padding: 16, paddingBottom: 100 },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14 },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+    cardBroker: { color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 2 },
+    cardRoute: { color: Colors.textMuted, fontSize: 13 },
+    cardNum: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
+    cardRight: { alignItems: 'flex-end', gap: 2 },
+    cardRate: { color: Colors.secondary, fontSize: 20, fontWeight: '900' },
+    cardMiles: { color: Colors.textMuted, fontSize: 12 },
+    cardRpm: { color: Colors.textMuted, fontSize: 12 },
+    cardBottom: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    cardCommodity: { color: Colors.textMuted, fontSize: 12 },
+    statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
+    statusText: { fontSize: 11, fontWeight: '800' },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4, maxHeight: '92%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+    groupLabel: { color: Colors.secondary, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 16, marginBottom: 4 },
+    inputLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
+    input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14, marginTop: 4 },
+    previewBox: { backgroundColor: Colors.secondary + '22', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 8 },
+    previewText: { color: Colors.secondary, fontSize: 16, fontWeight: '800' },
+    sectionHead: { color: Colors.secondary, fontSize: 12, fontWeight: '800', marginTop: 14, marginBottom: 4 },
+    detailLabel: { color: Colors.textMuted, fontSize: 13 },
+    detailValue: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    detailSub: { color: Colors.textMuted, fontSize: 13 },
+    modalBtns: { flexDirection: 'row', gap: 8, marginTop: 20 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+    editBtn: { flex: 1, backgroundColor: Colors.surface, borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
+    editBtnText: { color: Colors.text, fontWeight: '700' },
+    nextBtn: { flex: 2, borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
+    nextBtnText: { color: Colors.text, fontWeight: '800' },
+    deleteBtn: { width: 44, backgroundColor: Colors.danger + '22', borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.danger },
+  }), [Colors]);
   const [loads, setLoads] = useState<Load[]>([]);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(true);
@@ -140,6 +191,7 @@ export default function LoadBoardScreen() {
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -363,54 +415,3 @@ export default function LoadBoardScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  filterBar: { maxHeight: 52, paddingVertical: 10 },
-  chip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  chipActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  chipText: { color: Colors.textMuted, fontSize: 13, fontWeight: '600' },
-  chipTextActive: { color: Colors.textDark },
-  list: { padding: 16, paddingBottom: 100 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-  cardBroker: { color: Colors.white, fontSize: 15, fontWeight: '800', marginBottom: 2 },
-  cardRoute: { color: Colors.textMuted, fontSize: 13 },
-  cardNum: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
-  cardRight: { alignItems: 'flex-end', gap: 2 },
-  cardRate: { color: Colors.secondary, fontSize: 20, fontWeight: '900' },
-  cardMiles: { color: Colors.textMuted, fontSize: 12 },
-  cardRpm: { color: Colors.textMuted, fontSize: 12 },
-  cardBottom: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardCommodity: { color: Colors.textMuted, fontSize: 12 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1 },
-  statusText: { fontSize: 11, fontWeight: '800' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4, maxHeight: '92%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  groupLabel: { color: Colors.secondary, fontSize: 11, fontWeight: '900', letterSpacing: 1, marginTop: 16, marginBottom: 4 },
-  inputLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
-  input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14, marginTop: 4 },
-  previewBox: { backgroundColor: Colors.secondary + '22', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 8 },
-  previewText: { color: Colors.secondary, fontSize: 16, fontWeight: '800' },
-  sectionHead: { color: Colors.secondary, fontSize: 12, fontWeight: '800', marginTop: 14, marginBottom: 4 },
-  detailLabel: { color: Colors.textMuted, fontSize: 13 },
-  detailValue: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  detailSub: { color: Colors.textMuted, fontSize: 13 },
-  modalBtns: { flexDirection: 'row', gap: 8, marginTop: 20 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-  editBtn: { flex: 1, backgroundColor: Colors.surface, borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
-  editBtnText: { color: Colors.white, fontWeight: '700' },
-  nextBtn: { flex: 2, borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },
-  nextBtnText: { color: Colors.white, fontWeight: '800' },
-  deleteBtn: { width: 44, backgroundColor: Colors.danger + '22', borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.danger },
-});

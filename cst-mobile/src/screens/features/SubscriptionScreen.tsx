@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
   ScrollView, Alert, ActivityIndicator, Linking,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 
 interface SubStatus {
@@ -32,6 +32,52 @@ const FEATURES = [
 ];
 
 export default function SubscriptionScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    content: { padding: 20, paddingBottom: 40, gap: 16 },
+    statusCard: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 18,
+      borderWidth: 1, borderColor: Colors.border,
+    },
+    statusLeft: { gap: 4 },
+    statusLabel: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
+    statusValue: { fontSize: 22, fontWeight: '900' },
+    statusPlan: { color: Colors.textMuted, fontSize: 13 },
+    statusExpiry: { color: Colors.textMuted, fontSize: 12 },
+    statusBadge: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
+    hero: { alignItems: 'center', paddingVertical: 8 },
+    heroTitle: { color: Colors.text, fontSize: 28, fontWeight: '900', textAlign: 'center' },
+    heroSub: { color: Colors.textMuted, fontSize: 14, textAlign: 'center', marginTop: 6 },
+    featuresCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border, gap: 10 },
+    featuresTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 4 },
+    featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    featureText: { color: Colors.textMuted, fontSize: 14, flex: 1 },
+    planCard: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 18,
+      borderWidth: 1, borderColor: Colors.border, gap: 12,
+    },
+    planCardFeatured: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    saveBadge: { position: 'absolute', top: -10, right: 16, backgroundColor: Colors.danger, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+    saveBadgeText: { color: Colors.text, fontSize: 10, fontWeight: '900' },
+    planLeft: { flex: 1 },
+    planName: { color: Colors.text, fontSize: 17, fontWeight: '800' },
+    planDesc: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    planRight: { alignItems: 'flex-end' },
+    planPrice: { color: Colors.text, fontSize: 20, fontWeight: '900' },
+    planPer: { color: Colors.textMuted, fontSize: 11 },
+    secureNote: { color: Colors.textMuted, fontSize: 12, textAlign: 'center' },
+    portalBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+      backgroundColor: Colors.secondary, borderRadius: 14, padding: 16,
+    },
+    portalBtnText: { color: Colors.textDark, fontSize: 15, fontWeight: '800' },
+    disclaimer: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.border },
+    disclaimerText: { color: Colors.textMuted, fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  }), [Colors]);
   const [status, setStatus] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<'monthly' | 'annual' | 'portal' | null>(null);
@@ -95,6 +141,7 @@ export default function SubscriptionScreen() {
   }
 
   const isActive = status?.isActive ?? false;
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -212,49 +259,3 @@ export default function SubscriptionScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 20, paddingBottom: 40, gap: 16 },
-  statusCard: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 18,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  statusLeft: { gap: 4 },
-  statusLabel: { color: Colors.textMuted, fontSize: 10, fontWeight: '700', letterSpacing: 1 },
-  statusValue: { fontSize: 22, fontWeight: '900' },
-  statusPlan: { color: Colors.textMuted, fontSize: 13 },
-  statusExpiry: { color: Colors.textMuted, fontSize: 12 },
-  statusBadge: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-  hero: { alignItems: 'center', paddingVertical: 8 },
-  heroTitle: { color: Colors.white, fontSize: 28, fontWeight: '900', textAlign: 'center' },
-  heroSub: { color: Colors.textMuted, fontSize: 14, textAlign: 'center', marginTop: 6 },
-  featuresCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border, gap: 10 },
-  featuresTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', marginBottom: 4 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureText: { color: Colors.textMuted, fontSize: 14, flex: 1 },
-  planCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 18,
-    borderWidth: 1, borderColor: Colors.border, gap: 12,
-  },
-  planCardFeatured: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  saveBadge: { position: 'absolute', top: -10, right: 16, backgroundColor: Colors.danger, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  saveBadgeText: { color: Colors.white, fontSize: 10, fontWeight: '900' },
-  planLeft: { flex: 1 },
-  planName: { color: Colors.white, fontSize: 17, fontWeight: '800' },
-  planDesc: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  planRight: { alignItems: 'flex-end' },
-  planPrice: { color: Colors.white, fontSize: 20, fontWeight: '900' },
-  planPer: { color: Colors.textMuted, fontSize: 11 },
-  secureNote: { color: Colors.textMuted, fontSize: 12, textAlign: 'center' },
-  portalBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.secondary, borderRadius: 14, padding: 16,
-  },
-  portalBtnText: { color: Colors.textDark, fontSize: 15, fontWeight: '800' },
-  disclaimer: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.border },
-  disclaimerText: { color: Colors.textMuted, fontSize: 11, lineHeight: 17, textAlign: 'center' },
-});

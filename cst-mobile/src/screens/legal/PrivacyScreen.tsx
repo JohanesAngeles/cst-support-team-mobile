@@ -1,7 +1,7 @@
-import React from 'react';
+﻿import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 const SECTIONS = [
   {
@@ -10,7 +10,7 @@ const SECTIONS = [
   },
   {
     title: '2. How We Use Your Information',
-    body: 'We use your data to provide and improve the CST app services, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant (your messages are sent to Anthropic\'s Claude API), and respond to support requests.',
+    body: "We use your data to provide and improve the CST app services, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant and AI Rate Advisor (your messages are sent to xAI's Grok API), and respond to support requests.",
   },
   {
     title: '3. Data Storage & Security',
@@ -18,7 +18,7 @@ const SECTIONS = [
   },
   {
     title: '4. AI Legal Assistant & Third Parties',
-    body: 'When you use the AI Legal Assistant, your messages are processed by Anthropic\'s Claude API. Anthropic\'s privacy policy applies to this processing. We do not share your personal identity with Anthropic — only the message content is transmitted.',
+    body: "When you use the AI Legal Assistant or AI Rate Advisor, your messages are processed by xAI's Grok API. xAI's privacy policy applies to this processing. We do not share your personal identity with xAI — only the message content is transmitted.",
   },
   {
     title: '5. Document Vault',
@@ -55,6 +55,21 @@ const SECTIONS = [
 ];
 
 export default function PrivacyScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 20, paddingBottom: 40 },
+    header: { marginBottom: 20 },
+    title: { color: Colors.text, fontSize: 24, fontWeight: '900' },
+    effective: { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
+    intro: { backgroundColor: Colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 20 },
+    introText: { color: Colors.textMuted, fontSize: 14, lineHeight: 22 },
+    section: { marginBottom: 20 },
+    sectionTitle: { color: Colors.secondary, fontSize: 14, fontWeight: '800', marginBottom: 6 },
+    sectionBody: { color: Colors.textMuted, fontSize: 13, lineHeight: 21 },
+    footer: { color: Colors.border, fontSize: 12, textAlign: 'center', marginTop: 12 },
+  }), [Colors]);
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -83,17 +98,3 @@ export default function PrivacyScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20, paddingBottom: 40 },
-  header: { marginBottom: 20 },
-  title: { color: Colors.white, fontSize: 24, fontWeight: '900' },
-  effective: { color: Colors.textMuted, fontSize: 12, marginTop: 4 },
-  intro: { backgroundColor: Colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 20 },
-  introText: { color: Colors.textMuted, fontSize: 14, lineHeight: 22 },
-  section: { marginBottom: 20 },
-  sectionTitle: { color: Colors.secondary, fontSize: 14, fontWeight: '800', marginBottom: 6 },
-  sectionBody: { color: Colors.textMuted, fontSize: 13, lineHeight: 21 },
-  footer: { color: Colors.border, fontSize: 12, textAlign: 'center', marginTop: 12 },
-});

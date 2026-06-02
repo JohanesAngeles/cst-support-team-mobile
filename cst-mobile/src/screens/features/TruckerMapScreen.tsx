@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+﻿import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, TextInput,
   ScrollView, Alert, ActivityIndicator, Platform, Linking,
@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getMapReports, createMapReport, upvoteMapReport, deleteMapReport } from '../../api/features';
 import { useAuth } from '../../context/AuthContext';
 
@@ -162,6 +162,96 @@ const buildMapHTML = () => `
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function TruckerMapScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    map: { flex: 1 },
+    filterBar: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
+    filterScroll: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
+    filterChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      backgroundColor: Colors.surface + 'EE', borderRadius: 20,
+      paddingHorizontal: 12, paddingVertical: 7,
+      borderWidth: 1, borderColor: Colors.border,
+    },
+    filterEmoji: { fontSize: 14 },
+    filterLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+    controls: { position: 'absolute', right: 16, bottom: 80, gap: 10, alignItems: 'center' },
+    controlBtn: {
+      width: 48, height: 48, borderRadius: 24,
+      backgroundColor: Colors.surface + 'EE',
+      justifyContent: 'center', alignItems: 'center',
+      borderWidth: 1, borderColor: Colors.border,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
+    },
+    addBtn: { backgroundColor: Colors.secondary, borderColor: Colors.secondary, width: 56, height: 56, borderRadius: 28 },
+    hintBar: {
+      position: 'absolute', bottom: 20, left: 16, right: 80,
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      backgroundColor: Colors.surface + 'DD', borderRadius: 10,
+      paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: Colors.border,
+    },
+    hintText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
+    modalBackdrop: { flex: 1, backgroundColor: '#00000066' },
+    detailCard: {
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+      overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10,
+    },
+    detailTypeBar: { paddingHorizontal: 20, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between' },
+    detailTypeText: { color: Colors.text, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
+    detailExpiry: { color: Colors.text + 'AA', fontSize: 11 },
+    detailBody: { padding: 20, gap: 10 },
+    detailTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+    detailDesc: { color: Colors.textMuted, fontSize: 14, lineHeight: 20 },
+    detailChip: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    detailChipLabel: { color: Colors.textMuted, fontSize: 13 },
+    detailChipValue: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    detailStars: { color: Colors.secondary, fontSize: 22, letterSpacing: 2 },
+    amenityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    amenityChip: { backgroundColor: Colors.surfaceLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: Colors.border },
+    amenityChipText: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' },
+    detailMeta: { flexDirection: 'row', justifyContent: 'space-between' },
+    detailMetaText: { color: Colors.textMuted, fontSize: 11 },
+    detailActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+    detailActionBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      borderWidth: 1, borderColor: Colors.secondary,
+      borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
+    },
+    detailActionText: { color: Colors.secondary, fontSize: 13, fontWeight: '700' },
+    addSheet: {
+      position: 'absolute', bottom: 0, left: 0, right: 0,
+      backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      padding: 20, maxHeight: '85%',
+    },
+    addSheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+    addSheetTitle: { color: Colors.text, fontSize: 20, fontWeight: '900', marginBottom: 4 },
+    addSheetCoords: { color: Colors.textMuted, fontSize: 11, marginBottom: 14 },
+    addLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 6, marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+    addInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 },
+    addNote: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 4 },
+    typeChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      backgroundColor: Colors.surfaceLight, borderRadius: 20,
+      paddingHorizontal: 12, paddingVertical: 7,
+      borderWidth: 1, borderColor: Colors.border, marginRight: 8,
+    },
+    typeChipLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+    switchStatus: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
+    starsRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+    starBtn: { fontSize: 32, color: Colors.border },
+    amenityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+    amenityToggle: { backgroundColor: Colors.surfaceLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: Colors.border },
+    amenityToggleOn: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    amenityToggleText: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+    addBtns: { flexDirection: 'row', gap: 10, marginTop: 20, marginBottom: 10 },
+    addCancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center' },
+    addCancelText: { color: Colors.textMuted, fontWeight: '700' },
+    addSubmitBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    addSubmitText: { color: Colors.textDark, fontWeight: '900', fontSize: 14 },
+  }), [Colors]);
   const { user } = useAuth();
   const webRef = useRef<WebView>(null);
 
@@ -430,7 +520,7 @@ export default function TruckerMapScreen() {
               onPress={() => navigateTo(report.lat, report.lng, report.title)}
             >
               <Ionicons name="navigate-outline" size={16} color={Colors.white} />
-              <Text style={[styles.detailActionText, { color: Colors.white }]}>Navigate Here</Text>
+              <Text style={[styles.detailActionText, { color: Colors.text }]}>Navigate Here</Text>
             </TouchableOpacity>
             {report.userId === user?._id && (
               <TouchableOpacity style={[styles.detailActionBtn, { borderColor: Colors.danger }]} onPress={() => handleDelete(report)}>
@@ -444,6 +534,7 @@ export default function TruckerMapScreen() {
   };
 
   // ─── Main render ─────────────────────────────────────────────────────────────
+
 
   return (
     <View style={styles.container}>
@@ -473,7 +564,7 @@ export default function TruckerMapScreen() {
                 onPress={() => toggleFilter(rt.key)}
               >
                 <Text style={styles.filterEmoji}>{rt.emoji}</Text>
-                <Text style={[styles.filterLabel, active && { color: Colors.white }]}>{rt.label}</Text>
+                <Text style={[styles.filterLabel, active && { color: Colors.text }]}>{rt.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -525,7 +616,7 @@ export default function TruckerMapScreen() {
                   onPress={() => setFormType(rt.key)}
                 >
                   <Text style={styles.filterEmoji}>{rt.emoji}</Text>
-                  <Text style={[styles.typeChipLabel, formType === rt.key && { color: Colors.white }]}>{rt.label}</Text>
+                  <Text style={[styles.typeChipLabel, formType === rt.key && { color: Colors.text }]}>{rt.label}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -612,7 +703,7 @@ export default function TruckerMapScreen() {
                         style={[styles.typeChip, formHazardType === h && { backgroundColor: '#E74C3C', borderColor: '#E74C3C' }]}
                         onPress={() => setFormHazardType(h)}
                       >
-                        <Text style={[styles.typeChipLabel, formHazardType === h && { color: Colors.white }]}>{h}</Text>
+                        <Text style={[styles.typeChipLabel, formHazardType === h && { color: Colors.text }]}>{h}</Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
@@ -664,93 +755,3 @@ export default function TruckerMapScreen() {
 }
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  map: { flex: 1 },
-  filterBar: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center' },
-  filterScroll: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  filterChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.surface + 'EE', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  filterEmoji: { fontSize: 14 },
-  filterLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
-  controls: { position: 'absolute', right: 16, bottom: 80, gap: 10, alignItems: 'center' },
-  controlBtn: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: Colors.surface + 'EE',
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.border,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 4,
-  },
-  addBtn: { backgroundColor: Colors.secondary, borderColor: Colors.secondary, width: 56, height: 56, borderRadius: 28 },
-  hintBar: {
-    position: 'absolute', bottom: 20, left: 16, right: 80,
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.surface + 'DD', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: Colors.border,
-  },
-  hintText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
-  modalBackdrop: { flex: 1, backgroundColor: '#00000066' },
-  detailCard: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-    overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10,
-  },
-  detailTypeBar: { paddingHorizontal: 20, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between' },
-  detailTypeText: { color: Colors.white, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
-  detailExpiry: { color: Colors.white + 'AA', fontSize: 11 },
-  detailBody: { padding: 20, gap: 10 },
-  detailTitle: { color: Colors.white, fontSize: 18, fontWeight: '800' },
-  detailDesc: { color: Colors.textMuted, fontSize: 14, lineHeight: 20 },
-  detailChip: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  detailChipLabel: { color: Colors.textMuted, fontSize: 13 },
-  detailChipValue: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  detailStars: { color: Colors.secondary, fontSize: 22, letterSpacing: 2 },
-  amenityRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  amenityChip: { backgroundColor: Colors.surfaceLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: Colors.border },
-  amenityChipText: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' },
-  detailMeta: { flexDirection: 'row', justifyContent: 'space-between' },
-  detailMetaText: { color: Colors.textMuted, fontSize: 11 },
-  detailActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  detailActionBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderWidth: 1, borderColor: Colors.secondary,
-    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9,
-  },
-  detailActionText: { color: Colors.secondary, fontSize: 13, fontWeight: '700' },
-  addSheet: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, maxHeight: '85%',
-  },
-  addSheetHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  addSheetTitle: { color: Colors.white, fontSize: 20, fontWeight: '900', marginBottom: 4 },
-  addSheetCoords: { color: Colors.textMuted, fontSize: 11, marginBottom: 14 },
-  addLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', marginBottom: 6, marginTop: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  addInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
-  addNote: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic', marginTop: 4 },
-  typeChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.surfaceLight, borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 7,
-    borderWidth: 1, borderColor: Colors.border, marginRight: 8,
-  },
-  typeChipLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
-  switchStatus: { fontSize: 13, fontWeight: '700', marginBottom: 4 },
-  starsRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  starBtn: { fontSize: 32, color: Colors.border },
-  amenityGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
-  amenityToggle: { backgroundColor: Colors.surfaceLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: Colors.border },
-  amenityToggleOn: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  amenityToggleText: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
-  addBtns: { flexDirection: 'row', gap: 10, marginTop: 20, marginBottom: 10 },
-  addCancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center' },
-  addCancelText: { color: Colors.textMuted, fontWeight: '700' },
-  addSubmitBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  addSubmitText: { color: Colors.textDark, fontWeight: '900', fontSize: 14 },
-});

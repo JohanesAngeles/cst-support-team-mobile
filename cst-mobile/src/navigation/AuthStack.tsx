@@ -1,12 +1,12 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Colors } from '../constants/colors';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ResetPasswordScreen from '../screens/auth/ResetPasswordScreen';
 import TermsScreen from '../screens/legal/TermsScreen';
 import PrivacyScreen from '../screens/legal/PrivacyScreen';
+import { useTheme } from '../context/ThemeContext';
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -20,6 +20,7 @@ export type AuthStackParamList = {
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthStack() {
+  const { theme } = useTheme();
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
@@ -29,12 +30,24 @@ export default function AuthStack() {
       <Stack.Screen
         name="Terms"
         component={TermsScreen}
-        options={{ headerShown: true, headerStyle: { backgroundColor: Colors.surface }, headerTintColor: Colors.white, headerTitleStyle: { fontWeight: '800' }, title: 'Terms of Service' }}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: theme.surface },
+          headerTintColor: theme.text,
+          headerTitleStyle: { fontWeight: '800' },
+          title: 'Terms of Service',
+        }}
       />
       <Stack.Screen
         name="Privacy"
         component={PrivacyScreen}
-        options={{ headerShown: true, headerStyle: { backgroundColor: Colors.surface }, headerTintColor: Colors.white, headerTitleStyle: { fontWeight: '800' }, title: 'Privacy Policy' }}
+        options={{
+          headerShown: true,
+          headerStyle: { backgroundColor: theme.surface },
+          headerTintColor: theme.text,
+          headerTitleStyle: { fontWeight: '800' },
+          title: 'Privacy Policy',
+        }}
       />
     </Stack.Navigator>
   );

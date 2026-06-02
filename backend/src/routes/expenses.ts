@@ -6,22 +6,24 @@ const router = Router();
 router.use(protect);
 
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const expenses = await Expense.find({ userId: req.user._id }).sort({ createdAt: -1 });
+  const filter: Record<string, any> = { userId: req.user._id };
+  if (req.query.tripId) filter.tripId = req.query.tripId;
+  const expenses = await Expense.find(filter).sort({ createdAt: -1 });
   res.json(expenses);
 });
 
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { category, amount, description } = req.body;
+  const { category, amount, description, tripId, receiptUrl } = req.body;
   if (!category || amount == null) { res.status(400).json({ message: 'category and amount required' }); return; }
-  const expense = await Expense.create({ userId: req.user._id, category, amount, description: description ?? '' });
+  const expense = await Expense.create({ userId: req.user._id, category, amount, description: description ?? '', tripId: tripId || null, receiptUrl: receiptUrl || '' });
   res.status(201).json(expense);
 });
 
 router.put('/:id', async (req: AuthRequest, res: Response) => {
-  const { category, amount, description } = req.body;
+  const { category, amount, description, tripId, receiptUrl } = req.body;
   const expense = await Expense.findOneAndUpdate(
     { _id: req.params.id, userId: req.user._id },
-    { $set: { category, amount, description } },
+    { $set: { category, amount, description, tripId: tripId || null, receiptUrl: receiptUrl ?? undefined } },
     { new: true }
   );
   if (!expense) { res.status(404).json({ message: 'Not found' }); return; }

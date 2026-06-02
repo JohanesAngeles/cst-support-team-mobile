@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface Section {
   title: string;
@@ -113,9 +113,49 @@ const SECTIONS: Section[] = [
 ];
 
 export default function DriverProtectionScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40 },
+    banner: {
+      flexDirection: 'row', alignItems: 'center', gap: 14,
+      backgroundColor: Colors.secondary + '18', borderRadius: 14,
+      padding: 16, marginBottom: 14,
+      borderWidth: 1, borderColor: Colors.secondary + '44',
+    },
+    bannerTitle: { color: Colors.text, fontSize: 16, fontWeight: '800' },
+    bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    emergencyRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+    emergencyCard: {
+      flex: 1, backgroundColor: Colors.surface, borderRadius: 12,
+      padding: 14, alignItems: 'center', gap: 4,
+      borderWidth: 1, borderColor: Colors.border,
+    },
+    emergencyLabel: { color: Colors.textMuted, fontSize: 11, textAlign: 'center' },
+    emergencyNum: { color: Colors.text, fontSize: 13, fontWeight: '800', textAlign: 'center' },
+    section: {
+      backgroundColor: Colors.surface, borderRadius: 12,
+      borderWidth: 1, borderColor: Colors.border,
+      borderLeftWidth: 4, padding: 14, marginBottom: 12,
+    },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+    sectionIcon: { width: 34, height: 34, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    sectionTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', flex: 1 },
+    item: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10, marginTop: 6 },
+    itemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    itemQ: { color: Colors.secondary, fontSize: 13, fontWeight: '700', flex: 1 },
+    itemA: { color: Colors.textMuted, fontSize: 13, lineHeight: 20, marginTop: 8 },
+    disclaimer: {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+      backgroundColor: Colors.surface, borderRadius: 10, padding: 12,
+      borderWidth: 1, borderColor: Colors.border, marginTop: 4,
+    },
+    disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
+  }), [Colors]);
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const toggle = (key: string) => setExpanded(expanded === key ? null : key);
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -176,42 +216,3 @@ export default function DriverProtectionScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40 },
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.secondary + '18', borderRadius: 14,
-    padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: Colors.secondary + '44',
-  },
-  bannerTitle: { color: Colors.white, fontSize: 16, fontWeight: '800' },
-  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  emergencyRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  emergencyCard: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 12,
-    padding: 14, alignItems: 'center', gap: 4,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  emergencyLabel: { color: Colors.textMuted, fontSize: 11, textAlign: 'center' },
-  emergencyNum: { color: Colors.white, fontSize: 13, fontWeight: '800', textAlign: 'center' },
-  section: {
-    backgroundColor: Colors.surface, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    borderLeftWidth: 4, padding: 14, marginBottom: 12,
-  },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  sectionIcon: { width: 34, height: 34, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  sectionTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', flex: 1 },
-  item: { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10, marginTop: 6 },
-  itemRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  itemQ: { color: Colors.secondary, fontSize: 13, fontWeight: '700', flex: 1 },
-  itemA: { color: Colors.textMuted, fontSize: 13, lineHeight: 20, marginTop: 8 },
-  disclaimer: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
-    backgroundColor: Colors.surface, borderRadius: 10, padding: 12,
-    borderWidth: 1, borderColor: Colors.border, marginTop: 4,
-  },
-  disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
-});

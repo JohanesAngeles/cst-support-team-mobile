@@ -4,7 +4,8 @@ import {
   register, login, getMe,
   verifyEmail, resendVerification,
   forgotPassword, resetPassword,
-  updateProfile, changePassword,
+  updateProfile, changePassword, deleteAccount,
+  updateAvatar, updateAvatarMiddleware,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 
@@ -36,5 +37,7 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.put('/update-profile', protect, updateProfile);
 router.put('/change-password', protect, changePassword);
+router.put('/avatar', protect, updateAvatarMiddleware, updateAvatar);
+router.delete('/me', protect, deleteAccount);
 
 export default router;

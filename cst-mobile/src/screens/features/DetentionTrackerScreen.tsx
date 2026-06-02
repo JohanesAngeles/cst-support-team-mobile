@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+﻿import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getDetentionEvents, startDetention, stopDetention, updateDetentionEvent, deleteDetentionEvent } from '../../api/features';
 
 interface DetentionEvent {
@@ -47,6 +47,101 @@ const fmtDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 export default function DetentionTrackerScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40, gap: 14 },
+    activeCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 2, padding: 16, gap: 10,
+    },
+    activeHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    activeDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.success },
+    activeTitle: { color: Colors.text, fontSize: 14, fontWeight: '800', flex: 1 },
+    typeBadge: {
+      backgroundColor: Colors.secondary + '22', borderRadius: 6,
+      paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: Colors.secondary,
+    },
+    typeBadgeText: { color: Colors.secondary, fontSize: 11, fontWeight: '700' },
+    activeLocation: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+    activeLoad: { color: Colors.textMuted, fontSize: 13 },
+    timerRow: { flexDirection: 'row', backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14 },
+    timerItem: { flex: 1, alignItems: 'center', gap: 4 },
+    timerDivider: { width: 1, backgroundColor: Colors.border, marginHorizontal: 4 },
+    timerLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    timerValue: { color: Colors.text, fontSize: 16, fontWeight: '900', textAlign: 'center' },
+    freeTimeNote: { color: Colors.textMuted, fontSize: 11 },
+    stopBtn: {
+      backgroundColor: Colors.danger, borderRadius: 12,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 8, height: 48, marginTop: 4,
+    },
+    stopText: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    clockInBtn: {
+      backgroundColor: Colors.secondary, borderRadius: 14,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 12, height: 60,
+    },
+    clockInText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
+    summaryRow: { flexDirection: 'row', gap: 10 },
+    summaryCard: {
+      flex: 1, backgroundColor: Colors.surface, borderRadius: 12,
+      borderWidth: 1, borderColor: Colors.border,
+      padding: 14, alignItems: 'center', gap: 4,
+    },
+    summaryValue: { color: Colors.text, fontSize: 20, fontWeight: '900' },
+    summaryLabel: { color: Colors.textMuted, fontSize: 11 },
+    historyCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16,
+    },
+    historyTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 8 },
+    historyRow: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingVertical: 12, borderTopWidth: 1, borderTopColor: Colors.border,
+    },
+    historyLeft: { flex: 1, gap: 3 },
+    historyTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    historyLocation: { color: Colors.text, fontSize: 14, fontWeight: '700', flex: 1 },
+    historyTypeBadge: { backgroundColor: Colors.surfaceLight, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+    historyTypeText: { color: Colors.textMuted, fontSize: 10, fontWeight: '600' },
+    historyLoad: { color: Colors.textMuted, fontSize: 11 },
+    historyTime: { color: Colors.textMuted, fontSize: 11 },
+    historyDuration: { color: Colors.textMuted, fontSize: 11 },
+    historyPay: { marginLeft: 12, alignItems: 'flex-end' },
+    historyPayAmt: { fontSize: 16, fontWeight: '900' },
+    longPressHint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 },
+    empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+    emptyTitle: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptyText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 20 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10 },
+    modalInput: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 10,
+      borderWidth: 1, borderColor: Colors.border,
+      padding: 12, color: Colors.text, fontSize: 15, marginTop: 4,
+    },
+    typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+    typeChip: {
+      flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
+      backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border,
+    },
+    typeChipActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    typeChipText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
+    typeChipTextActive: { color: Colors.textDark },
+    twoCol: { flexDirection: 'row', gap: 10 },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: {
+      flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14,
+      alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
+    },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [events, setEvents] = useState<DetentionEvent[]>([]);
   const [activeEvent, setActiveEvent] = useState<DetentionEvent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -181,6 +276,7 @@ export default function DetentionTrackerScreen() {
   if (loading) return (
     <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>
   );
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -431,98 +527,3 @@ export default function DetentionTrackerScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40, gap: 14 },
-  activeCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 2, padding: 16, gap: 10,
-  },
-  activeHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  activeDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.success },
-  activeTitle: { color: Colors.white, fontSize: 14, fontWeight: '800', flex: 1 },
-  typeBadge: {
-    backgroundColor: Colors.secondary + '22', borderRadius: 6,
-    paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: Colors.secondary,
-  },
-  typeBadgeText: { color: Colors.secondary, fontSize: 11, fontWeight: '700' },
-  activeLocation: { color: Colors.white, fontSize: 18, fontWeight: '800' },
-  activeLoad: { color: Colors.textMuted, fontSize: 13 },
-  timerRow: { flexDirection: 'row', backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14 },
-  timerItem: { flex: 1, alignItems: 'center', gap: 4 },
-  timerDivider: { width: 1, backgroundColor: Colors.border, marginHorizontal: 4 },
-  timerLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  timerValue: { color: Colors.white, fontSize: 16, fontWeight: '900', textAlign: 'center' },
-  freeTimeNote: { color: Colors.textMuted, fontSize: 11 },
-  stopBtn: {
-    backgroundColor: Colors.danger, borderRadius: 12,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, height: 48, marginTop: 4,
-  },
-  stopText: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  clockInBtn: {
-    backgroundColor: Colors.secondary, borderRadius: 14,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 12, height: 60,
-  },
-  clockInText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
-  summaryRow: { flexDirection: 'row', gap: 10 },
-  summaryCard: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 14, alignItems: 'center', gap: 4,
-  },
-  summaryValue: { color: Colors.white, fontSize: 20, fontWeight: '900' },
-  summaryLabel: { color: Colors.textMuted, fontSize: 11 },
-  historyCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
-  },
-  historyTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', marginBottom: 8 },
-  historyRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  historyLeft: { flex: 1, gap: 3 },
-  historyTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  historyLocation: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1 },
-  historyTypeBadge: { backgroundColor: Colors.surfaceLight, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  historyTypeText: { color: Colors.textMuted, fontSize: 10, fontWeight: '600' },
-  historyLoad: { color: Colors.textMuted, fontSize: 11 },
-  historyTime: { color: Colors.textMuted, fontSize: 11 },
-  historyDuration: { color: Colors.textMuted, fontSize: 11 },
-  historyPay: { marginLeft: 12, alignItems: 'flex-end' },
-  historyPayAmt: { fontSize: 16, fontWeight: '900' },
-  longPressHint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 10 },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  emptyTitle: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptyText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 20 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10 },
-  modalInput: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 12, color: Colors.white, fontSize: 15, marginTop: 4,
-  },
-  typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  typeChip: {
-    flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border,
-  },
-  typeChipActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  typeChipText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
-  typeChipTextActive: { color: Colors.textDark },
-  twoCol: { flexDirection: 'row', gap: 10 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: {
-    flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14,
-    alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6,
-  },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-});

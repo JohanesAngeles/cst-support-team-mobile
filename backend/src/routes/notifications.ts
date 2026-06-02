@@ -3,6 +3,7 @@ import { protect, AuthRequest } from '../middleware/auth';
 import PushToken from '../models/PushToken';
 import Deadline from '../models/Deadline';
 import MaintenanceRecord from '../models/MaintenanceRecord';
+import UserDocument from '../models/UserDocument';
 
 const router = Router();
 router.use(protect);
@@ -37,9 +38,13 @@ router.get('/alerts', async (req: AuthRequest, res: Response) => {
   const todayStr = today.toISOString().split('T')[0];
   const in7Str = in7Days.toISOString().split('T')[0];
 
-  const [deadlines, maintenance] = await Promise.all([
+  const in30Days = new Date(); in30Days.setDate(today.getDate() + 30);
+  const in30Str = in30Days.toISOString().split('T')[0];
+
+  const [deadlines, maintenance, expiringDocs] = await Promise.all([
     Deadline.find({ userId: uid, date: { $gte: todayStr, $lte: in7Str } }).sort({ date: 1 }),
     MaintenanceRecord.find({ userId: uid, nextDate: { $gte: todayStr, $lte: in7Str } }).sort({ nextDate: 1 }),
+    UserDocument.find({ userId: uid, expiryDate: { $gte: todayStr, $lte: in30Str } }).sort({ expiryDate: 1 }),
   ]);
 
   const alerts = [
@@ -54,6 +59,12 @@ router.get('/alerts', async (req: AuthRequest, res: Response) => {
       title: m.name,
       date: m.nextDate,
       daysAway: Math.ceil((new Date(m.nextDate).getTime() - today.getTime()) / 86400000),
+    })),
+    ...expiringDocs.map(doc => ({
+      type: 'document',
+      title: `${doc.name} expires`,
+      date: doc.expiryDate!,
+      daysAway: Math.ceil((new Date(doc.expiryDate!).getTime() - today.getTime()) / 86400000),
     })),
   ].sort((a, b) => a.daysAway - b.daysAway);
 

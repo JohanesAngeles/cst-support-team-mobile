@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList,
   TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getMaintenance, addMaintenanceRecord, completeMaintenance, deleteMaintenanceRecord } from '../../api/features';
 
 interface MaintenanceRecord {
@@ -21,9 +21,9 @@ interface MaintenanceRecord {
 type Status = 'ok' | 'due_soon' | 'overdue';
 
 const STATUS_CONFIG = {
-  ok:       { color: Colors.success, label: 'OK',       icon: 'checkmark-circle' },
+  ok:       { color: '#27AE60', label: 'OK',       icon: 'checkmark-circle' },
   due_soon: { color: '#E67E22',       label: 'Due Soon', icon: 'warning' },
-  overdue:  { color: Colors.danger,   label: 'Overdue',  icon: 'alert-circle' },
+  overdue:  { color: '#CC0000',   label: 'Overdue',  icon: 'alert-circle' },
 };
 
 const getDaysUntil = (dateStr: string) => {
@@ -40,6 +40,49 @@ const computeStatus = (record: MaintenanceRecord, currentMileage: number): Statu
 };
 
 export default function MaintenanceScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 12 },
+    title: { color: Colors.text, fontSize: 22, fontWeight: '800' },
+    subtitle: { color: Colors.textMuted, fontSize: 13, marginTop: 2 },
+    addBtn: { backgroundColor: Colors.secondary, width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
+    summaryRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 14 },
+    chip: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1 },
+    chipCount: { fontSize: 22, fontWeight: '900' },
+    chipLabel: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
+    list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
+    card: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border },
+    cardLeft: { padding: 14, justifyContent: 'center' },
+    iconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+    cardBody: { flex: 1, padding: 14, gap: 4 },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    itemName: { color: Colors.text, fontSize: 15, fontWeight: '700' },
+    statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
+    statusText: { fontSize: 11, fontWeight: '700' },
+    nextDate: { color: Colors.textMuted, fontSize: 12 },
+    metricsRow: { flexDirection: 'row' },
+    metric: { fontSize: 12 },
+    doneBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, gap: 4, alignSelf: 'flex-start', marginTop: 4 },
+    doneBtnText: { color: Colors.textDark, fontSize: 12, fontWeight: '700' },
+    empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
+    emptyText: { color: Colors.text, fontSize: 18, fontWeight: '700' },
+    emptySubText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
+    emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
+    emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
+    hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', paddingVertical: 12 },
+    overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 6 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 5 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    confirmText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
   const [currentMileage, setCurrentMileage] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -155,6 +198,7 @@ export default function MaintenanceScreen() {
   const withStatus = records.map(r => ({ ...r, status: computeStatus(r, currentMileage) }));
   const counts = { ok: withStatus.filter(i => i.status === 'ok').length, due_soon: withStatus.filter(i => i.status === 'due_soon').length, overdue: withStatus.filter(i => i.status === 'overdue').length };
 
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -222,46 +266,3 @@ export default function MaintenanceScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, paddingBottom: 12 },
-  title: { color: Colors.white, fontSize: 22, fontWeight: '800' },
-  subtitle: { color: Colors.textMuted, fontSize: 13, marginTop: 2 },
-  addBtn: { backgroundColor: Colors.secondary, width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
-  summaryRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 20, marginBottom: 14 },
-  chip: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1 },
-  chipCount: { fontSize: 22, fontWeight: '900' },
-  chipLabel: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
-  list: { paddingHorizontal: 20, gap: 10, paddingBottom: 8 },
-  card: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border },
-  cardLeft: { padding: 14, justifyContent: 'center' },
-  iconCircle: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  cardBody: { flex: 1, padding: 14, gap: 4 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemName: { color: Colors.white, fontSize: 15, fontWeight: '700' },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-  statusText: { fontSize: 11, fontWeight: '700' },
-  nextDate: { color: Colors.textMuted, fontSize: 12 },
-  metricsRow: { flexDirection: 'row' },
-  metric: { fontSize: 12 },
-  doneBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, gap: 4, alignSelf: 'flex-start', marginTop: 4 },
-  doneBtnText: { color: Colors.textDark, fontSize: 12, fontWeight: '700' },
-  empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
-  emptyText: { color: Colors.white, fontSize: 18, fontWeight: '700' },
-  emptySubText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
-  emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
-  emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
-  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', paddingVertical: 12 },
-  overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 6 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 5 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  confirmText: { color: Colors.textDark, fontWeight: '800' },
-});

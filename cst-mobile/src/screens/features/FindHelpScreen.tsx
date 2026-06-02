@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Alert, ActivityIndicator, Linking, Platform,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface HelpCategory {
   icon: string;
@@ -25,13 +25,52 @@ const CATEGORIES: HelpCategory[] = [
   { icon: 'bed-outline',        label: 'Rest Areas',          sublabel: 'Rest stops & parking',      color: '#F39C12', query: 'rest+area+truck+parking' },
   { icon: 'car-outline',        label: 'Tire Shops',          sublabel: 'Truck tire repair',         color: '#2ECC71', query: 'semi+truck+tire+shop' },
   { icon: 'shield-outline',     label: 'DOT / Inspections',   sublabel: 'DOT offices near me',       color: '#1A3A5C', query: 'DOT+truck+inspection+station' },
-  { icon: 'restaurant-outline', label: 'Restaurants',         sublabel: 'Truck-friendly dining',     color: '#F5A623', query: 'truck+friendly+restaurant' },
+  { icon: 'restaurant-outline', label: 'Restaurants',         sublabel: 'Truck-friendly dining',     color: '#2C6EBD', query: 'truck+friendly+restaurant' },
   { icon: 'home-outline',       label: 'Truck Parking',       sublabel: 'Safe overnight parking',    color: '#8E44AD', query: 'semi+truck+parking' },
   { icon: 'people-outline',     label: 'CAT Scale',           sublabel: 'Certified scales',          color: '#16A085', query: 'CAT+Scale+truck' },
   { icon: 'briefcase-outline',  label: 'Freight / Brokers',   sublabel: 'Load boards & brokers',     color: '#C0392B', query: 'freight+broker+office' },
 ];
 
 export default function FindHelpScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 36 },
+    banner: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
+      borderWidth: 1, borderColor: Colors.secondary + '44', marginBottom: 20,
+    },
+    bannerTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    locBtn: { backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+    locBtnText: { color: Colors.textDark, fontSize: 12, fontWeight: '800' },
+    sectionLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
+    card: {
+      width: '47%', backgroundColor: Colors.surface, borderRadius: 14,
+      padding: 14, borderWidth: 1, borderColor: Colors.border,
+    },
+    iconCircle: {
+      width: 52, height: 52, borderRadius: 26,
+      justifyContent: 'center', alignItems: 'center', marginBottom: 10,
+    },
+    cardLabel: { color: Colors.text, fontSize: 13, fontWeight: '700' },
+    cardSub: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
+    openBadge: {
+      flexDirection: 'row', alignItems: 'center', gap: 4,
+      marginTop: 8, backgroundColor: Colors.secondary + '18',
+      paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4,
+      alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary + '44',
+    },
+    openBadgeText: { color: Colors.secondary, fontSize: 9, fontWeight: '800' },
+    tipCard: {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+      backgroundColor: Colors.secondary + '12', borderRadius: 12, padding: 14,
+      borderWidth: 1, borderColor: Colors.secondary + '30',
+    },
+    tipText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 18 },
+  }), [Colors]);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locLoading, setLocLoading] = useState(false);
 
@@ -78,6 +117,7 @@ export default function FindHelpScreen() {
       await Linking.openURL(webUrl);
     }
   };
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -135,42 +175,3 @@ export default function FindHelpScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 36 },
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: Colors.secondary + '44', marginBottom: 20,
-  },
-  bannerTitle: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  locBtn: { backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-  locBtnText: { color: Colors.textDark, fontSize: 12, fontWeight: '800' },
-  sectionLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  card: {
-    width: '47%', backgroundColor: Colors.surface, borderRadius: 14,
-    padding: 14, borderWidth: 1, borderColor: Colors.border,
-  },
-  iconCircle: {
-    width: 52, height: 52, borderRadius: 26,
-    justifyContent: 'center', alignItems: 'center', marginBottom: 10,
-  },
-  cardLabel: { color: Colors.white, fontSize: 13, fontWeight: '700' },
-  cardSub: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
-  openBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    marginTop: 8, backgroundColor: Colors.secondary + '18',
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4,
-    alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary + '44',
-  },
-  openBadgeText: { color: Colors.secondary, fontSize: 9, fontWeight: '800' },
-  tipCard: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: Colors.secondary + '12', borderRadius: 12, padding: 14,
-    borderWidth: 1, borderColor: Colors.secondary + '30',
-  },
-  tipText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 18 },
-});

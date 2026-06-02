@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+﻿import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Alert, ActivityIndicator, TextInput, Modal,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getELDEntries, startELDStatus, closeELDStatus, syncELDtoHOS, deleteELDEntry } from '../../api/features';
 
 type ELDStatus = 'off_duty' | 'sleeper_berth' | 'driving' | 'on_duty';
@@ -63,6 +63,54 @@ function calcTotals(entries: ELDEntry[]) {
 }
 
 export default function ELDStatusScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    scroll: { padding: 16, paddingBottom: 40 },
+    currentCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 2, padding: 16, gap: 12, marginBottom: 24 },
+    statusDot: { width: 14, height: 14, borderRadius: 7 },
+    currentLabel: { fontSize: 17, fontWeight: '800' },
+    currentDesc: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    timerBadge: { backgroundColor: Colors.surfaceLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+    timerText: { color: Colors.text, fontSize: 13, fontWeight: '700' },
+    noStatusText: { color: Colors.textMuted, fontSize: 13, flex: 1 },
+    sectionTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 12 },
+    statusGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
+    statusBtn: { width: '47%', backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 2, padding: 16, alignItems: 'center', gap: 8, position: 'relative' },
+    statusBtnLabel: { fontSize: 12, fontWeight: '800', textAlign: 'center' },
+    activePip: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4 },
+    totalsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+    totalBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
+    totalVal: { fontSize: 16, fontWeight: '900' },
+    totalLbl: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    limitsBox: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8, marginBottom: 20 },
+    limitsTitle: { color: Colors.text, fontSize: 13, fontWeight: '800', marginBottom: 4 },
+    limitRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    limitLabel: { color: Colors.textMuted, fontSize: 13 },
+    limitVal: { fontSize: 13, fontWeight: '700' },
+    limitOk: { color: '#2ECC71' },
+    limitWarn: { color: Colors.danger },
+    timelineEntry: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 14, marginBottom: 8 },
+    timelineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
+    timelineStatus: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
+    timelineTime: { color: Colors.textMuted, fontSize: 12 },
+    timelineMeta: { color: Colors.textMuted, fontSize: 11, fontStyle: 'italic', marginTop: 2 },
+    livePip: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2ECC71', marginTop: 4 },
+    syncBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: Colors.secondary, borderRadius: 14, padding: 15, marginTop: 24 },
+    syncText: { color: Colors.textDark, fontWeight: '800', fontSize: 14 },
+    hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 12 },
+    overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    inputLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14, marginTop: 4 },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    confirmBtn: { flex: 1, borderRadius: 10, padding: 14, alignItems: 'center' },
+    confirmText: { color: '#fff', fontWeight: '800' },
+  }), [Colors]);
   const [entries, setEntries] = useState<ELDEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -130,6 +178,7 @@ export default function ELDStatusScreen() {
 
   const totals = calcTotals(entries);
   const cfg = currentStatus ? STATUS_CONFIG[currentStatus] : null;
+
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -279,51 +328,3 @@ export default function ELDStatusScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  scroll: { padding: 16, paddingBottom: 40 },
-  currentCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 2, padding: 16, gap: 12, marginBottom: 24 },
-  statusDot: { width: 14, height: 14, borderRadius: 7 },
-  currentLabel: { fontSize: 17, fontWeight: '800' },
-  currentDesc: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  timerBadge: { backgroundColor: Colors.surfaceLight, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
-  timerText: { color: Colors.white, fontSize: 13, fontWeight: '700' },
-  noStatusText: { color: Colors.textMuted, fontSize: 13, flex: 1 },
-  sectionTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', marginBottom: 12 },
-  statusGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
-  statusBtn: { width: '47%', backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 2, padding: 16, alignItems: 'center', gap: 8, position: 'relative' },
-  statusBtnLabel: { fontSize: 12, fontWeight: '800', textAlign: 'center' },
-  activePip: { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4 },
-  totalsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  totalBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
-  totalVal: { fontSize: 16, fontWeight: '900' },
-  totalLbl: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  limitsBox: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8, marginBottom: 20 },
-  limitsTitle: { color: Colors.white, fontSize: 13, fontWeight: '800', marginBottom: 4 },
-  limitRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  limitLabel: { color: Colors.textMuted, fontSize: 13 },
-  limitVal: { fontSize: 13, fontWeight: '700' },
-  limitOk: { color: '#2ECC71' },
-  limitWarn: { color: Colors.danger },
-  timelineEntry: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 14, marginBottom: 8 },
-  timelineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-  timelineStatus: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
-  timelineTime: { color: Colors.textMuted, fontSize: 12 },
-  timelineMeta: { color: Colors.textMuted, fontSize: 11, fontStyle: 'italic', marginTop: 2 },
-  livePip: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#2ECC71', marginTop: 4 },
-  syncBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: Colors.secondary, borderRadius: 14, padding: 15, marginTop: 24 },
-  syncText: { color: Colors.textDark, fontWeight: '800', fontSize: 14 },
-  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 12 },
-  overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  inputLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14, marginTop: 4 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  confirmBtn: { flex: 1, borderRadius: 10, padding: 14, alignItems: 'center' },
-  confirmText: { color: '#fff', fontWeight: '800' },
-});

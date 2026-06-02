@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface Step {
   number: string;
@@ -148,6 +148,68 @@ const CHECKLIST = [
 ];
 
 export default function CorpStartupsScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40 },
+    banner: {
+      flexDirection: 'row', alignItems: 'center', gap: 14,
+      backgroundColor: Colors.secondary + '18', borderRadius: 14,
+      padding: 16, marginBottom: 14,
+      borderWidth: 1, borderColor: Colors.secondary + '44',
+    },
+    bannerTitle: { color: Colors.text, fontSize: 16, fontWeight: '800' },
+    bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    progressCard: {
+      backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
+      borderWidth: 1, borderColor: Colors.border, marginBottom: 20,
+    },
+    progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+    progressTitle: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    progressCount: { color: Colors.secondary, fontSize: 14, fontWeight: '800' },
+    progressBar: {
+      height: 6, backgroundColor: Colors.surfaceLight,
+      borderRadius: 3, marginBottom: 14, overflow: 'hidden',
+    },
+    progressFill: { height: '100%', backgroundColor: Colors.secondary, borderRadius: 3 },
+    checklistGrid: { gap: 10 },
+    checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    checkLabel: { color: Colors.text, fontSize: 13, flex: 1 },
+    checkLabelDone: { color: Colors.textMuted, textDecorationLine: 'line-through' },
+    stepsTitle: { color: Colors.text, fontSize: 16, fontWeight: '800', marginBottom: 12 },
+    stepCard: {
+      backgroundColor: Colors.surface, borderRadius: 12,
+      borderWidth: 1, borderColor: Colors.border,
+      borderLeftWidth: 4, padding: 14, marginBottom: 10,
+    },
+    stepHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    stepNum: {
+      width: 40, height: 40, borderRadius: 10,
+      justifyContent: 'center', alignItems: 'center',
+    },
+    stepNumText: { fontSize: 13, fontWeight: '900' },
+    stepMeta: { flex: 1 },
+    stepTitle: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    stepPills: { flexDirection: 'row', gap: 8, marginTop: 4 },
+    pill: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    pillText: { color: Colors.textMuted, fontSize: 11 },
+    stepBody: { marginTop: 14, gap: 10 },
+    detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    dot: { width: 6, height: 6, borderRadius: 3, marginTop: 6 },
+    detailText: { color: Colors.textMuted, fontSize: 13, lineHeight: 20, flex: 1 },
+    tipBox: {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+      backgroundColor: Colors.secondary + '15', borderRadius: 8,
+      padding: 10, borderWidth: 1, borderColor: Colors.secondary + '33',
+    },
+    tipText: { color: Colors.secondary, fontSize: 12, lineHeight: 18, flex: 1 },
+    disclaimer: {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+      backgroundColor: Colors.surface, borderRadius: 10, padding: 12,
+      borderWidth: 1, borderColor: Colors.border, marginTop: 4,
+    },
+    disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
+  }), [Colors]);
   const [expanded, setExpanded] = useState<string | null>('01');
   const [checked, setChecked] = useState<boolean[]>(CHECKLIST.map(() => false));
 
@@ -159,6 +221,7 @@ export default function CorpStartupsScreen() {
   };
 
   const completedCount = checked.filter(Boolean).length;
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -255,65 +318,3 @@ export default function CorpStartupsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40 },
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.secondary + '18', borderRadius: 14,
-    padding: 16, marginBottom: 14,
-    borderWidth: 1, borderColor: Colors.secondary + '44',
-  },
-  bannerTitle: { color: Colors.white, fontSize: 16, fontWeight: '800' },
-  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  progressCard: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 20,
-  },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  progressTitle: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  progressCount: { color: Colors.secondary, fontSize: 14, fontWeight: '800' },
-  progressBar: {
-    height: 6, backgroundColor: Colors.surfaceLight,
-    borderRadius: 3, marginBottom: 14, overflow: 'hidden',
-  },
-  progressFill: { height: '100%', backgroundColor: Colors.secondary, borderRadius: 3 },
-  checklistGrid: { gap: 10 },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  checkLabel: { color: Colors.white, fontSize: 13, flex: 1 },
-  checkLabelDone: { color: Colors.textMuted, textDecorationLine: 'line-through' },
-  stepsTitle: { color: Colors.white, fontSize: 16, fontWeight: '800', marginBottom: 12 },
-  stepCard: {
-    backgroundColor: Colors.surface, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    borderLeftWidth: 4, padding: 14, marginBottom: 10,
-  },
-  stepHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stepNum: {
-    width: 40, height: 40, borderRadius: 10,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  stepNumText: { fontSize: 13, fontWeight: '900' },
-  stepMeta: { flex: 1 },
-  stepTitle: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  stepPills: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  pillText: { color: Colors.textMuted, fontSize: 11 },
-  stepBody: { marginTop: 14, gap: 10 },
-  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  dot: { width: 6, height: 6, borderRadius: 3, marginTop: 6 },
-  detailText: { color: Colors.textMuted, fontSize: 13, lineHeight: 20, flex: 1 },
-  tipBox: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: Colors.secondary + '15', borderRadius: 8,
-    padding: 10, borderWidth: 1, borderColor: Colors.secondary + '33',
-  },
-  tipText: { color: Colors.secondary, fontSize: 12, lineHeight: 18, flex: 1 },
-  disclaimer: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 6,
-    backgroundColor: Colors.surface, borderRadius: 10, padding: 12,
-    borderWidth: 1, borderColor: Colors.border, marginTop: 4,
-  },
-  disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
-});

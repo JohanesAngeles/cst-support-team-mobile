@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView, Switch,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getBrokerNotes, addBrokerNote, updateBrokerNote, deleteBrokerNote } from '../../api/features';
 
 interface BrokerNote {
@@ -25,7 +25,7 @@ const Stars = ({ value, onPress }: { value: number; onPress?: (v: number) => voi
   <View style={{ flexDirection: 'row', gap: 2 }}>
     {[1, 2, 3, 4, 5].map(i => (
       <TouchableOpacity key={i} onPress={() => onPress?.(i)} disabled={!onPress}>
-        <Ionicons name={i <= value ? 'star' : 'star-outline'} size={onPress ? 24 : 14} color={i <= value ? Colors.secondary : Colors.textMuted} />
+        <Ionicons name={i <= value ? 'star' : 'star-outline'} size={onPress ? 24 : 14} color={i <= value ? '#2C6EBD' : '#757575'} />
       </TouchableOpacity>
     ))}
   </View>
@@ -34,6 +34,48 @@ const Stars = ({ value, onPress }: { value: number; onPress?: (v: number) => voi
 const avgRating = (b: BrokerNote) => ((b.paySpeed + b.communication + b.loadQuality) / 3).toFixed(1);
 
 export default function BrokerNotesScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, marginHorizontal: 16, marginTop: 12, marginBottom: 8, paddingHorizontal: 12, height: 46 },
+    searchInput: { flex: 1, color: Colors.text, fontSize: 15 },
+    summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+    summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
+    summaryValue: { color: Colors.text, fontSize: 18, fontWeight: '900' },
+    summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    list: { padding: 16, paddingBottom: 100 },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 10 },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    cardLeft: { flex: 1, gap: 2 },
+    brokerName: { color: Colors.text, fontSize: 16, fontWeight: '800' },
+    mcNum: { color: Colors.textMuted, fontSize: 12 },
+    cardRight: { alignItems: 'flex-end', gap: 4 },
+    avgRating: { color: Colors.secondary, fontSize: 22, fontWeight: '900' },
+    ratingsRow: { gap: 6 },
+    ratingItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    ratingLabel: { color: Colors.textMuted, fontSize: 12, flex: 1 },
+    cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    useAgainBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
+    useAgainText: { fontSize: 11, fontWeight: '700' },
+    cardNotes: { color: Colors.textMuted, fontSize: 12, flex: 1 },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 4 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 },
+    twoCol: { flexDirection: 'row', gap: 10 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [notes, setNotes] = useState<BrokerNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -101,6 +143,7 @@ export default function BrokerNotesScreen() {
   const goodBrokers = notes.filter(n => n.wouldUseAgain).length;
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -255,45 +298,3 @@ export default function BrokerNotesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, marginHorizontal: 16, marginTop: 12, marginBottom: 8, paddingHorizontal: 12, height: 46 },
-  searchInput: { flex: 1, color: Colors.white, fontSize: 15 },
-  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
-  summaryValue: { color: Colors.white, fontSize: 18, fontWeight: '900' },
-  summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  list: { padding: 16, paddingBottom: 100 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 10 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardLeft: { flex: 1, gap: 2 },
-  brokerName: { color: Colors.white, fontSize: 16, fontWeight: '800' },
-  mcNum: { color: Colors.textMuted, fontSize: 12 },
-  cardRight: { alignItems: 'flex-end', gap: 4 },
-  avgRating: { color: Colors.secondary, fontSize: 22, fontWeight: '900' },
-  ratingsRow: { gap: 6 },
-  ratingItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  ratingLabel: { color: Colors.textMuted, fontSize: 12, flex: 1 },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  useAgainBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  useAgainText: { fontSize: 11, fontWeight: '700' },
-  cardNotes: { color: Colors.textMuted, fontSize: 12, flex: 1 },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 4 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
-  twoCol: { flexDirection: 'row', gap: 10 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-});

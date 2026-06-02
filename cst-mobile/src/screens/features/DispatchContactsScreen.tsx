@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import {
   getDispatchContacts, addDispatchContact, updateDispatchContact,
   toggleContactFavorite, deleteDispatchContact,
@@ -38,6 +38,51 @@ const ROLES: ContactRole[] = ['dispatcher', 'broker', 'shipper', 'consignee', 'o
 const blank = () => ({ name: '', company: '', role: 'dispatcher' as ContactRole, phone: '', email: '', mcNumber: '', notes: '' });
 
 export default function DispatchContactsScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    list: { padding: 16, paddingBottom: 100 },
+    countText: { color: Colors.textMuted, fontSize: 13, marginBottom: 12 },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8 },
+    cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+    avatarText: { fontSize: 18, fontWeight: '800' },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+    cardName: { color: Colors.text, fontSize: 15, fontWeight: '700' },
+    cardCompany: { color: Colors.textMuted, fontSize: 12, marginBottom: 4 },
+    roleBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, alignSelf: 'flex-start' },
+    roleText: { fontSize: 11, fontWeight: '800' },
+    callBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.secondary + '22', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.secondary },
+    contactInfo: { paddingLeft: 56, gap: 2 },
+    contactText: { color: Colors.textMuted, fontSize: 12 },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', flex: 1, marginBottom: 4 },
+    inputLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
+    input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14, marginTop: 4 },
+    rolePick: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border },
+    rolePickActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    rolePickText: { color: Colors.textMuted, fontWeight: '600', fontSize: 13 },
+    rolePickTextActive: { color: Colors.textDark },
+    actionRow: { gap: 10, marginTop: 12 },
+    actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.border },
+    actionText: { color: Colors.text, fontSize: 14 },
+    detailSub: { color: Colors.textMuted, fontSize: 13 },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+    editBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
+    editBtnText: { color: Colors.text, fontWeight: '700' },
+    deleteBtn: { flex: 1, backgroundColor: Colors.danger + '22', borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.danger },
+  }), [Colors]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -104,6 +149,7 @@ export default function DispatchContactsScreen() {
   const emailContact = (email: string) => Linking.openURL(`mailto:${email}`);
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -272,48 +318,3 @@ export default function DispatchContactsScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  list: { padding: 16, paddingBottom: 100 },
-  countText: { color: Colors.textMuted, fontSize: 13, marginBottom: 12 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 18, fontWeight: '800' },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  cardName: { color: Colors.white, fontSize: 15, fontWeight: '700' },
-  cardCompany: { color: Colors.textMuted, fontSize: 12, marginBottom: 4 },
-  roleBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, borderWidth: 1, alignSelf: 'flex-start' },
-  roleText: { fontSize: 11, fontWeight: '800' },
-  callBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.secondary + '22', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.secondary },
-  contactInfo: { paddingLeft: 56, gap: 2 },
-  contactText: { color: Colors.textMuted, fontSize: 12 },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  overlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', flex: 1, marginBottom: 4 },
-  inputLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
-  input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14, marginTop: 4 },
-  rolePick: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border },
-  rolePickActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  rolePickText: { color: Colors.textMuted, fontWeight: '600', fontSize: 13 },
-  rolePickTextActive: { color: Colors.textDark },
-  actionRow: { gap: 10, marginTop: 12 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.border },
-  actionText: { color: Colors.white, fontSize: 14 },
-  detailSub: { color: Colors.textMuted, fontSize: 13 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-  editBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
-  editBtnText: { color: Colors.white, fontWeight: '700' },
-  deleteBtn: { flex: 1, backgroundColor: Colors.danger + '22', borderRadius: 10, padding: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.danger },
-});

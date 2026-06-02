@@ -19,6 +19,18 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   res.status(201).json(contact);
 });
 
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const { name, phone, relationship } = req.body;
+  if (!name || !phone) { res.status(400).json({ message: 'name and phone required' }); return; }
+  const contact = await EmergencyContact.findOneAndUpdate(
+    { _id: req.params.id, userId: req.user._id },
+    { name, phone, relationship: relationship ?? 'Other' },
+    { new: true }
+  );
+  if (!contact) { res.status(404).json({ message: 'Contact not found' }); return; }
+  res.json(contact);
+});
+
 router.delete('/:id', async (req: AuthRequest, res: Response) => {
   await EmergencyContact.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
   res.json({ message: 'Deleted' });

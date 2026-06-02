@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput,
   TouchableOpacity, ListRenderItem,
@@ -6,13 +6,59 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { MainStackParamList } from '../../navigation/MainStack';
 import { STATE_LAWS, StateLawEntry } from '../../data/stateLaws';
 
 type Props = { navigation: NativeStackNavigationProp<MainStackParamList, 'StateLaw'> };
 
 export default function StateLawScreen({ navigation }: Props) {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    searchWrap: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: Colors.surface, borderRadius: 12,
+      borderWidth: 1, borderColor: Colors.border,
+      marginHorizontal: 16, marginTop: 12, marginBottom: 8,
+      paddingHorizontal: 12, height: 46,
+    },
+    searchIcon: { marginRight: 8 },
+    searchInput: { flex: 1, color: Colors.text, fontSize: 15 },
+    banner: {
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      backgroundColor: Colors.secondary + '18',
+      borderRadius: 10, padding: 10,
+      marginBottom: 10, borderWidth: 1, borderColor: Colors.secondary + '44',
+    },
+    bannerText: { color: Colors.secondary, fontSize: 12, fontWeight: '600' },
+    list: { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 4 },
+    row: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: Colors.surface, borderRadius: 12,
+      padding: 14, borderWidth: 1, borderColor: Colors.border,
+    },
+    separator: { height: 6 },
+    abbrBox: {
+      width: 46, height: 46, borderRadius: 10,
+      backgroundColor: Colors.secondary + '22',
+      borderWidth: 1, borderColor: Colors.secondary + '55',
+      justifyContent: 'center', alignItems: 'center',
+      marginRight: 12,
+    },
+    abbrText: { color: Colors.secondary, fontSize: 14, fontWeight: '900' },
+    rowBody: { flex: 1, gap: 6 },
+    stateName: { color: Colors.text, fontSize: 15, fontWeight: '700' },
+    pills: { flexDirection: 'row', gap: 8 },
+    pill: {
+      flexDirection: 'row', alignItems: 'center', gap: 3,
+      backgroundColor: Colors.surfaceLight, borderRadius: 6,
+      paddingHorizontal: 7, paddingVertical: 3,
+    },
+    pillText: { color: Colors.secondary, fontSize: 11, fontWeight: '600' },
+    empty: { alignItems: 'center', marginTop: 60, gap: 12 },
+    emptyText: { color: Colors.textMuted, fontSize: 15 },
+  }), [Colors]);
   const [query, setQuery] = useState('');
 
   const filtered = query.trim().length === 0
@@ -47,6 +93,7 @@ export default function StateLawScreen({ navigation }: Props) {
       <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
     </TouchableOpacity>
   ), [navigation]);
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -92,49 +139,3 @@ export default function StateLawScreen({ navigation }: Props) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 12,
-    borderWidth: 1, borderColor: Colors.border,
-    marginHorizontal: 16, marginTop: 12, marginBottom: 8,
-    paddingHorizontal: 12, height: 46,
-  },
-  searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, color: Colors.white, fontSize: 15 },
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.secondary + '18',
-    borderRadius: 10, padding: 10,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.secondary + '44',
-  },
-  bannerText: { color: Colors.secondary, fontSize: 12, fontWeight: '600' },
-  list: { paddingHorizontal: 16, paddingBottom: 32, paddingTop: 4 },
-  row: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 12,
-    padding: 14, borderWidth: 1, borderColor: Colors.border,
-  },
-  separator: { height: 6 },
-  abbrBox: {
-    width: 46, height: 46, borderRadius: 10,
-    backgroundColor: Colors.secondary + '22',
-    borderWidth: 1, borderColor: Colors.secondary + '55',
-    justifyContent: 'center', alignItems: 'center',
-    marginRight: 12,
-  },
-  abbrText: { color: Colors.secondary, fontSize: 14, fontWeight: '900' },
-  rowBody: { flex: 1, gap: 6 },
-  stateName: { color: Colors.white, fontSize: 15, fontWeight: '700' },
-  pills: { flexDirection: 'row', gap: 8 },
-  pill: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: Colors.surfaceLight, borderRadius: 6,
-    paddingHorizontal: 7, paddingVertical: 3,
-  },
-  pillText: { color: Colors.secondary, fontSize: 11, fontWeight: '600' },
-  empty: { alignItems: 'center', marginTop: 60, gap: 12 },
-  emptyText: { color: Colors.textMuted, fontSize: 15 },
-});

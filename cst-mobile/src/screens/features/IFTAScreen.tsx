@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getIFTA, addIFTAEntry, deleteIFTAEntry } from '../../api/features';
 
 interface IFTAData {
@@ -18,6 +18,42 @@ interface IFTAData {
 }
 
 export default function IFTAScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: { padding: 20, paddingBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title: { color: Colors.text, fontSize: 22, fontWeight: '800' },
+    headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    quarter: { color: Colors.secondary, fontSize: 14, fontWeight: '700' },
+    addBtn: { backgroundColor: Colors.secondary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+    content: { padding: 20, gap: 16 },
+    summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
+    summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+    summaryVal: { color: Colors.secondary, fontSize: 18, fontWeight: '800' },
+    summaryLabel: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 2 },
+    sectionTitle: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    stateRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.border, gap: 12 },
+    stateDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.secondary },
+    stateName: { color: Colors.text, fontSize: 15, fontWeight: '600' },
+    stateDetail: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    stateTax: { color: Colors.success, fontSize: 15, fontWeight: '700' },
+    empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+    emptyText: { color: Colors.textMuted, fontSize: 14 },
+    emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 },
+    emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
+    hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 4 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 6 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 5 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    confirmText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [data, setData] = useState<IFTAData | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -75,6 +111,7 @@ export default function IFTAScreen() {
 
   const quarter = data?.quarter ?? Math.ceil((new Date().getMonth() + 1) / 3);
   const year = data?.year ?? new Date().getFullYear();
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -154,39 +191,3 @@ export default function IFTAScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 20, paddingBottom: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { color: Colors.white, fontSize: 22, fontWeight: '800' },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  quarter: { color: Colors.secondary, fontSize: 14, fontWeight: '700' },
-  addBtn: { backgroundColor: Colors.secondary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 20, gap: 16 },
-  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
-  summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
-  summaryVal: { color: Colors.secondary, fontSize: 18, fontWeight: '800' },
-  summaryLabel: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 2 },
-  sectionTitle: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  stateRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.border, gap: 12 },
-  stateDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.secondary },
-  stateName: { color: Colors.white, fontSize: 15, fontWeight: '600' },
-  stateDetail: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  stateTax: { color: Colors.success, fontSize: 15, fontWeight: '700' },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  emptyText: { color: Colors.textMuted, fontSize: 14 },
-  emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10 },
-  emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
-  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 4 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 6 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 5 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  confirmText: { color: Colors.textDark, fontWeight: '800' },
-});

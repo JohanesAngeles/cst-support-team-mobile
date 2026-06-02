@@ -12,10 +12,13 @@ export interface IUser extends Document {
   verificationExpires?: Date;
   resetCode?: string;
   resetExpires?: Date;
+  avatarUrl?: string;
   stripeCustomerId?: string;
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual';
   subscriptionEnd?: Date;
+  referralCode?: string;
+  referredBy?: string;
   createdAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -32,10 +35,13 @@ const UserSchema = new Schema<IUser>(
     verificationExpires: { type: Date,   select: false },
     resetCode:           { type: String, select: false },
     resetExpires:        { type: Date,   select: false },
+    avatarUrl:           { type: String },
     stripeCustomerId:    { type: String },
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },
     subscriptionPlan:    { type: String, enum: ['monthly', 'annual'] },
     subscriptionEnd:     { type: Date },
+    referralCode:        { type: String, unique: true, sparse: true },
+    referredBy:          { type: String },
   },
   { timestamps: true }
 );

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Colors } from '../constants/colors';
+import { useColors } from '../constants/colors';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import TaxCalculatorScreen from '../screens/features/TaxCalculatorScreen';
 import AILegalScreen from '../screens/features/AILegalScreen';
@@ -41,8 +41,39 @@ import ScorecardScreen from '../screens/features/ScorecardScreen';
 import GamesScreen from '../screens/features/GamesScreen';
 import TruckerCrosswordScreen from '../screens/features/TruckerCrosswordScreen';
 import TruckingTriviaScreen from '../screens/features/TruckingTriviaScreen';
+import DVIRScreen from '../screens/features/DVIRScreen';
+import InvoiceScreen from '../screens/features/InvoiceScreen';
+import DrugTestScreen from '../screens/features/DrugTestScreen';
+import DriverChatScreen from '../screens/features/DriverChatScreen';
+import BrokerBlacklistScreen from '../screens/features/BrokerBlacklistScreen';
+import OwnerNetworkScreen from '../screens/features/OwnerNetworkScreen';
+import ParkingTrackerScreen from '../screens/features/ParkingTrackerScreen';
+import SleepLogScreen from '../screens/features/SleepLogScreen';
+import ShipperDirectoryScreen from '../screens/features/ShipperDirectoryScreen';
+import ReferralScreen from '../screens/features/ReferralScreen';
+import HOSAlertsScreen from '../screens/features/HOSAlertsScreen';
+import PremiumGateScreen from '../screens/features/PremiumGateScreen';
+import RoadReadyScreen from '../screens/features/RoadReadyScreen';
+import StudentDriverScreen from '../screens/features/StudentDriverScreen';
+import CDLChallengeScreen from '../screens/features/CDLChallengeScreen';
+import FreightCareerScreen from '../screens/features/FreightCareerScreen';
+import OOSimScreen from '../screens/features/OOSimScreen';
 import TermsScreen from '../screens/legal/TermsScreen';
 import PrivacyScreen from '../screens/legal/PrivacyScreen';
+import CDLTrackerScreen from '../screens/features/CDLTrackerScreen';
+import LoadCompareScreen from '../screens/features/LoadCompareScreen';
+import PerDiemScreen from '../screens/features/PerDiemScreen';
+import CargoClaimScreen from '../screens/features/CargoClaimScreen';
+import BillOfLadingScreen from '../screens/features/BillOfLadingScreen';
+import NotificationsScreen from '../screens/features/NotificationsScreen';
+import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
+import AILoadRateScreen from '../screens/features/AILoadRateScreen';
+import RateBenchmarkScreen from '../screens/features/RateBenchmarkScreen';
+import HOSCountdownScreen from '../screens/features/HOSCountdownScreen';
+import PaymentTrackerScreen from '../screens/features/PaymentTrackerScreen';
+import QuarterlyTaxScreen from '../screens/features/QuarterlyTaxScreen';
+import FuelMapScreen from '../screens/features/FuelMapScreen';
+import TripPlannerScreen from '../screens/features/TripPlannerScreen';
 
 export type MainStackParamList = {
   Dashboard: undefined;
@@ -87,18 +118,51 @@ export type MainStackParamList = {
   TruckingTrivia: undefined;
   Terms: undefined;
   Privacy: undefined;
+  DVIR: undefined;
+  Invoice: undefined;
+  DrugTest: undefined;
+  DriverChat: undefined;
+  BrokerBlacklist: undefined;
+  OwnerNetwork: undefined;
+  ParkingTracker: undefined;
+  SleepLog: undefined;
+  ShipperDirectory: undefined;
+  Referral: undefined;
+  HOSAlerts: undefined;
+  PremiumGate: undefined;
+  RoadReady: undefined;
+  StudentDriver: undefined;
+  CDLChallenge: undefined;
+  FreightCareer: undefined;
+  OOSim: undefined;
+  CDLTracker: undefined;
+  LoadCompare: undefined;
+  PerDiem: undefined;
+  CargoClaim: undefined;
+  BillOfLading: undefined;
+  Notifications: undefined;
+  VerifyEmail: undefined;
+  AILoadRate: undefined;
+  RateBenchmark: undefined;
+  HOSCountdown: undefined;
+  PaymentTracker: undefined;
+  QuarterlyTax: undefined;
+  FuelMap: undefined;
+  TripPlanner: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 export default function MainStack() {
+  const Colors = useColors();
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: Colors.surface },
-        headerTintColor: Colors.white,
-        headerTitleStyle: { fontWeight: '800', fontSize: 17 },
+        headerStyle: { backgroundColor: Colors.background },
+        headerShadowVisible: true,
+        headerTintColor: Colors.text,
+        headerTitleStyle: { fontWeight: '800', fontSize: 17, color: Colors.text },
         headerBackTitle: 'Back',
         contentStyle: { backgroundColor: Colors.background },
       }}
@@ -145,6 +209,37 @@ export default function MainStack() {
       <Stack.Screen name="TruckingTrivia" component={TruckingTriviaScreen} options={{ title: 'Trucking Trivia' }} />
       <Stack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
       <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
+      <Stack.Screen name="DVIR" component={DVIRScreen} options={{ title: 'DVIR Inspection' }} />
+      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: 'Invoice Generator' }} />
+      <Stack.Screen name="DrugTest" component={DrugTestScreen} options={{ title: 'Drug & Alcohol Log' }} />
+      <Stack.Screen name="DriverChat" component={DriverChatScreen} options={{ title: 'Driver Chat' }} />
+      <Stack.Screen name="BrokerBlacklist" component={BrokerBlacklistScreen} options={{ title: 'Broker Blacklist' }} />
+      <Stack.Screen name="OwnerNetwork" component={OwnerNetworkScreen} options={{ title: 'O/O Network' }} />
+      <Stack.Screen name="ParkingTracker" component={ParkingTrackerScreen} options={{ title: 'Parking Tracker' }} />
+      <Stack.Screen name="SleepLog" component={SleepLogScreen} options={{ title: 'Sleep & Fatigue Log' }} />
+      <Stack.Screen name="ShipperDirectory" component={ShipperDirectoryScreen} options={{ title: 'Shipper Directory' }} />
+      <Stack.Screen name="Referral" component={ReferralScreen} options={{ title: 'Referral Program' }} />
+      <Stack.Screen name="HOSAlerts" component={HOSAlertsScreen} options={{ title: 'HOS Alerts' }} />
+      <Stack.Screen name="PremiumGate" component={PremiumGateScreen} options={{ title: 'CST Pro' }} />
+      <Stack.Screen name="RoadReady" component={RoadReadyScreen} options={{ title: "Road Ready Score" }} />
+      <Stack.Screen name="StudentDriver" component={StudentDriverScreen} options={{ title: 'Student Driver' }} />
+      <Stack.Screen name="CDLChallenge" component={CDLChallengeScreen} options={{ title: 'CDL Skill Challenge' }} />
+      <Stack.Screen name="FreightCareer" component={FreightCareerScreen} options={{ title: 'Freight Career' }} />
+      <Stack.Screen name="OOSim" component={OOSimScreen} options={{ title: 'Owner-Operator Sim' }} />
+      <Stack.Screen name="CDLTracker" component={CDLTrackerScreen} options={{ title: 'CDL & License Tracker' }} />
+      <Stack.Screen name="LoadCompare" component={LoadCompareScreen} options={{ title: 'Load Quick Compare' }} />
+      <Stack.Screen name="PerDiem" component={PerDiemScreen} options={{ title: 'Per Diem Calculator' }} />
+      <Stack.Screen name="CargoClaim" component={CargoClaimScreen} options={{ title: 'Cargo Claim Tracker' }} />
+      <Stack.Screen name="BillOfLading" component={BillOfLadingScreen} options={{ title: 'Bill of Lading' }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
+      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ title: 'Verify Email' }} />
+      <Stack.Screen name="AILoadRate" component={AILoadRateScreen} options={{ title: 'AI Rate Advisor' }} />
+      <Stack.Screen name="RateBenchmark" component={RateBenchmarkScreen} options={{ title: 'Rate Benchmark' }} />
+      <Stack.Screen name="HOSCountdown" component={HOSCountdownScreen} options={{ title: 'HOS Countdown' }} />
+      <Stack.Screen name="PaymentTracker" component={PaymentTrackerScreen} options={{ title: 'Payment Tracker' }} />
+      <Stack.Screen name="QuarterlyTax" component={QuarterlyTaxScreen} options={{ title: 'Quarterly Tax Estimator' }} />
+      <Stack.Screen name="FuelMap" component={FuelMapScreen} options={{ title: 'Diesel Prices' }} />
+      <Stack.Screen name="TripPlanner" component={TripPlannerScreen} options={{ title: 'Trip Planner' }} />
     </Stack.Navigator>
   );
 }

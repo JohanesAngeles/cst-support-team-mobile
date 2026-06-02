@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator, Switch,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getTruckProfile, updateTruckProfile } from '../../api/features';
 
 interface TruckProfile {
@@ -45,6 +45,47 @@ const isInsuranceExpired = (expiry: string) => {
 };
 
 export default function TruckProfileScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40, gap: 10 },
+    heroCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
+    heroIcon: { width: 60, height: 60, borderRadius: 14, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary + '44', justifyContent: 'center', alignItems: 'center' },
+    heroInfo: { flex: 1, gap: 2 },
+    rigName: { color: Colors.text, fontSize: 18, fontWeight: '900' },
+    rigSub: { color: Colors.textMuted, fontSize: 12 },
+    editBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+    alertCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12 },
+    alertText: { flex: 1, fontSize: 13, fontWeight: '600' },
+    sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4, marginBottom: 2 },
+    sectionTitle: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 10 },
+    infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border + '66' },
+    infoLabel: { color: Colors.textMuted, fontSize: 13 },
+    infoValue: { color: Colors.text, fontSize: 13, fontWeight: '700', maxWidth: '60%', textAlign: 'right' },
+    infoMono: { fontFamily: 'monospace', letterSpacing: 0.5 },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    statCard: { flex: 1, minWidth: '44%', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 14, alignItems: 'center', gap: 3 },
+    statValue: { fontSize: 20, fontWeight: '900' },
+    statUnit: { color: Colors.textMuted, fontSize: 10 },
+    statLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+    fuelCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.success + '18', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.success + '44' },
+    fuelCardText: { color: Colors.success, fontSize: 13, fontWeight: '700' },
+    editBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.secondary + '15', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.secondary + '33' },
+    editBannerText: { flex: 1, color: Colors.secondary, fontSize: 14, fontWeight: '700' },
+    row: { flexDirection: 'row', gap: 10 },
+    field: { gap: 5 },
+    fieldLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+    fieldInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
+    switchLabel: { color: Colors.textMuted, fontSize: 13 },
+    actionRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
+  }), [Colors]);
   const [profile, setProfile] = useState<TruckProfile>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -250,25 +291,27 @@ export default function TruckProfileScreen() {
 }
 
 function SectionHeader({ title, icon }: { title: string; icon: string }) {
+  const Colors = useColors();
   return (
-    <View style={styles.sectionHeader}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4, marginBottom: 2 }}>
       <Ionicons name={icon as any} size={15} color={Colors.secondary} />
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={{ color: Colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }}>{title}</Text>
     </View>
   );
 }
 
 function InfoRow({ label, value, mono, valueColor }: { label: string; value: string; mono?: boolean; valueColor?: string }) {
+  const Colors = useColors();
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={[styles.infoValue, mono && styles.infoMono, valueColor ? { color: valueColor } : null]}>{value}</Text>
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border + '66' }}>
+      <Text style={{ color: Colors.textMuted, fontSize: 13 }}>{label}</Text>
+      <Text style={[{ color: Colors.text, fontSize: 13, fontWeight: '700', maxWidth: '60%', textAlign: 'right' }, mono ? { fontFamily: 'monospace', letterSpacing: 0.5 } : {}, valueColor ? { color: valueColor } : {}]}>{value}</Text>
     </View>
   );
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <View style={styles.row}>{children}</View>;
+  return <View style={{ flexDirection: 'row', gap: 10 }}>{children}</View>;
 }
 
 function Field({
@@ -277,55 +320,16 @@ function Field({
   label: string; value: string; onChangeText: (v: string) => void;
   placeholder?: string; keyboard?: any; flex?: boolean; autoCapitalize?: any;
 }) {
+  const Colors = useColors();
   return (
-    <View style={[styles.field, flex && { flex: 1 }]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={[{ gap: 5 }, flex ? { flex: 1 } : {}]}>
+      <Text style={{ color: Colors.textMuted, fontSize: 12, fontWeight: '600' }}>{label}</Text>
       <TextInput
-        style={styles.fieldInput} value={value} onChangeText={onChangeText}
+        style={{ backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 }}
+        value={value} onChangeText={onChangeText}
         placeholder={placeholder ?? ''} placeholderTextColor={Colors.textMuted}
         keyboardType={keyboard ?? 'default'} autoCapitalize={autoCapitalize ?? 'none'}
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40, gap: 10 },
-  heroCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  heroIcon: { width: 60, height: 60, borderRadius: 14, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary + '44', justifyContent: 'center', alignItems: 'center' },
-  heroInfo: { flex: 1, gap: 2 },
-  rigName: { color: Colors.white, fontSize: 18, fontWeight: '900' },
-  rigSub: { color: Colors.textMuted, fontSize: 12 },
-  editBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
-  alertCard: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 12, borderWidth: 1, padding: 12 },
-  alertText: { flex: 1, fontSize: 13, fontWeight: '600' },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4, marginBottom: 2 },
-  sectionTitle: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 10 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border + '66' },
-  infoLabel: { color: Colors.textMuted, fontSize: 13 },
-  infoValue: { color: Colors.white, fontSize: 13, fontWeight: '700', maxWidth: '60%', textAlign: 'right' },
-  infoMono: { fontFamily: 'monospace', letterSpacing: 0.5 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statCard: { flex: 1, minWidth: '44%', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 14, alignItems: 'center', gap: 3 },
-  statValue: { fontSize: 20, fontWeight: '900' },
-  statUnit: { color: Colors.textMuted, fontSize: 10 },
-  statLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '600', textAlign: 'center' },
-  fuelCardBadge: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.success + '18', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.success + '44' },
-  fuelCardText: { color: Colors.success, fontSize: 13, fontWeight: '700' },
-  editBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.secondary + '15', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: Colors.secondary + '33' },
-  editBannerText: { flex: 1, color: Colors.secondary, fontSize: 14, fontWeight: '700' },
-  row: { flexDirection: 'row', gap: 10 },
-  field: { gap: 5 },
-  fieldLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
-  fieldInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
-  switchLabel: { color: Colors.textMuted, fontSize: 13 },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
-});

@@ -9,9 +9,10 @@ export interface IFuelStop extends Document {
   pricePerGallon: number;
   odometer: number;
   notes: string;
+  receiptUrl?: string;
 }
 
-const FuelStopSchema = new Schema<IFuelStop>(
+const FuelStopSchema = new Schema(
   {
     userId:        { type: Schema.Types.ObjectId, ref: 'User', required: true },
     date:          { type: String, required: true },
@@ -21,6 +22,7 @@ const FuelStopSchema = new Schema<IFuelStop>(
     pricePerGallon:{ type: Number, required: true, min: 0 },
     odometer:      { type: Number, default: 0 },
     notes:         { type: String, default: '' },
+    receiptUrl:    { type: String, default: '' },
   },
   { timestamps: true }
 );

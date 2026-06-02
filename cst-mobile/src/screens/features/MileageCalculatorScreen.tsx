@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface RouteResult {
   distanceMiles: number;
@@ -55,6 +55,38 @@ const PRESET_RATES = [
 ];
 
 export default function MileageCalculatorScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    scroll: { padding: 20, paddingBottom: 40 },
+    heading: { color: Colors.text, fontSize: 22, fontWeight: '800', marginBottom: 4 },
+    subheading: { color: Colors.textMuted, fontSize: 13, marginBottom: 20 },
+    label: { color: Colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 12 },
+    input: { backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 14, color: Colors.text, fontSize: 14 },
+    row: { flexDirection: 'row', gap: 12 },
+    halfBlock: { flex: 1 },
+    preset: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+    presetActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    presetText: { color: Colors.textMuted, fontWeight: '600', fontSize: 13 },
+    presetTextActive: { color: Colors.textDark },
+    calcBtn: { backgroundColor: Colors.secondary, borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 24 },
+    calcText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
+    resultCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 20, gap: 4 },
+    routeText: { color: Colors.text, fontSize: 14, fontWeight: '600' },
+    routeArrow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
+    divider: { flex: 1, height: 1, backgroundColor: Colors.border },
+    bigStat: { alignItems: 'center', paddingVertical: 20 },
+    bigNum: { color: Colors.secondary, fontSize: 56, fontWeight: '900' },
+    bigUnit: { color: Colors.textMuted, fontSize: 14, fontWeight: '600' },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
+    statBox: { flex: 1, minWidth: '40%', backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
+    statVal: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+    statLbl: { color: Colors.textMuted, fontSize: 11 },
+    profitBox: { backgroundColor: Colors.secondary + '15', borderRadius: 12, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: Colors.secondary + '40' },
+    profitLabel: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    profitVal: { fontSize: 20, fontWeight: '900' },
+    disclaimer: { color: Colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 12 },
+  }), [Colors]);
   const [origin, setOrigin] = useState('');
   const [dest, setDest] = useState('');
   const [mpg, setMpg] = useState('6.5');
@@ -96,6 +128,7 @@ export default function MileageCalculatorScreen() {
       setLoading(false);
     }
   };
+
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -202,35 +235,3 @@ export default function MileageCalculatorScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingBottom: 40 },
-  heading: { color: Colors.white, fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  subheading: { color: Colors.textMuted, fontSize: 13, marginBottom: 20 },
-  label: { color: Colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 14, color: Colors.white, fontSize: 14 },
-  row: { flexDirection: 'row', gap: 12 },
-  halfBlock: { flex: 1 },
-  preset: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  presetActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  presetText: { color: Colors.textMuted, fontWeight: '600', fontSize: 13 },
-  presetTextActive: { color: Colors.textDark },
-  calcBtn: { backgroundColor: Colors.secondary, borderRadius: 12, padding: 15, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 24 },
-  calcText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
-  resultCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 20, gap: 4 },
-  routeText: { color: Colors.white, fontSize: 14, fontWeight: '600' },
-  routeArrow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4 },
-  divider: { flex: 1, height: 1, backgroundColor: Colors.border },
-  bigStat: { alignItems: 'center', paddingVertical: 20 },
-  bigNum: { color: Colors.secondary, fontSize: 56, fontWeight: '900' },
-  bigUnit: { color: Colors.textMuted, fontSize: 14, fontWeight: '600' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
-  statBox: { flex: 1, minWidth: '40%', backgroundColor: Colors.surfaceLight, borderRadius: 12, padding: 14, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
-  statVal: { color: Colors.white, fontSize: 18, fontWeight: '800' },
-  statLbl: { color: Colors.textMuted, fontSize: 11 },
-  profitBox: { backgroundColor: Colors.secondary + '15', borderRadius: 12, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, borderWidth: 1, borderColor: Colors.secondary + '40' },
-  profitLabel: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  profitVal: { fontSize: 20, fontWeight: '900' },
-  disclaimer: { color: Colors.textMuted, fontSize: 10, textAlign: 'center', marginTop: 12 },
-});

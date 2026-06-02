@@ -19,7 +19,10 @@ client.interceptors.response.use(
   (res) => res,
   (err) => {
     const message = err.response?.data?.message || 'Something went wrong';
-    return Promise.reject(new Error(message));
+    const apiError = new Error(message) as Error & { status?: number; code?: string };
+    apiError.status = err.response?.status;
+    apiError.code   = err.response?.data?.code;
+    return Promise.reject(apiError);
   }
 );
 

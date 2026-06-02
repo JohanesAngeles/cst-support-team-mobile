@@ -17,9 +17,18 @@ async function fetchWithCache<T>(cacheKey: string, fetcher: () => Promise<T>): P
 
 // Expenses
 export const getExpenses = () => client.get('/expenses').then(r => r.data);
-export const addExpense = (data: { category: string; amount: number; description?: string }) =>
+// Receipt photo upload
+export const uploadReceipt = (photo: { uri: string; type: string; name: string }) => {
+  const form = new FormData();
+  form.append('photo', photo as any);
+  return client.post('/uploads/receipt', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then(r => r.data as { url: string });
+};
+
+export const addExpense = (data: { category: string; amount: number; description?: string; tripId?: string; receiptUrl?: string }) =>
   client.post('/expenses', data).then(r => r.data);
-export const updateExpense = (id: string, data: { category: string; amount: number; description?: string }) =>
+export const updateExpense = (id: string, data: { category: string; amount: number; description?: string; tripId?: string; receiptUrl?: string }) =>
   client.put(`/expenses/${id}`, data).then(r => r.data);
 export const deleteExpense = (id: string) => client.delete(`/expenses/${id}`).then(r => r.data);
 
@@ -57,10 +66,11 @@ export const deleteDeadline = (id: string) => client.delete(`/deadlines/${id}`).
 
 // Documents
 export const getDocuments = () => client.get('/documents').then(r => r.data);
-export const uploadDocument = (name: string, file: { uri: string; type: string; name: string }) => {
+export const uploadDocument = (name: string, file: { uri: string; type: string; name: string }, expiryDate?: string) => {
   const form = new FormData();
   form.append('file', file as any);
   form.append('name', name);
+  if (expiryDate) form.append('expiryDate', expiryDate);
   return client.post('/documents', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then(r => r.data);
@@ -115,6 +125,8 @@ export const deleteBrokerNote = (id: string) => client.delete(`/brokernotes/${id
 export const getEmergencyContacts = () => fetchWithCache(CACHE_KEYS.emergencyContacts, () => client.get('/emergency-contacts').then(r => r.data));
 export const addEmergencyContact = (data: { name: string; phone: string; relationship?: string }) =>
   client.post('/emergency-contacts', data).then(r => r.data);
+export const updateEmergencyContact = (id: string, data: { name: string; phone: string; relationship?: string }) =>
+  client.put(`/emergency-contacts/${id}`, data).then(r => r.data);
 export const deleteEmergencyContact = (id: string) => client.delete(`/emergency-contacts/${id}`).then(r => r.data);
 
 // HOS
@@ -186,3 +198,93 @@ export const createMapReport = (data: {
 }) => client.post('/map/reports', data).then(r => r.data);
 export const upvoteMapReport = (id: string) => client.post(`/map/reports/${id}/upvote`, {}).then(r => r.data);
 export const deleteMapReport = (id: string) => client.delete(`/map/reports/${id}`).then(r => r.data);
+
+// DVIR
+export const getDVIREntries = () => client.get('/dvir').then(r => r.data);
+export const addDVIREntry = (data: {
+  type: string; date: string; odometer?: number; truckId?: string;
+  items: { label: string; pass: boolean; notes?: string }[];
+  driverSignature: string; remarks?: string;
+}) => client.post('/dvir', data).then(r => r.data);
+export const deleteDVIREntry = (id: string) => client.delete(`/dvir/${id}`).then(r => r.data);
+
+// Invoices
+export const getInvoices = () => client.get('/invoices').then(r => r.data);
+export const addInvoice = (data: object) => client.post('/invoices', data).then(r => r.data);
+export const updateInvoice = (id: string, data: object) => client.put(`/invoices/${id}`, data).then(r => r.data);
+export const updateInvoiceStatus = (id: string, status: string) => client.patch(`/invoices/${id}/status`, { status }).then(r => r.data);
+export const emailInvoice = (id: string, email?: string) => client.post(`/invoices/${id}/email`, { email }).then(r => r.data);
+export const deleteInvoice = (id: string) => client.delete(`/invoices/${id}`).then(r => r.data);
+
+// Drug & Alcohol Tests
+export const getDrugTests = () => client.get('/drug-tests').then(r => r.data);
+export const addDrugTest = (data: { date: string; testType: string; result: string; testingCompany: string; clearinghouse: boolean; notes?: string }) =>
+  client.post('/drug-tests', data).then(r => r.data);
+export const updateDrugTest = (id: string, data: object) => client.put(`/drug-tests/${id}`, data).then(r => r.data);
+export const deleteDrugTest = (id: string) => client.delete(`/drug-tests/${id}`).then(r => r.data);
+
+// Driver Chat
+export const getChatMessages = (channelId: string, after?: string) =>
+  client.get(`/chat/${channelId}`, { params: after ? { after } : undefined }).then(r => r.data);
+export const sendChatMessage = (channelId: string, message: string) =>
+  client.post(`/chat/${channelId}`, { message }).then(r => r.data);
+export const deleteChatMessage = (id: string) => client.delete(`/chat/${id}`).then(r => r.data);
+
+// Broker Blacklist
+export const getBrokerBlacklist = (search?: string) =>
+  client.get('/broker-blacklist', { params: search ? { search } : undefined }).then(r => r.data);
+export const addBrokerBlacklist = (data: { brokerName: string; mcNum?: string; phone?: string; reason: string; category: string }) =>
+  client.post('/broker-blacklist', data).then(r => r.data);
+export const upvoteBrokerBlacklist = (id: string) => client.post(`/broker-blacklist/${id}/upvote`, {}).then(r => r.data);
+export const deleteBrokerBlacklist = (id: string) => client.delete(`/broker-blacklist/${id}`).then(r => r.data);
+
+// Owner-Operator Network
+export const getNetworkPosts = (category?: string) =>
+  client.get('/network', { params: category ? { category } : undefined }).then(r => r.data);
+export const getNetworkPost = (id: string) => client.get(`/network/${id}`).then(r => r.data);
+export const addNetworkPost = (data: { category: string; title: string; body: string }) =>
+  client.post('/network', data).then(r => r.data);
+export const upvoteNetworkPost = (id: string) => client.post(`/network/${id}/upvote`, {}).then(r => r.data);
+export const replyNetworkPost = (id: string, body: string) => client.post(`/network/${id}/reply`, { body }).then(r => r.data);
+export const deleteNetworkPost = (id: string) => client.delete(`/network/${id}`).then(r => r.data);
+
+// Parking Tracker
+export const getParkingReservations = () => client.get('/parking').then(r => r.data);
+export const addParkingReservation = (data: { location: string; date: string; confirmationNumber: string; arrivalWindow?: string; notes?: string; status?: string }) =>
+  client.post('/parking', data).then(r => r.data);
+export const updateParkingReservation = (id: string, data: object) => client.put(`/parking/${id}`, data).then(r => r.data);
+export const deleteParkingReservation = (id: string) => client.delete(`/parking/${id}`).then(r => r.data);
+
+// Sleep & Fatigue Log
+export const getSleepLogs = () => client.get('/sleep-log').then(r => r.data);
+export const addSleepLog = (data: { date: string; sleepStart: string; sleepEnd: string; sleepHours: number; quality: number; location?: string; notes?: string }) =>
+  client.post('/sleep-log', data).then(r => r.data);
+export const deleteSleepLog = (id: string) => client.delete(`/sleep-log/${id}`).then(r => r.data);
+
+// Shipper/Receiver Directory
+export const getShippers = (type?: string) =>
+  client.get('/shippers', { params: type ? { type } : undefined }).then(r => r.data);
+export const addShipper = (data: { name: string; type: string; address: string; city: string; state: string; phone?: string; contact?: string; hours?: string; appointmentRequired?: boolean; dockInfo?: string; notes?: string }) =>
+  client.post('/shippers', data).then(r => r.data);
+export const updateShipper = (id: string, data: object) => client.put(`/shippers/${id}`, data).then(r => r.data);
+export const toggleShipperFavorite = (id: string) => client.patch(`/shippers/${id}/favorite`, {}).then(r => r.data);
+export const deleteShipper = (id: string) => client.delete(`/shippers/${id}`).then(r => r.data);
+
+// Referral Program
+export const getMyReferral = () => client.get('/referrals/my').then(r => r.data);
+export const applyReferralCode = (code: string) => client.post('/referrals/apply', { code }).then(r => r.data);
+
+// CDL / License Tracker
+export const getCDLDocs = () => client.get('/cdl-docs').then(r => r.data);
+export const addCDLDoc = (data: object) => client.post('/cdl-docs', data).then(r => r.data);
+export const updateCDLDoc = (id: string, data: object) => client.put(`/cdl-docs/${id}`, data).then(r => r.data);
+export const deleteCDLDoc = (id: string) => client.delete(`/cdl-docs/${id}`).then(r => r.data);
+
+// EIA Diesel Prices (no auth needed — public endpoint)
+export const getEIADieselPrices = () => client.get('/fuel/eia-prices').then(r => r.data);
+
+// Cargo Claims
+export const getCargoClaims = () => client.get('/cargo-claims').then(r => r.data);
+export const addCargoClaim = (data: object) => client.post('/cargo-claims', data).then(r => r.data);
+export const updateCargoClaim = (id: string, data: object) => client.put(`/cargo-claims/${id}`, data).then(r => r.data);
+export const deleteCargoClaim = (id: string) => client.delete(`/cargo-claims/${id}`).then(r => r.data);

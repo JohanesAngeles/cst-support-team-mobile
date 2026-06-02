@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+﻿import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, TextInput, Alert, Modal, ActivityIndicator,
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getExpenses, addExpense, deleteExpense, getRevenue, updateRevenue, getTaxReport } from '../../api/features';
 
 type Category = 'Fuel' | 'Repairs' | 'Meals' | 'Lodging' | 'Tolls' | 'Insurance' | 'Office' | 'Other';
@@ -34,6 +34,56 @@ const SE_TAX_RATE = 0.1413;
 const INCOME_TAX_RATE = 0.22;
 
 export default function TaxCalculatorScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    content: { padding: 16, gap: 14, paddingBottom: 32 },
+    card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
+    cardTitle: { color: Colors.text, fontSize: 16, fontWeight: '800', marginBottom: 14 },
+    rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+    incomeRow: { flexDirection: 'row', alignItems: 'center' },
+    dollarSign: { color: Colors.secondary, fontSize: 28, fontWeight: '800', marginRight: 4 },
+    incomeInput: { color: Colors.secondary, fontSize: 32, fontWeight: '900', flex: 1 },
+    addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, gap: 4 },
+    addBtnText: { color: Colors.textDark, fontWeight: '700', fontSize: 13 },
+    noExpenses: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
+    catRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+    catDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+    catName: { flex: 1, color: Colors.textMuted, fontSize: 14 },
+    catAmount: { fontSize: 14, fontWeight: '700' },
+    divider: { height: 1, backgroundColor: Colors.border, marginVertical: 8 },
+    hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 4 },
+    expenseList: { maxHeight: 200, marginTop: 8 },
+    expRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border },
+    expDesc: { flex: 1, color: Colors.textMuted, fontSize: 12 },
+    expCat: { color: Colors.textMuted, fontSize: 11, marginHorizontal: 8 },
+    expAmount: { color: Colors.text, fontSize: 13, fontWeight: '700' },
+    taxRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 },
+    taxLabel: { color: Colors.textMuted, fontSize: 13, flex: 1 },
+    taxValue: { fontSize: 14, fontWeight: '700' },
+    totalTaxCard: { backgroundColor: Colors.danger + '22', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: Colors.danger },
+    totalTaxLabel: { color: Colors.textMuted, fontSize: 11, letterSpacing: 0.5, fontWeight: '700' },
+    totalTaxValue: { color: Colors.danger, fontSize: 36, fontWeight: '900', marginTop: 4 },
+    exportGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+    exportBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 10, gap: 6, width: '47%' },
+    exportBtnText: { color: Colors.text, fontSize: 12, fontWeight: '600' },
+    oneButtonExport: { backgroundColor: Colors.secondary, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    oneButtonText: { color: Colors.textDark, fontWeight: '900', fontSize: 14, letterSpacing: 0.5 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 16 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 10 },
+    catScroll: { marginBottom: 4 },
+    catChip: { backgroundColor: Colors.surfaceLight, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8, borderWidth: 1, borderColor: Colors.border },
+    catChipText: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
+    modalButtons: { flexDirection: 'row', gap: 10, marginTop: 20 },
+    modalCancel: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    modalCancelText: { color: Colors.textMuted, fontWeight: '700' },
+    modalConfirm: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    modalConfirmText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [grossIncome, setGrossIncome] = useState('');
   const [loading, setLoading] = useState(true);
@@ -112,7 +162,7 @@ export default function TaxCalculatorScreen() {
     return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
     <style>
       body{font-family:Arial,sans-serif;padding:32px;color:#1a1a2e;max-width:800px;margin:0 auto}
-      h1{color:#f5a623;font-size:26px;margin-bottom:4px}
+      h1{color:#2C6EBD;font-size:26px;margin-bottom:4px}
       h2{color:#1a3a5c;font-size:16px;margin:24px 0 10px}
       .subtitle{color:#666;font-size:13px;margin-bottom:28px}
       .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
@@ -126,7 +176,7 @@ export default function TaxCalculatorScreen() {
       th{background:#1a3a5c;color:white;padding:9px 12px;text-align:left}
       td{padding:8px 12px;border-bottom:1px solid #eee}
       tr:nth-child(even) td{background:#fafafa}
-      .disclaimer{background:#fff3cd;border-left:4px solid #f5a623;padding:12px 16px;font-size:11px;color:#666;margin-top:24px;border-radius:4px}
+      .disclaimer{background:#fff3cd;border-left:4px solid #2C6EBD;padding:12px 16px;font-size:11px;color:#666;margin-top:24px;border-radius:4px}
       .footer{margin-top:28px;font-size:10px;color:#bbb;text-align:center}
     </style></head><body>
     <h1>Tax Preparation Report</h1>
@@ -173,6 +223,7 @@ export default function TaxCalculatorScreen() {
     </SafeAreaView>
   );
 
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
@@ -216,7 +267,7 @@ export default function TaxCalculatorScreen() {
               ))}
               <View style={styles.divider} />
               <View style={styles.catRow}>
-                <Text style={[styles.catName, { color: Colors.white, fontWeight: '800', flex: 1 }]}>Total Deductions</Text>
+                <Text style={[styles.catName, { color: Colors.text, fontWeight: '800', flex: 1 }]}>Total Deductions</Text>
                 <Text style={[styles.catAmount, { color: Colors.secondary, fontSize: 17 }]}>{fmt(totalDeductions)}</Text>
               </View>
               <Text style={styles.hint}>Long-press an expense item to delete it</Text>
@@ -239,7 +290,7 @@ export default function TaxCalculatorScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Tax Estimate</Text>
           {[
-            { label: 'Net Taxable Income', value: fmt(netIncome), color: Colors.white },
+            { label: 'Net Taxable Income', value: fmt(netIncome), color: Colors.text },
             { label: 'Self-Employment Tax (14.13%)', value: fmt(seTax), color: '#E74C3C' },
             { label: 'Est. Federal Income Tax (22%)', value: fmt(incomeTax), color: '#E74C3C' },
           ].map(({ label, value, color }) => (
@@ -311,53 +362,3 @@ export default function TaxCalculatorScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { padding: 16, gap: 14, paddingBottom: 32 },
-  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
-  cardTitle: { color: Colors.white, fontSize: 16, fontWeight: '800', marginBottom: 14 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  incomeRow: { flexDirection: 'row', alignItems: 'center' },
-  dollarSign: { color: Colors.secondary, fontSize: 28, fontWeight: '800', marginRight: 4 },
-  incomeInput: { color: Colors.secondary, fontSize: 32, fontWeight: '900', flex: 1 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, gap: 4 },
-  addBtnText: { color: Colors.textDark, fontWeight: '700', fontSize: 13 },
-  noExpenses: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', paddingVertical: 12 },
-  catRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  catDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  catName: { flex: 1, color: Colors.textMuted, fontSize: 14 },
-  catAmount: { fontSize: 14, fontWeight: '700' },
-  divider: { height: 1, backgroundColor: Colors.border, marginVertical: 8 },
-  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 4 },
-  expenseList: { maxHeight: 200, marginTop: 8 },
-  expRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  expDesc: { flex: 1, color: Colors.textMuted, fontSize: 12 },
-  expCat: { color: Colors.textMuted, fontSize: 11, marginHorizontal: 8 },
-  expAmount: { color: Colors.white, fontSize: 13, fontWeight: '700' },
-  taxRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7 },
-  taxLabel: { color: Colors.textMuted, fontSize: 13, flex: 1 },
-  taxValue: { fontSize: 14, fontWeight: '700' },
-  totalTaxCard: { backgroundColor: Colors.danger + '22', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: Colors.danger },
-  totalTaxLabel: { color: Colors.textMuted, fontSize: 11, letterSpacing: 0.5, fontWeight: '700' },
-  totalTaxValue: { color: Colors.danger, fontSize: 36, fontWeight: '900', marginTop: 4 },
-  exportGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
-  exportBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 10, gap: 6, width: '47%' },
-  exportBtnText: { color: Colors.white, fontSize: 12, fontWeight: '600' },
-  oneButtonExport: { backgroundColor: Colors.secondary, borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  oneButtonText: { color: Colors.textDark, fontWeight: '900', fontSize: 14, letterSpacing: 0.5 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 16 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginBottom: 6, marginTop: 10 },
-  catScroll: { marginBottom: 4 },
-  catChip: { backgroundColor: Colors.surfaceLight, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8, borderWidth: 1, borderColor: Colors.border },
-  catChipText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
-  modalButtons: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  modalCancel: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  modalCancelText: { color: Colors.textMuted, fontWeight: '700' },
-  modalConfirm: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  modalConfirmText: { color: Colors.textDark, fontWeight: '800' },
-});

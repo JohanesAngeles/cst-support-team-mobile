@@ -48,6 +48,7 @@ router.post('/', upload.single('file'), async (req: AuthRequest, res: Response) 
     resourceType,
     fileType,
     fileSize,
+    expiryDate: req.body.expiryDate ?? undefined,
   });
   res.status(201).json(doc);
 });

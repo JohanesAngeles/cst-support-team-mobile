@@ -1,22 +1,80 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 const LIMITS = { steer: 12000, drive: 34000, trailer: 34000, gross: 80000 };
 
 const statusFor = (actual: number, limit: number) => {
-  if (actual > limit) return { color: Colors.danger, label: 'OVER LIMIT', icon: 'close-circle' as const };
+  if (actual > limit) return { color: '#CC0000', label: 'OVER LIMIT', icon: 'close-circle' as const };
   if (actual > limit * 0.95) return { color: '#E67E22', label: 'CLOSE', icon: 'warning' as const };
-  return { color: Colors.success, label: 'LEGAL', icon: 'checkmark-circle' as const };
+  return { color: '#27AE60', label: 'LEGAL', icon: 'checkmark-circle' as const };
 };
 
 const fmt = (n: number) => n.toLocaleString();
 
 export default function AxleWeightScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40, gap: 14 },
+    diagram: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16,
+    },
+    truckRow: { flexDirection: 'row', gap: 4, marginBottom: 8 },
+    truckCab: {
+      width: 70, height: 44, backgroundColor: Colors.secondary + '22',
+      borderRadius: 8, borderWidth: 1, borderColor: Colors.secondary,
+      justifyContent: 'center', alignItems: 'center', gap: 2,
+    },
+    truckTrailer: {
+      flex: 1, height: 44, backgroundColor: Colors.surfaceLight,
+      borderRadius: 8, borderWidth: 1, borderColor: Colors.border,
+      justifyContent: 'center', alignItems: 'center',
+    },
+    truckLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700' },
+    axleRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8 },
+    axleMark: { alignItems: 'center' },
+    axleMarkLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700' },
+    inputCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 10 },
+    inputTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    field: { gap: 6 },
+    fieldLabel: { color: Colors.textMuted, fontSize: 13 },
+    input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 15 },
+    clearBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end' },
+    clearText: { color: Colors.textMuted, fontSize: 13 },
+    allClear: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.success + '18', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.success + '44' },
+    allClearText: { color: Colors.success, fontSize: 15, fontWeight: '800' },
+    resultCard: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, padding: 14, gap: 8 },
+    resultTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    resultIcon: { width: 34, height: 34, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    resultMeta: { flex: 1 },
+    resultLabel: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    resultLimit: { color: Colors.textMuted, fontSize: 11 },
+    resultRight: { alignItems: 'flex-end', gap: 4 },
+    resultValue: { fontSize: 18, fontWeight: '900' },
+    resultBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+    resultBadgeText: { fontSize: 10, fontWeight: '700' },
+    overRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: Colors.danger + '18', borderRadius: 8, padding: 8 },
+    overText: { color: Colors.danger, fontSize: 12, flex: 1 },
+    progressBar: { height: 6, backgroundColor: Colors.surfaceLight, borderRadius: 3, overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 3 },
+    progressPct: { color: Colors.textMuted, fontSize: 11, textAlign: 'right' },
+    tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: Colors.secondary + '15', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.secondary + '33' },
+    tipTitle: { color: Colors.secondary, fontSize: 13, fontWeight: '700' },
+    tipText: { color: Colors.secondary, fontSize: 12, lineHeight: 18, marginTop: 2 },
+    limitsCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 8 },
+    limitsTitle: { color: Colors.text, fontSize: 14, fontWeight: '800', marginBottom: 4 },
+    limitRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: Colors.border },
+    limitLabel: { color: Colors.textMuted, fontSize: 13 },
+    limitValue: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+    disclaimer: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
+    disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
+  }), [Colors]);
   const [steer, setSteer] = useState('');
   const [drive, setDrive] = useState('');
   const [trailer, setTrailer] = useState('');
@@ -49,6 +107,7 @@ export default function AxleWeightScreen() {
     { label: 'Trailer Tandems', value: trailerW, limit: LIMITS.trailer, status: trailerS, over: overTrailer, icon: 'train-outline' },
     { label: 'Gross Vehicle Weight', value: gross, limit: LIMITS.gross, status: grossS, over: overGross, icon: 'scale-outline' },
   ];
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -177,61 +236,3 @@ export default function AxleWeightScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40, gap: 14 },
-  diagram: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
-  },
-  truckRow: { flexDirection: 'row', gap: 4, marginBottom: 8 },
-  truckCab: {
-    width: 70, height: 44, backgroundColor: Colors.secondary + '22',
-    borderRadius: 8, borderWidth: 1, borderColor: Colors.secondary,
-    justifyContent: 'center', alignItems: 'center', gap: 2,
-  },
-  truckTrailer: {
-    flex: 1, height: 44, backgroundColor: Colors.surfaceLight,
-    borderRadius: 8, borderWidth: 1, borderColor: Colors.border,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  truckLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700' },
-  axleRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 8 },
-  axleMark: { alignItems: 'center' },
-  axleMarkLabel: { color: Colors.textMuted, fontSize: 9, fontWeight: '700' },
-  inputCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 10 },
-  inputTitle: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  field: { gap: 6 },
-  fieldLabel: { color: Colors.textMuted, fontSize: 13 },
-  input: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 15 },
-  clearBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-end' },
-  clearText: { color: Colors.textMuted, fontSize: 13 },
-  allClear: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.success + '18', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.success + '44' },
-  allClearText: { color: Colors.success, fontSize: 15, fontWeight: '800' },
-  resultCard: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, borderLeftWidth: 4, padding: 14, gap: 8 },
-  resultTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  resultIcon: { width: 34, height: 34, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  resultMeta: { flex: 1 },
-  resultLabel: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  resultLimit: { color: Colors.textMuted, fontSize: 11 },
-  resultRight: { alignItems: 'flex-end', gap: 4 },
-  resultValue: { fontSize: 18, fontWeight: '900' },
-  resultBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  resultBadgeText: { fontSize: 10, fontWeight: '700' },
-  overRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, backgroundColor: Colors.danger + '18', borderRadius: 8, padding: 8 },
-  overText: { color: Colors.danger, fontSize: 12, flex: 1 },
-  progressBar: { height: 6, backgroundColor: Colors.surfaceLight, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3 },
-  progressPct: { color: Colors.textMuted, fontSize: 11, textAlign: 'right' },
-  tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, backgroundColor: Colors.secondary + '15', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.secondary + '33' },
-  tipTitle: { color: Colors.secondary, fontSize: 13, fontWeight: '700' },
-  tipText: { color: Colors.secondary, fontSize: 12, lineHeight: 18, marginTop: 2 },
-  limitsCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 8 },
-  limitsTitle: { color: Colors.white, fontSize: 14, fontWeight: '800', marginBottom: 4 },
-  limitRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: Colors.border },
-  limitLabel: { color: Colors.textMuted, fontSize: 13 },
-  limitValue: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  disclaimer: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
-  disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
-});

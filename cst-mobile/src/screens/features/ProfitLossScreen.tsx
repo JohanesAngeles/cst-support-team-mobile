@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getRevenue, getLiveRevenue, updateRevenue } from '../../api/features';
 
 type Period = 'Week' | 'Month' | 'Quarter' | 'Year';
@@ -27,6 +27,69 @@ const fmtFull = (n: number) => `$${n.toLocaleString()}`;
 const EMPTY: RevenueData = { period: 'Month', grossRevenue: 0, netProfit: 0, totalMiles: 0, fuelCost: 0, expenses: [], trend: [] };
 
 export default function ProfitLossScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { paddingVertical: 60, alignItems: 'center' },
+    content: { padding: 16, gap: 14, paddingBottom: 32 },
+    toggleRow: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 12, padding: 4, gap: 2 },
+    toggleBtn: { flex: 1, flexDirection: 'row', paddingVertical: 7, borderRadius: 10, alignItems: 'center', justifyContent: 'center', gap: 5 },
+    toggleBtnActive: { backgroundColor: Colors.secondary },
+    toggleText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
+    toggleTextActive: { color: Colors.textDark },
+    periodRow: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 12, padding: 4, gap: 2 },
+    periodBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
+    periodBtnActive: { backgroundColor: Colors.secondary },
+    periodText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
+    periodTextActive: { color: Colors.textDark },
+    empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
+    emptyText: { color: Colors.text, fontSize: 18, fontWeight: '700' },
+    emptySubText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', maxWidth: 280 },
+    emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
+    emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
+    heroRow: { flexDirection: 'row', gap: 10 },
+    heroCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
+    heroCardProfit: { borderColor: Colors.success + '44' },
+    heroLabel: { color: Colors.textMuted, fontSize: 12, marginBottom: 6 },
+    heroValue: { color: Colors.text, fontSize: 24, fontWeight: '900' },
+    kpiRow: { flexDirection: 'row', gap: 8 },
+    kpiCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
+    kpiValue: { fontSize: 15, fontWeight: '800' },
+    kpiLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
+    cardTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 14 },
+    totalExpenses: { color: Colors.textMuted, fontSize: 13, marginBottom: 10 },
+    chartRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 120 },
+    barWrap: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
+    barLabel: { color: Colors.textMuted, fontSize: 8, marginBottom: 2, textAlign: 'center' },
+    barTrack: { width: '80%', height: 80, justifyContent: 'flex-end' },
+    bar: { width: '100%', borderRadius: 4 },
+    barIndex: { color: Colors.textMuted, fontSize: 10, marginTop: 4 },
+    stackBar: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 16 },
+    stackSegment: { height: 10 },
+    expRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, gap: 8 },
+    expDot: { width: 10, height: 10, borderRadius: 5 },
+    expLabel: { color: Colors.textMuted, fontSize: 13, width: 68 },
+    expBarWrap: { flex: 1, height: 6, backgroundColor: Colors.surfaceLight, borderRadius: 3, overflow: 'hidden', flexDirection: 'row' },
+    expBar: { height: 6, borderRadius: 3 },
+    expPct: { color: Colors.textMuted, fontSize: 12, width: 36, textAlign: 'right' },
+    expAmount: { color: Colors.text, fontSize: 12, fontWeight: '700', width: 72, textAlign: 'right' },
+    summaryCard: { flexDirection: 'row', alignItems: 'center', borderColor: Colors.secondary + '44' },
+    summaryTitle: { color: Colors.text, fontSize: 14, fontWeight: '700', marginBottom: 4 },
+    summaryText: { color: Colors.textMuted, fontSize: 13, lineHeight: 18 },
+    updateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, gap: 8 },
+    updateBtnText: { color: Colors.textDark, fontWeight: '800', fontSize: 14 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 5 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    confirmText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [period, setPeriod] = useState<Period>('Month');
   const [data, setData] = useState<RevenueData>(EMPTY);
   const [liveData, setLiveData] = useState<RevenueData | null>(null);
@@ -93,6 +156,7 @@ export default function ProfitLossScreen() {
   const maxTrend = d.trend.length > 0 ? Math.max(...d.trend) : 1;
   const hasData = d.grossRevenue > 0;
   const hasLive = liveData !== null;
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -277,66 +341,3 @@ export default function ProfitLossScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { paddingVertical: 60, alignItems: 'center' },
-  content: { padding: 16, gap: 14, paddingBottom: 32 },
-  toggleRow: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 12, padding: 4, gap: 2 },
-  toggleBtn: { flex: 1, flexDirection: 'row', paddingVertical: 7, borderRadius: 10, alignItems: 'center', justifyContent: 'center', gap: 5 },
-  toggleBtnActive: { backgroundColor: Colors.secondary },
-  toggleText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
-  toggleTextActive: { color: Colors.textDark },
-  periodRow: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 12, padding: 4, gap: 2 },
-  periodBtn: { flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center' },
-  periodBtnActive: { backgroundColor: Colors.secondary },
-  periodText: { color: Colors.textMuted, fontSize: 13, fontWeight: '700' },
-  periodTextActive: { color: Colors.textDark },
-  empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
-  emptyText: { color: Colors.white, fontSize: 18, fontWeight: '700' },
-  emptySubText: { color: Colors.textMuted, fontSize: 13, textAlign: 'center', maxWidth: 280 },
-  emptyBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  emptyBtnText: { color: Colors.textDark, fontWeight: '700' },
-  heroRow: { flexDirection: 'row', gap: 10 },
-  heroCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
-  heroCardProfit: { borderColor: Colors.success + '44' },
-  heroLabel: { color: Colors.textMuted, fontSize: 12, marginBottom: 6 },
-  heroValue: { color: Colors.white, fontSize: 24, fontWeight: '900' },
-  kpiRow: { flexDirection: 'row', gap: 8 },
-  kpiCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: Colors.border },
-  kpiValue: { fontSize: 15, fontWeight: '800' },
-  kpiLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: Colors.border },
-  cardTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', marginBottom: 14 },
-  totalExpenses: { color: Colors.textMuted, fontSize: 13, marginBottom: 10 },
-  chartRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 120 },
-  barWrap: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
-  barLabel: { color: Colors.textMuted, fontSize: 8, marginBottom: 2, textAlign: 'center' },
-  barTrack: { width: '80%', height: 80, justifyContent: 'flex-end' },
-  bar: { width: '100%', borderRadius: 4 },
-  barIndex: { color: Colors.textMuted, fontSize: 10, marginTop: 4 },
-  stackBar: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 16 },
-  stackSegment: { height: 10 },
-  expRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, gap: 8 },
-  expDot: { width: 10, height: 10, borderRadius: 5 },
-  expLabel: { color: Colors.textMuted, fontSize: 13, width: 68 },
-  expBarWrap: { flex: 1, height: 6, backgroundColor: Colors.surfaceLight, borderRadius: 3, overflow: 'hidden', flexDirection: 'row' },
-  expBar: { height: 6, borderRadius: 3 },
-  expPct: { color: Colors.textMuted, fontSize: 12, width: 36, textAlign: 'right' },
-  expAmount: { color: Colors.white, fontSize: 12, fontWeight: '700', width: 72, textAlign: 'right' },
-  summaryCard: { flexDirection: 'row', alignItems: 'center', borderColor: Colors.secondary + '44' },
-  summaryTitle: { color: Colors.white, fontSize: 14, fontWeight: '700', marginBottom: 4 },
-  summaryText: { color: Colors.textMuted, fontSize: 13, lineHeight: 18 },
-  updateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.secondary, borderRadius: 12, padding: 14, gap: 8 },
-  updateBtnText: { color: Colors.textDark, fontWeight: '800', fontSize: 14 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 5 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 15, borderWidth: 1, borderColor: Colors.border },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  confirmBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  confirmText: { color: Colors.textDark, fontWeight: '800' },
-});

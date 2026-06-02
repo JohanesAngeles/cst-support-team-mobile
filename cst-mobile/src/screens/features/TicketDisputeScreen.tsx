@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, KeyboardAvoidingView, Platform, Alert, Modal,
+  TextInput, KeyboardAvoidingView, Platform, Alert, Modal, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { Colors } from '../../constants/colors';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import { useColors } from '../../constants/colors';
 
 const VIOLATIONS = [
   'Speeding', 'Logbook Violation', 'Overweight', 'Hours of Service',
@@ -15,6 +17,66 @@ const VIOLATIONS = [
 ];
 
 export default function TicketDisputeScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 16, paddingBottom: 40, gap: 14 },
+    banner: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      backgroundColor: Colors.secondary + '18', borderRadius: 14,
+      padding: 14, borderWidth: 1, borderColor: Colors.secondary + '44',
+    },
+    bannerTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    card: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12,
+    },
+    cardTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    cardSub: { color: Colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: -4 },
+    field: { gap: 6 },
+    fieldLabel: { color: Colors.textMuted, fontSize: 13 },
+    input: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 10,
+      borderWidth: 1, borderColor: Colors.border,
+      paddingHorizontal: 12, height: 46, color: Colors.text, fontSize: 14,
+    },
+    chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    chip: {
+      paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+      backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border,
+    },
+    chipActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    chipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+    chipTextActive: { color: Colors.textDark },
+    textArea: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 10,
+      borderWidth: 1, borderColor: Colors.border,
+      padding: 12, color: Colors.text, fontSize: 14, minHeight: 130,
+    },
+    generateBtn: {
+      backgroundColor: Colors.secondary, borderRadius: 12,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 10, height: 52,
+    },
+    generateText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
+    modalContainer: { flex: 1, backgroundColor: Colors.background },
+    modalHeader: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 16, paddingVertical: 14,
+      backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    },
+    modalTitle: { color: Colors.text, fontSize: 17, fontWeight: '800' },
+    modalActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    copyBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
+    },
+    copyText: { color: Colors.textDark, fontSize: 13, fontWeight: '700' },
+    letterContent: { padding: 20, paddingBottom: 40 },
+    letterText: { color: Colors.text, fontSize: 13, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
+  }), [Colors]);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [driverName, setDriverName] = useState('');
   const [cdl, setCdl] = useState('');
   const [ticketDate, setTicketDate] = useState('');
@@ -80,6 +142,41 @@ Note: This letter was generated as a template. Review and customize before submi
     await Clipboard.setStringAsync(letter);
     Alert.alert('Copied', 'Dispute letter copied to clipboard.');
   };
+
+  const exportPDF = async () => {
+    setPdfLoading(true);
+    try {
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body{font-family:Arial,sans-serif;margin:48px;color:#1a1a1a;font-size:13px;line-height:1.7;}
+  .header{border-bottom:2px solid #1A3A5C;padding-bottom:16px;margin-bottom:24px;}
+  .title{font-size:18px;font-weight:bold;color:#1A3A5C;margin-bottom:4px;}
+  .meta{font-size:12px;color:#666;}
+  pre{font-family:inherit;white-space:pre-wrap;word-wrap:break-word;}
+  .footer{margin-top:32px;border-top:1px solid #ccc;padding-top:12px;font-size:10px;color:#999;text-align:center;}
+</style></head><body>
+<div class="header">
+  <div class="title">Formal Traffic Violation Dispute</div>
+  <div class="meta">Generated by CST Driver App · ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+</div>
+<pre>${letter.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre>
+<div class="footer">This document was generated as a template. Review and customize before submitting. CST Driver App — Commercial Support Technologies</div>
+</body></html>`;
+
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Share Dispute Letter' });
+      } else {
+        await Print.printAsync({ uri });
+      }
+    } catch (err: any) {
+      Alert.alert('Export Failed', err.message ?? 'Could not generate PDF');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -169,6 +266,16 @@ Note: This letter was generated as a template. Review and customize before submi
                 <Ionicons name="copy-outline" size={18} color={Colors.textDark} />
                 <Text style={styles.copyText}>Copy</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.copyBtn, { backgroundColor: '#2ECC71' }]}
+                onPress={exportPDF}
+                disabled={pdfLoading}
+              >
+                {pdfLoading
+                  ? <ActivityIndicator size="small" color={Colors.textDark} />
+                  : <><Ionicons name="document-outline" size={18} color={Colors.textDark} /><Text style={styles.copyText}>PDF</Text></>
+                }
+              </TouchableOpacity>
               <TouchableOpacity onPress={() => setLetterModal(false)}>
                 <Ionicons name="close" size={24} color={Colors.white} />
               </TouchableOpacity>
@@ -182,62 +289,3 @@ Note: This letter was generated as a template. Review and customize before submi
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 16, paddingBottom: 40, gap: 14 },
-  banner: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.secondary + '18', borderRadius: 14,
-    padding: 14, borderWidth: 1, borderColor: Colors.secondary + '44',
-  },
-  bannerTitle: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  card: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12,
-  },
-  cardTitle: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  cardSub: { color: Colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: -4 },
-  field: { gap: 6 },
-  fieldLabel: { color: Colors.textMuted, fontSize: 13 },
-  input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 12, height: 46, color: Colors.white, fontSize: 14,
-  },
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border,
-  },
-  chipActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  chipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: Colors.textDark },
-  textArea: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 12, color: Colors.white, fontSize: 14, minHeight: 130,
-  },
-  generateBtn: {
-    backgroundColor: Colors.secondary, borderRadius: 12,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, height: 52,
-  },
-  generateText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
-  modalContainer: { flex: 1, backgroundColor: Colors.background },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  modalTitle: { color: Colors.white, fontSize: 17, fontWeight: '800' },
-  modalActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  copyBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
-  },
-  copyText: { color: Colors.textDark, fontSize: 13, fontWeight: '700' },
-  letterContent: { padding: 20, paddingBottom: 40 },
-  letterText: { color: Colors.white, fontSize: 13, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
-});

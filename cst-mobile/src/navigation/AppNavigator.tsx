@@ -1,24 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import MainTabs from './MainTabs';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import OfflineBanner from '../components/OfflineBanner';
-import { Colors } from '../constants/colors';
+import { useColors } from '../constants/colors';
 
 export default function AppNavigator() {
-  const { user, loading } = useAuth();
-  const [onboarded, setOnboarded] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!user) { setOnboarded(null); return; }
-    AsyncStorage.getItem('@cst_onboarded').then(v => setOnboarded(v === 'true'));
-  }, [user]);
-
-  const handleOnboardingComplete = () => setOnboarded(true);
+  const Colors = useColors();
+  const { user, loading, onboarded, completeOnboarding } = useAuth();
 
   if (loading || (user && onboarded === null)) {
     return (
@@ -29,7 +21,7 @@ export default function AppNavigator() {
   }
 
   if (user && onboarded === false) {
-    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+    return <OnboardingScreen onComplete={completeOnboarding} />;
   }
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator,
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 type DocType = 'rate_confirmation' | 'proof_of_delivery' | 'invoice';
 
@@ -243,6 +243,26 @@ const FIELDS: Record<DocType, Array<{ label: string; key: string; ph: string; kb
 };
 
 export default function DocGeneratorScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    picker: { padding: 24, gap: 16 },
+    heading: { color: Colors.text, fontSize: 22, fontWeight: '800', marginBottom: 4 },
+    subheading: { color: Colors.textMuted, fontSize: 13, marginBottom: 16 },
+    typeCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 2, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16 },
+    typeIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
+    typeLabel: { color: Colors.text, fontSize: 16, fontWeight: '800', marginBottom: 4 },
+    typeDesc: { color: Colors.textMuted, fontSize: 12 },
+    formHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: 1, borderColor: Colors.border },
+    backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+    formTitle: { color: Colors.text, fontSize: 16, fontWeight: '800' },
+    formSubtitle: { color: Colors.textMuted, fontSize: 12 },
+    formBody: { padding: 20, gap: 4 },
+    fieldLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10 },
+    fieldInput: { backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14, marginTop: 4 },
+    generateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, borderRadius: 14, marginTop: 24 },
+    generateText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  }), [Colors]);
   const [selected, setSelected] = useState<DocType | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [generating, setGenerating] = useState(false);
@@ -303,6 +323,7 @@ export default function DocGeneratorScreen() {
   const docInfo = DOC_TYPES.find(d => d.type === selected)!;
   const fields = FIELDS[selected];
 
+
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
       <View style={s.formHeader}>
@@ -350,23 +371,3 @@ export default function DocGeneratorScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  picker: { padding: 24, gap: 16 },
-  heading: { color: Colors.white, fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  subheading: { color: Colors.textMuted, fontSize: 13, marginBottom: 16 },
-  typeCard: { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 2, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 16 },
-  typeIcon: { width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center' },
-  typeLabel: { color: Colors.white, fontSize: 16, fontWeight: '800', marginBottom: 4 },
-  typeDesc: { color: Colors.textMuted, fontSize: 12 },
-  formHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderBottomWidth: 1, borderColor: Colors.border },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center' },
-  formTitle: { color: Colors.white, fontSize: 16, fontWeight: '800' },
-  formSubtitle: { color: Colors.textMuted, fontSize: 12 },
-  formBody: { padding: 20, gap: 4 },
-  fieldLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10 },
-  fieldInput: { backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14, marginTop: 4 },
-  generateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 16, borderRadius: 14, marginTop: 24 },
-  generateText: { color: '#fff', fontSize: 16, fontWeight: '800' },
-});

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, Linking, RefreshControl,
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getDocuments, uploadDocument, deleteDocument } from '../../api/features';
 
 interface Doc {
@@ -19,7 +19,19 @@ interface Doc {
   fileType: string;
   fileSize: number;
   createdAt: string;
+  expiryDate?: string;
 }
+
+const daysUntil = (dateStr: string) =>
+  Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
+
+const expiryBadge = (doc: Doc): { label: string; color: string } | null => {
+  if (!doc.expiryDate) return null;
+  const days = daysUntil(doc.expiryDate);
+  if (days < 0) return { label: 'EXPIRED', color: '#E74C3C' };
+  if (days <= 30) return { label: `${days}d left`, color: '#E67E22' };
+  return null;
+};
 
 const DOC_CATEGORIES = [
   { icon: 'shield-outline',           label: 'Insurance',     color: '#27AE60' },
@@ -52,6 +64,52 @@ const fileLabel = (type: string) => {
 };
 
 export default function DocumentVaultScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    list: { padding: 16, paddingBottom: 100 },
+    summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
+    summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
+    summaryValue: { color: Colors.text, fontSize: 18, fontWeight: '900' },
+    summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+    docIcon: { width: 46, height: 46, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+    cardBody: { flex: 1, gap: 4 },
+    cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    docName: { color: Colors.text, fontSize: 14, fontWeight: '700', flex: 1 },
+    fileTypeBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: Colors.secondary },
+    fileTypeText: { color: Colors.secondary, fontSize: 9, fontWeight: '900' },
+    cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    metaText: { color: Colors.textMuted, fontSize: 11 },
+    metaDot: { color: Colors.textMuted, fontSize: 11 },
+    openBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
+    hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 14 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 8 },
+    filePicker: { backgroundColor: Colors.surfaceLight, borderRadius: 14, borderWidth: 2, borderColor: Colors.border, borderStyle: 'dashed', overflow: 'hidden' },
+    filePickerEmpty: { alignItems: 'center', gap: 6, padding: 24 },
+    filePickerText: { color: Colors.text, fontSize: 14, fontWeight: '600' },
+    filePickerSub: { color: Colors.textMuted, fontSize: 12 },
+    filePickedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
+    filePickedName: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+    filePickedType: { color: Colors.secondary, fontSize: 11, fontWeight: '700' },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 12, marginBottom: 6 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
+    catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    catOption: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 8 },
+    catLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    uploadBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+    uploadText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
+  }), [Colors]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,6 +118,7 @@ export default function DocumentVaultScreen() {
 
   const [docName, setDocName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('document-text-outline');
+  const [expiryDate, setExpiryDate] = useState('');
   const [pickedFile, setPickedFile] = useState<{ uri: string; type: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
@@ -92,7 +151,7 @@ export default function DocumentVaultScreen() {
   };
 
   const openModal = () => {
-    setDocName(''); setSelectedIcon('document-text-outline'); setPickedFile(null);
+    setDocName(''); setSelectedIcon('document-text-outline'); setExpiryDate(''); setPickedFile(null);
     setModal(true);
   };
 
@@ -101,7 +160,7 @@ export default function DocumentVaultScreen() {
     if (!pickedFile) { Alert.alert('Error', 'Please pick a file to upload'); return; }
     setUploading(true);
     try {
-      await uploadDocument(docName.trim(), pickedFile);
+      await uploadDocument(docName.trim(), pickedFile, expiryDate.trim() || undefined);
       setModal(false);
       load();
     } catch (err: any) {
@@ -126,6 +185,7 @@ export default function DocumentVaultScreen() {
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -193,6 +253,10 @@ export default function DocumentVaultScreen() {
                   {item.fileSize > 0 && (
                     <><Text style={styles.metaDot}>·</Text><Text style={styles.metaText}>{fmtSize(item.fileSize)}</Text></>
                   )}
+                  {(() => { const b = expiryBadge(item); return b ? (
+                    <><Text style={styles.metaDot}>·</Text>
+                    <Text style={[styles.metaText, { color: b.color, fontWeight: '700' }]}>{b.label}</Text></>
+                  ) : null; })()}
                 </View>
               </View>
               {hasFile ? (
@@ -247,6 +311,12 @@ export default function DocumentVaultScreen() {
               placeholder="e.g. CDL License, Insurance Card..." placeholderTextColor={Colors.textMuted}
             />
 
+            <Text style={styles.modalLabel}>Expiry Date (optional)</Text>
+            <TextInput
+              style={styles.modalInput} value={expiryDate} onChangeText={setExpiryDate}
+              placeholder="YYYY-MM-DD" placeholderTextColor={Colors.textMuted}
+            />
+
             <Text style={styles.modalLabel}>Category</Text>
             <View style={styles.catGrid}>
               {DOC_CATEGORIES.map(c => (
@@ -282,49 +352,3 @@ export default function DocumentVaultScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  list: { padding: 16, paddingBottom: 100 },
-  summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 14 },
-  summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
-  summaryValue: { color: Colors.white, fontSize: 18, fontWeight: '900' },
-  summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  docIcon: { width: 46, height: 46, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
-  cardBody: { flex: 1, gap: 4 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  docName: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1 },
-  fileTypeBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: Colors.secondary },
-  fileTypeText: { color: Colors.secondary, fontSize: 9, fontWeight: '900' },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaText: { color: Colors.textMuted, fontSize: 11 },
-  metaDot: { color: Colors.textMuted, fontSize: 11 },
-  openBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.secondary + '1A', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13, textAlign: 'center' },
-  hint: { color: Colors.textMuted, fontSize: 11, textAlign: 'center', marginTop: 14 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 8 },
-  filePicker: { backgroundColor: Colors.surfaceLight, borderRadius: 14, borderWidth: 2, borderColor: Colors.border, borderStyle: 'dashed', overflow: 'hidden' },
-  filePickerEmpty: { alignItems: 'center', gap: 6, padding: 24 },
-  filePickerText: { color: Colors.white, fontSize: 14, fontWeight: '600' },
-  filePickerSub: { color: Colors.textMuted, fontSize: 12 },
-  filePickedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
-  filePickedName: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  filePickedType: { color: Colors.secondary, fontSize: 11, fontWeight: '700' },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 12, marginBottom: 6 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, color: Colors.white, fontSize: 14, borderWidth: 1, borderColor: Colors.border },
-  catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  catOption: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 10, paddingVertical: 8 },
-  catLabel: { color: Colors.textMuted, fontSize: 12, fontWeight: '600' },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  uploadBtn: { flex: 2, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  uploadText: { color: Colors.textDark, fontWeight: '800', fontSize: 15 },
-});

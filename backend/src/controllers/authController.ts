@@ -5,6 +5,7 @@ import { validationResult } from 'express-validator';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
+import { upload, uploadToCloudinary } from '../middleware/upload';
 
 const signToken = (id: string) =>
   jwt.sign({ id }, process.env.JWT_SECRET!, {
@@ -13,12 +14,15 @@ const signToken = (id: string) =>
 
 const makeCode = () => crypto.randomInt(100000, 999999).toString();
 
-const safeUser = (user: any) => ({
+export const safeUser = (user: any) => ({
   _id: user._id,
   name: user.name,
   email: user.email,
   phone: user.phone,
   isVerified: user.isVerified,
+  avatarUrl: user.avatarUrl ?? null,
+  subscriptionStatus: user.subscriptionStatus ?? 'free',
+  subscriptionPlan: user.subscriptionPlan ?? null,
 });
 
 export const register = async (req: Request, res: Response) => {
@@ -155,4 +159,118 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
   user.password = newPassword;
   await user.save();
   res.json({ message: 'Password changed successfully' });
+};
+
+export const deleteAccount = async (req: AuthRequest, res: Response) => {
+  const { password } = req.body;
+  if (!password) { res.status(400).json({ message: 'Password is required to delete your account' }); return; }
+
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+  // Verify password before destructive action
+  const valid = await user.comparePassword(password);
+  if (!valid) { res.status(400).json({ message: 'Incorrect password' }); return; }
+
+  const uid = req.user._id;
+
+  // Parallel wipe of all user data across every collection
+  const [
+    Expense, IFTAEntry, MaintenanceRecord, Deadline, Revenue, HOSEntry,
+    DetentionEvent, TripLog, FuelStop, BrokerNote, TruckProfile, UserDocument,
+    EmergencyContact, PushToken, MapReport, Load, DispatchContact, ELDEntry,
+    DVIREntry, Invoice, DrugTest, BrokerBlacklist, NetworkPost, ParkingReservation,
+    SleepLog, ShipperReceiver, Referral, RoadReadyScore, CDLDoc, CargoClaim, ChatMessage,
+  ] = await Promise.all([
+    import('../models/Expense'),
+    import('../models/IFTAEntry'),
+    import('../models/MaintenanceRecord'),
+    import('../models/Deadline'),
+    import('../models/Revenue'),
+    import('../models/HOSEntry'),
+    import('../models/DetentionEvent'),
+    import('../models/TripLog'),
+    import('../models/FuelStop'),
+    import('../models/BrokerNote'),
+    import('../models/TruckProfile'),
+    import('../models/UserDocument'),
+    import('../models/EmergencyContact'),
+    import('../models/PushToken'),
+    import('../models/MapReport'),
+    import('../models/Load'),
+    import('../models/DispatchContact'),
+    import('../models/ELDEntry'),
+    import('../models/DVIREntry'),
+    import('../models/Invoice'),
+    import('../models/DrugTest'),
+    import('../models/BrokerBlacklist'),
+    import('../models/NetworkPost'),
+    import('../models/ParkingReservation'),
+    import('../models/SleepLog'),
+    import('../models/ShipperReceiver'),
+    import('../models/Referral'),
+    import('../models/RoadReadyScore'),
+    import('../models/CDLDoc'),
+    import('../models/CargoClaim'),
+    import('../models/ChatMessage'),
+  ]);
+
+  await Promise.all([
+    Expense.default.deleteMany({ userId: uid }),
+    IFTAEntry.default.deleteMany({ userId: uid }),
+    MaintenanceRecord.default.deleteMany({ userId: uid }),
+    Deadline.default.deleteMany({ userId: uid }),
+    Revenue.default.deleteMany({ userId: uid }),
+    HOSEntry.default.deleteMany({ userId: uid }),
+    DetentionEvent.default.deleteMany({ userId: uid }),
+    TripLog.default.deleteMany({ userId: uid }),
+    FuelStop.default.deleteMany({ userId: uid }),
+    BrokerNote.default.deleteMany({ userId: uid }),
+    TruckProfile.default.deleteMany({ userId: uid }),
+    UserDocument.default.deleteMany({ userId: uid }),
+    EmergencyContact.default.deleteMany({ userId: uid }),
+    PushToken.default.deleteMany({ userId: uid }),
+    MapReport.default.deleteMany({ userId: uid }),
+    Load.default.deleteMany({ userId: uid }),
+    DispatchContact.default.deleteMany({ userId: uid }),
+    ELDEntry.default.deleteMany({ userId: uid }),
+    DVIREntry.default.deleteMany({ userId: uid }),
+    Invoice.default.deleteMany({ userId: uid }),
+    DrugTest.default.deleteMany({ userId: uid }),
+    BrokerBlacklist.default.deleteMany({ userId: uid }),
+    NetworkPost.default.deleteMany({ userId: uid }),
+    ParkingReservation.default.deleteMany({ userId: uid }),
+    SleepLog.default.deleteMany({ userId: uid }),
+    ShipperReceiver.default.deleteMany({ userId: uid }),
+    Referral.default.deleteMany({ userId: uid }),
+    RoadReadyScore.default.deleteMany({ userId: uid }),
+    CDLDoc.default.deleteMany({ userId: uid }),
+    CargoClaim.default.deleteMany({ userId: uid }),
+    ChatMessage.default.deleteMany({ senderId: uid }),
+    User.deleteOne({ _id: uid }),
+  ]);
+
+  res.json({ message: 'Account and all associated data deleted' });
+};
+
+// Avatar upload — multipart/form-data field name "avatar"
+export const updateAvatarMiddleware = upload.single('avatar');
+
+export const updateAvatar = async (req: AuthRequest, res: Response) => {
+  if (!req.file) { res.status(400).json({ message: 'No image provided' }); return; }
+  if (!req.file.mimetype.startsWith('image/')) {
+    res.status(400).json({ message: 'Only image files are allowed' }); return;
+  }
+
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+  try {
+    const result = await uploadToCloudinary(req.file.buffer, 'cst-avatars', req.file.mimetype);
+    user.avatarUrl = result.url;
+    await user.save();
+    res.json({ user: safeUser(user) });
+  } catch {
+    res.status(500).json({ message: 'Upload failed — check Cloudinary credentials' });
+  }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, KeyboardAvoidingView, Platform, Alert, Modal,
@@ -6,11 +6,85 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
-import { Colors } from '../../constants/colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColors } from '../../constants/colors';
+
+const CHECKLIST_KEY = 'cst_pretrip_checks';
 
 type Tab = 'bol' | 'checklist' | 'loadconf';
 
 export default function SmartFormsScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    tabBar: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, gap: 8 },
+    tabBtn: {
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 5, backgroundColor: Colors.surface, borderRadius: 10,
+      paddingVertical: 10, borderWidth: 1, borderColor: Colors.border,
+    },
+    tabBtnActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    tabLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
+    tabLabelActive: { color: Colors.textDark },
+    content: { padding: 16, paddingBottom: 40, gap: 14 },
+    card: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12,
+    },
+    cardTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    field: { gap: 6 },
+    fieldLabel: { color: Colors.textMuted, fontSize: 13 },
+    input: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 10,
+      borderWidth: 1, borderColor: Colors.border,
+      paddingHorizontal: 12, height: 46, color: Colors.text, fontSize: 14,
+    },
+    textArea: {
+      backgroundColor: Colors.surfaceLight, borderRadius: 10,
+      borderWidth: 1, borderColor: Colors.border,
+      padding: 12, color: Colors.text, fontSize: 14, minHeight: 80,
+    },
+    generateBtn: {
+      backgroundColor: Colors.secondary, borderRadius: 12,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 10, height: 52,
+    },
+    generateText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
+    progressCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16,
+    },
+    progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+    progressTitle: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    progressCount: { color: Colors.secondary, fontSize: 14, fontWeight: '800' },
+    progressBar: { height: 6, backgroundColor: Colors.surfaceLight, borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
+    progressFill: { height: '100%', backgroundColor: Colors.secondary, borderRadius: 3 },
+    allClearBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+    allClearText: { color: Colors.success, fontSize: 13, fontWeight: '700' },
+    checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
+    checkLabel: { color: Colors.text, fontSize: 13, flex: 1 },
+    checkLabelDone: { color: Colors.textMuted, textDecorationLine: 'line-through' },
+    resetBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 8, paddingVertical: 14,
+    },
+    resetText: { color: Colors.textMuted, fontSize: 14 },
+    modalContainer: { flex: 1, backgroundColor: Colors.background },
+    modalHeader: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 16, paddingVertical: 14,
+      backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    },
+    modalTitle: { color: Colors.text, fontSize: 17, fontWeight: '800' },
+    modalActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    copyBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
+    },
+    copyText: { color: Colors.textDark, fontSize: 13, fontWeight: '700' },
+    letterContent: { padding: 20, paddingBottom: 40 },
+    letterText: { color: Colors.text, fontSize: 13, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
+  }), [Colors]);
   const [tab, setTab] = useState<Tab>('bol');
   const [preview, setPreview] = useState(false);
   const [previewText, setPreviewText] = useState('');
@@ -65,12 +139,32 @@ export default function SmartFormsScreen() {
     'CDL in possession and valid',
   ];
   const [checks, setChecks] = useState<boolean[]>(PRE_TRIP.map(() => false));
+
+  // Load saved checklist on mount
+  useEffect(() => {
+    AsyncStorage.getItem(CHECKLIST_KEY).then(raw => {
+      if (raw) {
+        try {
+          const saved: boolean[] = JSON.parse(raw);
+          if (Array.isArray(saved) && saved.length === PRE_TRIP.length) {
+            setChecks(saved);
+          }
+        } catch { /* ignore corrupt data */ }
+      }
+    });
+  }, []);
+
   const toggleCheck = (i: number) => {
     const next = [...checks];
     next[i] = !next[i];
     setChecks(next);
+    AsyncStorage.setItem(CHECKLIST_KEY, JSON.stringify(next));
   };
-  const resetChecklist = () => setChecks(PRE_TRIP.map(() => false));
+  const resetChecklist = () => {
+    const empty = PRE_TRIP.map(() => false);
+    setChecks(empty);
+    AsyncStorage.setItem(CHECKLIST_KEY, JSON.stringify(empty));
+  };
   const completedChecks = checks.filter(Boolean).length;
 
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -188,6 +282,7 @@ Note: This is a template. Verify all details before use.`;
       />
     </View>
   );
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -331,74 +426,3 @@ Note: This is a template. Verify all details before use.`;
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  tabBar: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, gap: 8 },
-  tabBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 5, backgroundColor: Colors.surface, borderRadius: 10,
-    paddingVertical: 10, borderWidth: 1, borderColor: Colors.border,
-  },
-  tabBtnActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  tabLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
-  tabLabelActive: { color: Colors.textDark },
-  content: { padding: 16, paddingBottom: 40, gap: 14 },
-  card: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 12,
-  },
-  cardTitle: { color: Colors.white, fontSize: 15, fontWeight: '800' },
-  field: { gap: 6 },
-  fieldLabel: { color: Colors.textMuted, fontSize: 13 },
-  input: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 12, height: 46, color: Colors.white, fontSize: 14,
-  },
-  textArea: {
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 12, color: Colors.white, fontSize: 14, minHeight: 80,
-  },
-  generateBtn: {
-    backgroundColor: Colors.secondary, borderRadius: 12,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, height: 52,
-  },
-  generateText: { color: Colors.textDark, fontSize: 16, fontWeight: '800' },
-  progressCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16,
-  },
-  progressHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  progressTitle: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  progressCount: { color: Colors.secondary, fontSize: 14, fontWeight: '800' },
-  progressBar: { height: 6, backgroundColor: Colors.surfaceLight, borderRadius: 3, overflow: 'hidden', marginBottom: 10 },
-  progressFill: { height: '100%', backgroundColor: Colors.secondary, borderRadius: 3 },
-  allClearBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  allClearText: { color: Colors.success, fontSize: 13, fontWeight: '700' },
-  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  checkLabel: { color: Colors.white, fontSize: 13, flex: 1 },
-  checkLabelDone: { color: Colors.textMuted, textDecorationLine: 'line-through' },
-  resetBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, paddingVertical: 14,
-  },
-  resetText: { color: Colors.textMuted, fontSize: 14 },
-  modalContainer: { flex: 1, backgroundColor: Colors.background },
-  modalHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 14,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  modalTitle: { color: Colors.white, fontSize: 17, fontWeight: '800' },
-  modalActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  copyBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
-  },
-  copyText: { color: Colors.textDark, fontSize: 13, fontWeight: '700' },
-  letterContent: { padding: 20, paddingBottom: 40 },
-  letterText: { color: Colors.white, fontSize: 13, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
-});

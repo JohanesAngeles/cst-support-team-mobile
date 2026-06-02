@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import HOSEntry from '../models/HOSEntry';
+import { sendPushToUser } from './notifications';
 
 const router = Router();
 router.use(protect);
@@ -24,6 +25,18 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     { drivingHours, onDutyHours, notes: notes ?? '' },
     { upsert: true, new: true }
   );
+
+  // Send push alerts based on cycle usage
+  const recentEntries = await HOSEntry.find({ userId: req.user._id }).sort({ date: -1 }).limit(8);
+  const cycleTotal = recentEntries.reduce((sum, e) => sum + e.onDutyHours, 0);
+  const cycleLimit = 70; // default 70/8-day; conservative
+  const remaining = cycleLimit - cycleTotal;
+  if (remaining <= 0) {
+    sendPushToUser(req.user._id.toString(), '🚨 34-Hour Restart Required', 'Your 70-hr cycle is exhausted. Take a 34-hr consecutive off-duty break before driving.');
+  } else if (remaining <= 10) {
+    sendPushToUser(req.user._id.toString(), '⚠️ Low Cycle Hours', `Only ${remaining.toFixed(1)} hrs left in your 70-hr cycle.`);
+  }
+
   res.json({ entry });
 });
 

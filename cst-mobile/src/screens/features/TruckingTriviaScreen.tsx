@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface Question {
   q: string;
@@ -96,6 +96,55 @@ const QUESTIONS: Question[] = [
 ];
 
 export default function TruckingTriviaScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    content: { padding: 20, paddingBottom: 40 },
+    progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+    progressText: { color: Colors.textMuted, fontSize: 13 },
+    scoreText: { color: Colors.secondary, fontWeight: '800', fontSize: 13 },
+    progressBar: { height: 4, backgroundColor: Colors.surface, borderRadius: 2, marginBottom: 24 },
+    progressFill: { height: 4, backgroundColor: Colors.secondary, borderRadius: 2 },
+    questionCard: {
+      backgroundColor: Colors.surface, borderRadius: 14, padding: 20,
+      borderWidth: 1, borderColor: Colors.border, marginBottom: 20,
+    },
+    questionText: { color: Colors.text, fontSize: 17, fontWeight: '700', lineHeight: 24 },
+    options: { gap: 10, marginBottom: 20 },
+    option: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      borderWidth: 1.5, borderRadius: 12, padding: 14,
+    },
+    optionLetter: {
+      width: 28, height: 28, borderRadius: 14, borderWidth: 1.5,
+      justifyContent: 'center', alignItems: 'center',
+    },
+    optionLetterText: { fontWeight: '800', fontSize: 13 },
+    optionText: { flex: 1, fontSize: 14, fontWeight: '600' },
+    factCard: {
+      flexDirection: 'row', gap: 10, alignItems: 'flex-start',
+      backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
+      borderWidth: 1, marginBottom: 20,
+    },
+    factText: { color: Colors.textMuted, fontSize: 13, flex: 1, lineHeight: 18 },
+    nextBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      backgroundColor: Colors.primary, borderRadius: 12, padding: 14, gap: 8,
+      borderWidth: 1, borderColor: Colors.secondary,
+    },
+    nextBtnText: { color: Colors.white, fontWeight: '800', fontSize: 15 },
+    // Results
+    resultContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 },
+    resultScore: { color: Colors.text, fontSize: 52, fontWeight: '900' },
+    resultPct: { color: Colors.secondary, fontSize: 28, fontWeight: '800' },
+    resultMsg: { color: Colors.textMuted, fontSize: 16, textAlign: 'center', lineHeight: 22 },
+    restartBtn: {
+      flexDirection: 'row', alignItems: 'center', gap: 8,
+      backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: 32, paddingVertical: 14,
+      borderWidth: 1, borderColor: Colors.secondary, marginTop: 8,
+    },
+    restartBtnText: { color: Colors.white, fontWeight: '800', fontSize: 15 },
+  }), [Colors]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -153,6 +202,7 @@ export default function TruckingTriviaScreen() {
       </View>
     );
   }
+
 
   return (
     <View style={styles.container}>
@@ -227,52 +277,3 @@ export default function TruckingTriviaScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 20, paddingBottom: 40 },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  progressText: { color: Colors.textMuted, fontSize: 13 },
-  scoreText: { color: Colors.secondary, fontWeight: '800', fontSize: 13 },
-  progressBar: { height: 4, backgroundColor: Colors.surface, borderRadius: 2, marginBottom: 24 },
-  progressFill: { height: 4, backgroundColor: Colors.secondary, borderRadius: 2 },
-  questionCard: {
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 20,
-    borderWidth: 1, borderColor: Colors.border, marginBottom: 20,
-  },
-  questionText: { color: Colors.white, fontSize: 17, fontWeight: '700', lineHeight: 24 },
-  options: { gap: 10, marginBottom: 20 },
-  option: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1.5, borderRadius: 12, padding: 14,
-  },
-  optionLetter: {
-    width: 28, height: 28, borderRadius: 14, borderWidth: 1.5,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  optionLetterText: { fontWeight: '800', fontSize: 13 },
-  optionText: { flex: 1, fontSize: 14, fontWeight: '600' },
-  factCard: {
-    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
-    backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
-    borderWidth: 1, marginBottom: 20,
-  },
-  factText: { color: Colors.textMuted, fontSize: 13, flex: 1, lineHeight: 18 },
-  nextBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.primary, borderRadius: 12, padding: 14, gap: 8,
-    borderWidth: 1, borderColor: Colors.secondary,
-  },
-  nextBtnText: { color: Colors.white, fontWeight: '800', fontSize: 15 },
-  // Results
-  resultContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 },
-  resultScore: { color: Colors.white, fontSize: 52, fontWeight: '900' },
-  resultPct: { color: Colors.secondary, fontSize: 28, fontWeight: '800' },
-  resultMsg: { color: Colors.textMuted, fontSize: 16, textAlign: 'center', lineHeight: 22 },
-  restartBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.primary, borderRadius: 12, paddingHorizontal: 32, paddingVertical: 14,
-    borderWidth: 1, borderColor: Colors.secondary, marginTop: 8,
-  },
-  restartBtnText: { color: Colors.white, fontWeight: '800', fontSize: 15 },
-});

@@ -1,0 +1,78 @@
+import { Router, Request, Response } from 'express';
+
+const router = Router();
+
+const HTML = (title: string, sections: { h: string; p: string }[]) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>${title} — CST Driver</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0D1F33;color:#B0C4DE;line-height:1.7;padding:0}
+  .wrap{max-width:760px;margin:0 auto;padding:40px 24px 80px}
+  .logo{color:#F5A623;font-size:28px;font-weight:900;letter-spacing:1px;margin-bottom:4px}
+  .logo span{color:#B0C4DE;font-size:14px;font-weight:400;display:block;letter-spacing:0}
+  h1{color:#fff;font-size:26px;font-weight:900;margin:32px 0 4px}
+  .eff{color:#5577AA;font-size:12px;margin-bottom:24px}
+  .intro{background:#1A3A5C;border-radius:10px;padding:16px 20px;margin-bottom:28px;color:#8AAAC8;font-size:14px}
+  h2{color:#F5A623;font-size:14px;font-weight:800;margin:24px 0 6px;text-transform:uppercase;letter-spacing:.5px}
+  p{font-size:14px;margin-bottom:4px}
+  footer{margin-top:40px;color:#2A4A6A;font-size:12px;text-align:center}
+  a{color:#F5A623}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">CST<span>Commercial Support Technologies</span></div>
+  <h1>${title}</h1>
+  <p class="eff">Effective: January 1, 2025</p>
+  ${sections.map(s => `<h2>${s.h}</h2><p>${s.p.replace(/\n/g, '<br/>')}</p>`).join('')}
+  <footer>© ${new Date().getFullYear()} Commercial Support Technologies. All rights reserved.<br/>
+  Questions? <a href="mailto:support@commercialsupporttech.com">support@commercialsupporttech.com</a></footer>
+</div>
+</body>
+</html>`;
+
+const TERMS_SECTIONS = [
+  { h: '1. Acceptance of Terms', p: 'By accessing or using the Commercial Support Technologies (CST) mobile application, you agree to be bound by these Terms of Service. If you do not agree, do not use the app.' },
+  { h: '2. Description of Service', p: 'CST provides trucking professionals with tools including IFTA tracking, HOS logging, fuel logs, expense management, AI-assisted legal information, document storage, and related services. The app is intended for lawful commercial use only.' },
+  { h: '3. AI Legal Assistant Disclaimer', p: 'The AI Legal Assistant provides general information about trucking law and regulations. It does NOT constitute legal advice and is NOT a substitute for a licensed attorney. CST is not a law firm and assumes no liability for actions taken based on AI-generated content.' },
+  { h: '4. User Responsibilities', p: 'You are responsible for maintaining the confidentiality of your account credentials, ensuring the accuracy of data you enter, and complying with all applicable federal, state, and local laws including FMCSA regulations.' },
+  { h: '5. Subscription & Billing', p: 'Some features require a paid subscription. Subscriptions renew automatically unless cancelled at least 24 hours before the renewal date. Refunds are handled in accordance with the App Store or Google Play policies.' },
+  { h: '6. Data Accuracy', p: 'CST provides IFTA, HOS, tax, and other calculations as estimates based on user-entered data. Users are responsible for verifying all figures before filing with any government agency. CST is not liable for errors resulting from incorrect data entry.' },
+  { h: '7. Emergency Services', p: 'The Emergency SOS feature supplements — it does not replace — official emergency services. Always call 911 in a life-threatening emergency. CST is not liable for any delay, failure, or outcome related to emergency feature use.' },
+  { h: '8. Intellectual Property', p: 'All content, branding, and software in the CST app are the property of Commercial Support Technologies. You may not copy, modify, distribute, or reverse-engineer any part of the application.' },
+  { h: '9. Limitation of Liability', p: 'To the maximum extent permitted by law, CST shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the app, including lost profits or data loss.' },
+  { h: '10. Governing Law', p: 'These terms are governed by the laws of the United States. Any disputes shall be resolved through binding arbitration in accordance with the American Arbitration Association rules.' },
+  { h: '11. Changes to Terms', p: 'CST reserves the right to modify these terms at any time. Continued use of the app after changes constitutes acceptance of the updated terms.' },
+  { h: '12. Contact', p: 'For questions about these Terms of Service, contact us at support@commercialsupporttech.com.' },
+];
+
+const PRIVACY_SECTIONS = [
+  { h: '1. Information We Collect', p: 'We collect information you provide when you create an account (name, email address), data you enter into the app (trip logs, fuel stops, expenses, HOS entries, IFTA records, documents), your device location when you use GPS features (Emergency SOS, Find Help), and push notification tokens for sending alerts.' },
+  { h: '2. How We Use Your Information', p: "We use your data to provide and improve the CST app services, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant and Rate Advisor (your messages are sent to xAI's Grok API), and respond to support requests." },
+  { h: '3. Data Storage & Security', p: 'Your data is stored on secure servers using MongoDB with industry-standard encryption. Passwords are hashed using bcrypt and never stored in plain text. JWT tokens are used for authentication and expire automatically.' },
+  { h: '4. AI Features & Third Parties', p: "When you use the AI Legal Assistant or AI Rate Advisor, your messages are processed by xAI's Grok API. xAI's privacy policy applies to this processing. We do not share your personal identity with xAI — only the message content is transmitted." },
+  { h: '5. Document Vault', p: "Documents you upload to the Document Vault are stored via Cloudinary's secure cloud storage. Documents are private to your account and are not shared with other users or third parties." },
+  { h: '6. Location Data', p: 'Location data is only accessed when you actively use the Emergency SOS or Find Help features. We do not track your location in the background. Location coordinates shared via SMS during SOS are sent directly through your device\'s messaging app — we do not store them.' },
+  { h: '7. Push Notifications', p: 'If you enable push notifications, we store your Expo push token to send you deadline reminders and other alerts. You can disable push notifications at any time through your device settings.' },
+  { h: '8. Data Retention', p: 'We retain your data for as long as your account is active. You may request deletion of your account and all associated data by contacting support@commercialsupporttech.com. Deletion is processed within 30 days.' },
+  { h: '9. Your Rights', p: 'You have the right to access, correct, or delete your personal data. You may export your data (IFTA reports, tax prep PDFs) at any time using the in-app export features. Contact us to request a full data export or deletion.' },
+  { h: "10. Children's Privacy", p: 'The CST app is intended for commercial trucking professionals aged 18 and older. We do not knowingly collect personal information from children under 13.' },
+  { h: '11. Changes to This Policy', p: 'We may update this Privacy Policy periodically. We will notify you of significant changes via push notification or email. Continued use of the app after changes constitutes acceptance.' },
+  { h: '12. Contact Us', p: 'For privacy questions or data requests, contact us at:\n\nEmail: privacy@commercialsupporttech.com\nSupport: support@commercialsupporttech.com' },
+];
+
+router.get('/terms', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(HTML('Terms of Service', TERMS_SECTIONS));
+});
+
+router.get('/privacy', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(HTML('Privacy Policy', PRIVACY_SECTIONS));
+});
+
+export default router;

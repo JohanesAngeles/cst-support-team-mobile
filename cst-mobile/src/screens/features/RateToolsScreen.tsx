@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 type Tab = 'cpm' | 'minrate' | 'fsc';
 
@@ -13,6 +13,57 @@ const fmt = (n: number, decimals = 2) =>
   isNaN(n) || !isFinite(n) ? '—' : `$${n.toFixed(decimals)}`;
 
 export default function RateToolsScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    tabBar: {
+      flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12,
+      paddingBottom: 8, gap: 8,
+    },
+    tabBtn: {
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 5, backgroundColor: Colors.surface, borderRadius: 10,
+      paddingVertical: 10, borderWidth: 1, borderColor: Colors.border,
+    },
+    tabBtnActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+    tabLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
+    tabLabelActive: { color: Colors.textDark },
+    content: { padding: 16, paddingBottom: 40 },
+    card: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.border, padding: 16, marginBottom: 16, gap: 12,
+    },
+    cardTitle: { color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 4 },
+    field: { gap: 6 },
+    fieldLabel: { color: Colors.textMuted, fontSize: 13 },
+    hint: { color: Colors.textMuted, fontSize: 11 },
+    inputRow: {
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: Colors.surfaceLight, borderRadius: 10,
+      borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, height: 46,
+    },
+    prefix: { color: Colors.textMuted, fontSize: 15, marginRight: 4 },
+    input: { flex: 1, color: Colors.text, fontSize: 15 },
+    resultCard: {
+      backgroundColor: Colors.surface, borderRadius: 14,
+      borderWidth: 1, borderColor: Colors.secondary + '55',
+      borderLeftWidth: 4, borderLeftColor: Colors.secondary,
+      padding: 20, alignItems: 'center', gap: 4,
+    },
+    resultLabel: { color: Colors.textMuted, fontSize: 13, fontWeight: '600' },
+    resultValue: { color: Colors.secondary, fontSize: 42, fontWeight: '900', letterSpacing: -1 },
+    resultSub: { color: Colors.textMuted, fontSize: 12 },
+    totalRow: { flexDirection: 'row', gap: 16, marginTop: 12, width: '100%', justifyContent: 'center' },
+    totalItem: { alignItems: 'center', gap: 2 },
+    totalLabel: { color: Colors.textMuted, fontSize: 11 },
+    totalValue: { color: Colors.text, fontSize: 16, fontWeight: '800' },
+    insight: {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+      backgroundColor: Colors.secondary + '15', borderRadius: 8,
+      padding: 10, marginTop: 10, width: '100%',
+    },
+    insightText: { color: Colors.secondary, fontSize: 12, lineHeight: 18, flex: 1 },
+  }), [Colors]);
   const [tab, setTab] = useState<Tab>('cpm');
 
   // Cost Per Mile
@@ -80,6 +131,7 @@ export default function RateToolsScreen() {
       </View>
     </View>
   );
+
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -189,54 +241,3 @@ export default function RateToolsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  tabBar: {
-    flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12,
-    paddingBottom: 8, gap: 8,
-  },
-  tabBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 5, backgroundColor: Colors.surface, borderRadius: 10,
-    paddingVertical: 10, borderWidth: 1, borderColor: Colors.border,
-  },
-  tabBtnActive: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
-  tabLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
-  tabLabelActive: { color: Colors.textDark },
-  content: { padding: 16, paddingBottom: 40 },
-  card: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.border, padding: 16, marginBottom: 16, gap: 12,
-  },
-  cardTitle: { color: Colors.white, fontSize: 15, fontWeight: '800', marginBottom: 4 },
-  field: { gap: 6 },
-  fieldLabel: { color: Colors.textMuted, fontSize: 13 },
-  hint: { color: Colors.textMuted, fontSize: 11 },
-  inputRow: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surfaceLight, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, height: 46,
-  },
-  prefix: { color: Colors.textMuted, fontSize: 15, marginRight: 4 },
-  input: { flex: 1, color: Colors.white, fontSize: 15 },
-  resultCard: {
-    backgroundColor: Colors.surface, borderRadius: 14,
-    borderWidth: 1, borderColor: Colors.secondary + '55',
-    borderLeftWidth: 4, borderLeftColor: Colors.secondary,
-    padding: 20, alignItems: 'center', gap: 4,
-  },
-  resultLabel: { color: Colors.textMuted, fontSize: 13, fontWeight: '600' },
-  resultValue: { color: Colors.secondary, fontSize: 42, fontWeight: '900', letterSpacing: -1 },
-  resultSub: { color: Colors.textMuted, fontSize: 12 },
-  totalRow: { flexDirection: 'row', gap: 16, marginTop: 12, width: '100%', justifyContent: 'center' },
-  totalItem: { alignItems: 'center', gap: 2 },
-  totalLabel: { color: Colors.textMuted, fontSize: 11 },
-  totalValue: { color: Colors.white, fontSize: 16, fontWeight: '800' },
-  insight: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: Colors.secondary + '15', borderRadius: 8,
-    padding: 10, marginTop: 10, width: '100%',
-  },
-  insightText: { color: Colors.secondary, fontSize: 12, lineHeight: 18, flex: 1 },
-});

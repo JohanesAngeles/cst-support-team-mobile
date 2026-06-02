@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView,
@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getIFTA, addIFTAEntry, deleteIFTAEntry } from '../../api/features';
 
 interface IFTAEntry {
@@ -32,6 +32,58 @@ const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 2 
 const fmtMoney = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 export default function IFTATrackerScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    list: { padding: 16, paddingBottom: 100 },
+    quarterCard: { backgroundColor: Colors.secondary + '1A', borderRadius: 14, borderWidth: 1, borderColor: Colors.secondary + '44', padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    quarterLeft: { gap: 4 },
+    quarterBadge: { color: Colors.secondary, fontSize: 26, fontWeight: '900' },
+    quarterDeadline: { color: Colors.secondary, fontSize: 12, opacity: 0.8 },
+    exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+    exportText: { color: Colors.textDark, fontSize: 12, fontWeight: '800' },
+    statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+    statCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 10, alignItems: 'center', gap: 3 },
+    statValue: { fontSize: 13, fontWeight: '900' },
+    statLabel: { color: Colors.textMuted, fontSize: 9, textAlign: 'center' },
+    tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: Colors.secondary + '12', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.secondary + '30', marginBottom: 14 },
+    tipText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 18 },
+    tableHeader: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
+    stateBadge: { width: 48, height: 48, borderRadius: 12, backgroundColor: Colors.secondary + '22', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+    stateText: { color: Colors.secondary, fontSize: 15, fontWeight: '900' },
+    cardBody: { flex: 1 },
+    cardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    cardStat: { flex: 1, alignItems: 'center' },
+    cardStatValue: { color: Colors.text, fontSize: 13, fontWeight: '800' },
+    cardStatLabel: { color: Colors.textMuted, fontSize: 10 },
+    cardDivider: { width: 1, height: 24, backgroundColor: Colors.border },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13 },
+    filingCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 8, marginTop: 14 },
+    filingTitle: { color: Colors.text, fontSize: 14, fontWeight: '800', marginBottom: 4 },
+    filingRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderTopWidth: 1, borderTopColor: Colors.border },
+    filingQ: { color: Colors.textMuted, fontSize: 13 },
+    filingDue: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+    disclaimer: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
+    disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800' },
+    modalSub: { color: Colors.secondary, fontSize: 13, marginBottom: 4 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 4 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 },
+    noteBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: Colors.secondary + '15', borderRadius: 10, padding: 12, marginTop: 12 },
+    noteText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 17 },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const [entries, setEntries] = useState<IFTAEntry[]>([]);
   const [quarter, setQuarter] = useState(1);
   const [year, setYear] = useState(new Date().getFullYear());
@@ -114,17 +166,17 @@ export default function IFTATrackerScreen() {
       <!DOCTYPE html><html><head><meta charset="utf-8"/>
       <style>
         body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a2e; }
-        h1 { color: #f5a623; font-size: 24px; margin-bottom: 4px; }
+        h1 { color: #2C6EBD; font-size: 24px; margin-bottom: 4px; }
         .subtitle { color: #666; font-size: 14px; margin-bottom: 24px; }
         .summary { display: flex; gap: 16px; margin-bottom: 24px; }
         .stat { background: #f4f4f8; border-radius: 8px; padding: 12px 18px; text-align: center; }
         .stat-value { font-size: 22px; font-weight: 900; color: #1a1a2e; }
         .stat-label { font-size: 11px; color: #888; margin-top: 2px; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f5a623; color: white; padding: 10px 12px; text-align: left; }
+        th { background: #2C6EBD; color: white; padding: 10px 12px; text-align: left; }
         td { padding: 9px 12px; border-bottom: 1px solid #e8e8e8; }
         tr:nth-child(even) td { background: #fafafa; }
-        .total-row td { font-weight: 900; background: #fff3e0; border-top: 2px solid #f5a623; }
+        .total-row td { font-weight: 900; background: #fff3e0; border-top: 2px solid #2C6EBD; }
         .footer { margin-top: 28px; font-size: 11px; color: #999; }
         .deadline { color: #e67e22; font-weight: bold; }
       </style></head><body>
@@ -169,6 +221,7 @@ export default function IFTATrackerScreen() {
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
+
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -351,55 +404,3 @@ export default function IFTATrackerScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  list: { padding: 16, paddingBottom: 100 },
-  quarterCard: { backgroundColor: Colors.secondary + '1A', borderRadius: 14, borderWidth: 1, borderColor: Colors.secondary + '44', padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  quarterLeft: { gap: 4 },
-  quarterBadge: { color: Colors.secondary, fontSize: 26, fontWeight: '900' },
-  quarterDeadline: { color: Colors.secondary, fontSize: 12, opacity: 0.8 },
-  exportBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  exportText: { color: Colors.textDark, fontSize: 12, fontWeight: '800' },
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  statCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 10, alignItems: 'center', gap: 3 },
-  statValue: { fontSize: 13, fontWeight: '900' },
-  statLabel: { color: Colors.textMuted, fontSize: 9, textAlign: 'center' },
-  tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: Colors.secondary + '12', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.secondary + '30', marginBottom: 14 },
-  tipText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 18 },
-  tableHeader: { color: Colors.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  stateBadge: { width: 48, height: 48, borderRadius: 12, backgroundColor: Colors.secondary + '22', borderWidth: 1, borderColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
-  stateText: { color: Colors.secondary, fontSize: 15, fontWeight: '900' },
-  cardBody: { flex: 1 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardStat: { flex: 1, alignItems: 'center' },
-  cardStatValue: { color: Colors.white, fontSize: 13, fontWeight: '800' },
-  cardStatLabel: { color: Colors.textMuted, fontSize: 10 },
-  cardDivider: { width: 1, height: 24, backgroundColor: Colors.border },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13 },
-  filingCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16, gap: 8, marginTop: 14 },
-  filingTitle: { color: Colors.white, fontSize: 14, fontWeight: '800', marginBottom: 4 },
-  filingRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 7, borderTopWidth: 1, borderTopColor: Colors.border },
-  filingQ: { color: Colors.textMuted, fontSize: 13 },
-  filingDue: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  disclaimer: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 4 },
-  disclaimerText: { color: Colors.textMuted, fontSize: 11, flex: 1, lineHeight: 16 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800' },
-  modalSub: { color: Colors.secondary, fontSize: 13, marginBottom: 4 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 10, marginBottom: 4 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
-  noteBox: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: Colors.secondary + '15', borderRadius: 10, padding: 12, marginTop: 12 },
-  noteText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 17 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-});

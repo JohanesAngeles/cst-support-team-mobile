@@ -1,11 +1,11 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 
 interface WeighStation {
   id: string;
@@ -95,6 +95,30 @@ stations.forEach(ws=>{
 }
 
 export default function WeighStationScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    header: { padding: 12, gap: 10 },
+    infoBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surface, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: Colors.border },
+    infoText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
+    toggle: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+    toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 9, gap: 6 },
+    toggleActive: { backgroundColor: Colors.secondary },
+    toggleText: { color: Colors.textMuted, fontWeight: '700', fontSize: 13 },
+    toggleActiveText: { color: Colors.textDark },
+    search: { marginHorizontal: 12, marginBottom: 8, backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14 },
+    list: { paddingHorizontal: 12, paddingBottom: 30 },
+    card: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8 },
+    cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    wsIcon: { fontSize: 24 },
+    wsName: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    wsMeta: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
+    stateBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: Colors.secondary },
+    stateText: { color: Colors.secondary, fontSize: 12, fontWeight: '900' },
+    bypassRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    bypassText: { color: '#2ECC71', fontSize: 12, fontWeight: '600' },
+    emptyText: { color: Colors.textMuted, textAlign: 'center', paddingTop: 30, fontSize: 14 },
+  }), [Colors]);
   const [view, setView] = useState<'map' | 'list'>('map');
   const [search, setSearch] = useState('');
   const webRef = useRef<WebView>(null);
@@ -106,6 +130,7 @@ export default function WeighStationScreen() {
   );
 
   const statesWithStations = [...new Set(STATIONS.map(ws => ws.state))].sort();
+
 
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -176,27 +201,3 @@ export default function WeighStationScreen() {
     </SafeAreaView>
   );
 }
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: { padding: 12, gap: 10 },
-  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.surface, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: Colors.border },
-  infoText: { color: Colors.textMuted, fontSize: 11, flex: 1 },
-  toggle: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
-  toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 9, gap: 6 },
-  toggleActive: { backgroundColor: Colors.secondary },
-  toggleText: { color: Colors.textMuted, fontWeight: '700', fontSize: 13 },
-  toggleActiveText: { color: Colors.textDark },
-  search: { marginHorizontal: 12, marginBottom: 8, backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14 },
-  list: { paddingHorizontal: 12, paddingBottom: 30 },
-  card: { backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 8 },
-  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  wsIcon: { fontSize: 24 },
-  wsName: { color: Colors.white, fontSize: 14, fontWeight: '700' },
-  wsMeta: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-  stateBadge: { backgroundColor: Colors.secondary + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: Colors.secondary },
-  stateText: { color: Colors.secondary, fontSize: 12, fontWeight: '900' },
-  bypassRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  bypassText: { color: '#2ECC71', fontSize: 12, fontWeight: '600' },
-  emptyText: { color: Colors.textMuted, textAlign: 'center', paddingTop: 30, fontSize: 14 },
-});

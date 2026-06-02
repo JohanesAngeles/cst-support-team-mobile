@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
+﻿import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, Share, ScrollView,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../constants/colors';
 import { getTrips, addTrip, updateTrip, deleteTrip } from '../../api/features';
 
 interface Trip {
@@ -22,11 +22,54 @@ interface Trip {
   status: 'Completed' | 'In Progress' | 'Cancelled';
 }
 
-const STATUS_COLORS = { Completed: Colors.success, 'In Progress': Colors.secondary, Cancelled: Colors.danger };
+const STATUS_COLORS = { Completed: '#27AE60', 'In Progress': '#2C6EBD', Cancelled: '#CC0000' };
 const todayStr = () => new Date().toISOString().split('T')[0];
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function TripLogScreen() {
+  const Colors = useColors();
+  const styles = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
+    summaryRow: { flexDirection: 'row', padding: 16, gap: 10 },
+    summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
+    summaryValue: { fontSize: 17, fontWeight: '900' },
+    summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
+    list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
+    filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+    filterChipActive: { backgroundColor: Colors.secondary + '22', borderColor: Colors.secondary },
+    filterChipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+    filterChipTextActive: { color: Colors.secondary },
+    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 6 },
+    cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    routeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
+    origin: { color: Colors.text, fontSize: 14, fontWeight: '700', flex: 1 },
+    dest: { color: Colors.text, fontSize: 14, fontWeight: '700', flex: 1, textAlign: 'right' },
+    statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 },
+    statusText: { fontSize: 10, fontWeight: '700' },
+    cardMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
+    metaText: { color: Colors.textMuted, fontSize: 12 },
+    metaDot: { color: Colors.textMuted, fontSize: 12 },
+    loadNum: { color: Colors.textMuted, fontSize: 11 },
+    cardNotes: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic' },
+    empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
+    emptyText: { color: Colors.text, fontSize: 16, fontWeight: '700' },
+    emptySub: { color: Colors.textMuted, fontSize: 13 },
+    fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+    modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
+    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4, maxHeight: '90%' },
+    modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
+    modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
+    modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14, marginTop: 4 },
+    statusRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+    statusChip: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center', backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border },
+    statusChipText: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
+    modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
+    cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
+    cancelText: { color: Colors.textMuted, fontWeight: '700' },
+    saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
+    saveText: { color: Colors.textDark, fontWeight: '800' },
+  }), [Colors]);
   const navigation = useNavigation();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -149,6 +192,7 @@ export default function TripLogScreen() {
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
 
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Summary */}
@@ -270,46 +314,3 @@ export default function TripLogScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
-  summaryRow: { flexDirection: 'row', padding: 16, gap: 10 },
-  summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
-  summaryValue: { fontSize: 17, fontWeight: '900' },
-  summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
-  list: { paddingHorizontal: 16, paddingBottom: 100, paddingTop: 8 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  filterChipActive: { backgroundColor: Colors.secondary + '22', borderColor: Colors.secondary },
-  filterChipText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
-  filterChipTextActive: { color: Colors.secondary },
-  card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 6 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  origin: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1 },
-  dest: { color: Colors.white, fontSize: 14, fontWeight: '700', flex: 1, textAlign: 'right' },
-  statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 },
-  statusText: { fontSize: 10, fontWeight: '700' },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
-  metaText: { color: Colors.textMuted, fontSize: 12 },
-  metaDot: { color: Colors.textMuted, fontSize: 12 },
-  loadNum: { color: Colors.textMuted, fontSize: 11 },
-  cardNotes: { color: Colors.textMuted, fontSize: 12, fontStyle: 'italic' },
-  empty: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-  emptySub: { color: Colors.textMuted, fontSize: 13 },
-  fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
-  modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4, maxHeight: '90%' },
-  modalTitle: { color: Colors.white, fontSize: 18, fontWeight: '800', marginBottom: 4 },
-  modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
-  modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.white, fontSize: 14, marginTop: 4 },
-  statusRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
-  statusChip: { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center', backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border },
-  statusChipText: { color: Colors.textMuted, fontSize: 11, fontWeight: '700' },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 14, alignItems: 'center' },
-  cancelText: { color: Colors.textMuted, fontWeight: '700' },
-  saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
-  saveText: { color: Colors.textDark, fontWeight: '800' },
-});
