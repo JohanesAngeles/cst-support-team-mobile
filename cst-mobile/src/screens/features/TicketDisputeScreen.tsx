@@ -9,6 +9,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useColors } from '../../constants/colors';
+import { uploadDocument } from '../../api/features';
 
 const VIOLATIONS = [
   'Speeding', 'Logbook Violation', 'Overweight', 'Hours of Service',
@@ -77,6 +78,7 @@ export default function TicketDisputeScreen() {
     letterText: { color: Colors.text, fontSize: 13, lineHeight: 22, fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace' },
   }), [Colors]);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [vaultSaving, setVaultSaving] = useState(false);
   const [driverName, setDriverName] = useState('');
   const [cdl, setCdl] = useState('');
   const [ticketDate, setTicketDate] = useState('');
@@ -143,10 +145,7 @@ Note: This letter was generated as a template. Review and customize before submi
     Alert.alert('Copied', 'Dispute letter copied to clipboard.');
   };
 
-  const exportPDF = async () => {
-    setPdfLoading(true);
-    try {
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+  const buildLetterHTML = () => `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
   body{font-family:Arial,sans-serif;margin:48px;color:#1a1a1a;font-size:13px;line-height:1.7;}
   .header{border-bottom:2px solid #1A3A5C;padding-bottom:16px;margin-bottom:24px;}
@@ -163,7 +162,10 @@ Note: This letter was generated as a template. Review and customize before submi
 <div class="footer">This document was generated as a template. Review and customize before submitting. CST Driver App — Commercial Support Technologies</div>
 </body></html>`;
 
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
+  const exportPDF = async () => {
+    setPdfLoading(true);
+    try {
+      const { uri } = await Print.printToFileAsync({ html: buildLetterHTML(), base64: false });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Share Dispute Letter' });
@@ -174,6 +176,20 @@ Note: This letter was generated as a template. Review and customize before submi
       Alert.alert('Export Failed', err.message ?? 'Could not generate PDF');
     } finally {
       setPdfLoading(false);
+    }
+  };
+
+  const saveToVault = async () => {
+    setVaultSaving(true);
+    try {
+      const { uri } = await Print.printToFileAsync({ html: buildLetterHTML(), base64: false });
+      const label = `Ticket Dispute — ${violation || 'Violation'} ${ticketDate ? `(${ticketDate})` : ''}`.trim();
+      await uploadDocument(label, { uri, type: 'application/pdf', name: 'Ticket_Dispute.pdf' });
+      Alert.alert('Saved!', 'Dispute letter saved to your Document Vault.');
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Could not save to vault.');
+    } finally {
+      setVaultSaving(false);
     }
   };
 
@@ -274,6 +290,16 @@ Note: This letter was generated as a template. Review and customize before submi
                 {pdfLoading
                   ? <ActivityIndicator size="small" color={Colors.textDark} />
                   : <><Ionicons name="document-outline" size={18} color={Colors.textDark} /><Text style={styles.copyText}>PDF</Text></>
+                }
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.copyBtn, { backgroundColor: '#3498DB' }]}
+                onPress={saveToVault}
+                disabled={vaultSaving}
+              >
+                {vaultSaving
+                  ? <ActivityIndicator size="small" color={Colors.textDark} />
+                  : <><Ionicons name="cloud-upload-outline" size={18} color={Colors.textDark} /><Text style={styles.copyText}>Vault</Text></>
                 }
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setLetterModal(false)}>

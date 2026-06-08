@@ -135,10 +135,30 @@ export default function ReferralScreen() {
             <Text style={styles.statLabel}>Drivers Referred</Text>
           </View>
           <View style={styles.statBox}>
-            <Text style={styles.statNum}>{referralCount > 0 ? `${referralCount}mo` : '—'}</Text>
-            <Text style={styles.statLabel}>Discount Earned</Text>
+            <Text style={styles.statNum}>{referralCount > 0 ? `${referralCount} mo` : '—'}</Text>
+            <Text style={styles.statLabel}>Free Months</Text>
+          </View>
+          <View style={styles.statBox}>
+            <Text style={[styles.statNum, { color: referralCount > 0 ? '#2ECC71' : Colors.secondary }]}>
+              {referralCount > 0 ? `$${(referralCount * 29).toFixed(0)}` : '$0'}
+            </Text>
+            <Text style={styles.statLabel}>Value Saved</Text>
           </View>
         </View>
+
+        {referralCount > 0 && (
+          <View style={{ backgroundColor: '#2ECC71' + '18', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#2ECC71' + '44', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="checkmark-circle" size={22} color="#2ECC71" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: Colors.text, fontWeight: '800', fontSize: 14 }}>
+                {referralCount === 1 ? '1 month free earned!' : `${referralCount} months free earned!`}
+              </Text>
+              <Text style={{ color: Colors.textMuted, fontSize: 12, marginTop: 2 }}>
+                Applied automatically at next billing cycle.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* How it works */}
         <View style={styles.howCard}>

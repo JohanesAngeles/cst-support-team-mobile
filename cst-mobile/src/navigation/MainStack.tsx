@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useColors } from '../constants/colors';
-import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import MainTabs from './MainTabs';
 import TaxCalculatorScreen from '../screens/features/TaxCalculatorScreen';
 import AILegalScreen from '../screens/features/AILegalScreen';
 import CalendarScreen from '../screens/features/CalendarScreen';
@@ -67,6 +67,8 @@ import CargoClaimScreen from '../screens/features/CargoClaimScreen';
 import BillOfLadingScreen from '../screens/features/BillOfLadingScreen';
 import NotificationsScreen from '../screens/features/NotificationsScreen';
 import VerifyEmailScreen from '../screens/auth/VerifyEmailScreen';
+import LanguageSelectionScreen from '../screens/auth/LanguageSelectionScreen';
+import TranslatorScreen from '../screens/features/TranslatorScreen';
 import AILoadRateScreen from '../screens/features/AILoadRateScreen';
 import RateBenchmarkScreen from '../screens/features/RateBenchmarkScreen';
 import HOSCountdownScreen from '../screens/features/HOSCountdownScreen';
@@ -74,9 +76,11 @@ import PaymentTrackerScreen from '../screens/features/PaymentTrackerScreen';
 import QuarterlyTaxScreen from '../screens/features/QuarterlyTaxScreen';
 import FuelMapScreen from '../screens/features/FuelMapScreen';
 import TripPlannerScreen from '../screens/features/TripPlannerScreen';
+import SponsorsScreen from '../screens/features/SponsorsScreen';
+import TripProfitScreen from '../screens/features/TripProfitScreen';
 
 export type MainStackParamList = {
-  Dashboard: undefined;
+  Home: undefined;
   TaxCalculator: undefined;
   AILegal: undefined;
   Calendar: undefined;
@@ -142,6 +146,8 @@ export type MainStackParamList = {
   BillOfLading: undefined;
   Notifications: undefined;
   VerifyEmail: undefined;
+  LanguageSelection: undefined;
+  Translator: undefined;
   AILoadRate: undefined;
   RateBenchmark: undefined;
   HOSCountdown: undefined;
@@ -149,6 +155,8 @@ export type MainStackParamList = {
   QuarterlyTax: undefined;
   FuelMap: undefined;
   TripPlanner: undefined;
+  Sponsors: undefined;
+  TripProfit: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -167,7 +175,7 @@ export default function MainStack() {
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
-      <Stack.Screen name="Dashboard" component={DashboardScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="TaxCalculator" component={TaxCalculatorScreen} options={{ title: 'Tax Calculator' }} />
       <Stack.Screen name="AILegal" component={AILegalScreen} options={{ title: 'AI Legal Assistant' }} />
       <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Driver Calendar' }} />
@@ -233,6 +241,8 @@ export default function MainStack() {
       <Stack.Screen name="BillOfLading" component={BillOfLadingScreen} options={{ title: 'Bill of Lading' }} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Notifications' }} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} options={{ title: 'Verify Email' }} />
+      <Stack.Screen name="LanguageSelection" component={LanguageSelectionScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Translator" component={TranslatorScreen} options={{ title: 'Translator' }} />
       <Stack.Screen name="AILoadRate" component={AILoadRateScreen} options={{ title: 'AI Rate Advisor' }} />
       <Stack.Screen name="RateBenchmark" component={RateBenchmarkScreen} options={{ title: 'Rate Benchmark' }} />
       <Stack.Screen name="HOSCountdown" component={HOSCountdownScreen} options={{ title: 'HOS Countdown' }} />
@@ -240,6 +250,8 @@ export default function MainStack() {
       <Stack.Screen name="QuarterlyTax" component={QuarterlyTaxScreen} options={{ title: 'Quarterly Tax Estimator' }} />
       <Stack.Screen name="FuelMap" component={FuelMapScreen} options={{ title: 'Diesel Prices' }} />
       <Stack.Screen name="TripPlanner" component={TripPlannerScreen} options={{ title: 'Trip Planner' }} />
+      <Stack.Screen name="Sponsors" component={SponsorsScreen} options={{ title: 'Partners & Sponsors' }} />
+      <Stack.Screen name="TripProfit" component={TripProfitScreen} options={{ title: 'Trip Profit Calculator' }} />
     </Stack.Navigator>
   );
 }

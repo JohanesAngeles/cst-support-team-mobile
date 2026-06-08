@@ -1,15 +1,16 @@
-﻿import React, { useState, useEffect, useRef, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import {
   SKILL_CHALLENGES, CDL_LESSONS,
   HOS_MATH_PROBLEMS, AXLE_PROBLEMS, ROAD_SIGN_QUESTIONS,
 } from '../../data/cdlQuestions';
-import { submitChallengeScore } from '../../api/roadReady';
+import { submitChallengeScore, getRoadReadyProfile } from '../../api/roadReady';
 
 interface QuizQuestion {
   q: string;
@@ -94,6 +95,13 @@ export default function CDLChallengeScreen() {
   const [selected, setSelected] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState(60);
   const [saving, setSaving] = useState(false);
+  const [bestScores, setBestScores] = useState<Record<string, number>>({});
+
+  useFocusEffect(useCallback(() => {
+    getRoadReadyProfile()
+      .then(d => setBestScores((d.profile.challengesBestScores as Record<string, number>) ?? {}))
+      .catch(() => {});
+  }, []));
 
   const challengeIdRef = useRef('');
   const timeLimitRef = useRef(60);
@@ -121,7 +129,10 @@ export default function CDLChallengeScreen() {
     finishedRef.current = true;
     if (timerRef.current) clearInterval(timerRef.current);
     setSaving(true);
-    try { await submitChallengeScore(challengeIdRef.current, scoreRef.current); } catch (_) {}
+    try {
+      const updated = await submitChallengeScore(challengeIdRef.current, scoreRef.current);
+      setBestScores((updated.profile.challengesBestScores as Record<string, number>) ?? {});
+    } catch (_) {}
     setSaving(false);
     setView('results');
   };
@@ -165,24 +176,34 @@ export default function CDLChallengeScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.header}>CDL Skill Challenges</Text>
           <Text style={styles.sub}>Beat the clock — earn Skill score points for high scores</Text>
-          {SKILL_CHALLENGES.map(c => (
-            <TouchableOpacity
-              key={c.id}
-              style={styles.challengeCard}
-              onPress={() => startChallenge(c.id, c.timeLimit)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.challengeIcon, { backgroundColor: c.color + '22' }]}>
-                <Ionicons name={c.icon as any} size={28} color={c.color} />
-              </View>
-              <View style={styles.challengeInfo}>
-                <Text style={styles.challengeTitle}>{c.title}</Text>
-                <Text style={styles.challengeDesc}>{c.desc}</Text>
-                <Text style={[styles.challengeTimer, { color: c.color }]}>⏱ {c.timeLimit}s</Text>
-              </View>
-              <Ionicons name="play-circle-outline" size={32} color={c.color} />
-            </TouchableOpacity>
-          ))}
+          {SKILL_CHALLENGES.map(c => {
+            const best = bestScores[c.id] ?? 0;
+            return (
+              <TouchableOpacity
+                key={c.id}
+                style={[styles.challengeCard, best > 0 && { borderColor: c.color, borderWidth: 1.5 }]}
+                onPress={() => startChallenge(c.id, c.timeLimit)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.challengeIcon, { backgroundColor: c.color + '22' }]}>
+                  <Ionicons name={c.icon as any} size={28} color={c.color} />
+                </View>
+                <View style={styles.challengeInfo}>
+                  <Text style={styles.challengeTitle}>{c.title}</Text>
+                  <Text style={styles.challengeDesc}>{c.desc}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 2 }}>
+                    <Text style={[styles.challengeTimer, { color: c.color }]}>⏱ {c.timeLimit}s</Text>
+                    {best > 0 && (
+                      <Text style={{ color: '#2ECC71', fontSize: 12, fontWeight: '700' }}>
+                        🏆 Best: {best} pts
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                <Ionicons name="play-circle-outline" size={32} color={c.color} />
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
     );
@@ -233,6 +254,8 @@ export default function CDLChallengeScreen() {
   const challenge = SKILL_CHALLENGES.find(c => c.id === challengeIdRef.current);
   const maxScore = questions.length * 10;
   const pct = maxScore > 0 ? Math.round((scoreRef.current / maxScore) * 100) : 0;
+  const prevBest = bestScores[challengeIdRef.current] ?? 0;
+  const isNewBest = scoreRef.current > prevBest;
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -240,10 +263,16 @@ export default function CDLChallengeScreen() {
         {saving
           ? <ActivityIndicator size="large" color={Colors.secondary} />
           : <>
-              <Ionicons name="trophy-outline" size={80} color={Colors.secondary} />
+              <Ionicons name={isNewBest ? 'trophy' : 'trophy-outline'} size={80} color={isNewBest ? '#F1C40F' : Colors.secondary} />
               <Text style={styles.resultsTitle}>{challenge?.title ?? 'Challenge'}</Text>
               <Text style={styles.resultsBig}>{scoreRef.current}</Text>
               <Text style={styles.resultsSub}>points  •  {pct}%</Text>
+              {isNewBest
+                ? <Text style={{ color: '#F1C40F', fontWeight: '800', fontSize: 14 }}>🎉 New Personal Best!</Text>
+                : prevBest > 0
+                  ? <Text style={{ color: Colors.textMuted, fontSize: 13 }}>Personal best: {prevBest} pts</Text>
+                  : null
+              }
               <TouchableOpacity
                 style={styles.retryBtn}
                 onPress={() => startChallenge(challengeIdRef.current, challenge?.timeLimit ?? 60)}

@@ -174,11 +174,20 @@ export default function FuelLogScreen() {
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         ListHeaderComponent={
           <View style={styles.header}>
+            {/* Page header */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: Colors.text, fontSize: 24, fontWeight: '900' }}>Fuel Log</Text>
+              <Text style={{ color: Colors.textMuted, fontSize: 13, marginTop: 3 }}>
+                Track every stop — gallons, price & mileage
+              </Text>
+            </View>
+
+            {/* Stats row */}
             <View style={styles.summaryRow}>
               {[
-                { label: 'Total Gallons', value: totalGallons.toFixed(1), icon: 'water-outline', color: '#3498DB' },
-                { label: 'Total Spent', value: totalSpent > 0 ? `$${totalSpent.toFixed(2)}` : '—', icon: 'cash-outline', color: Colors.danger },
-                { label: 'Avg Price', value: avgPrice > 0 ? `$${avgPrice.toFixed(3)}` : '—', icon: 'trending-down-outline', color: Colors.secondary },
+                { label: 'Total Gallons', value: totalGallons.toFixed(1), icon: 'water-outline',      color: '#3498DB'     },
+                { label: 'Total Spent',   value: totalSpent > 0 ? `$${totalSpent.toFixed(2)}` : '—', icon: 'cash-outline', color: Colors.danger },
+                { label: 'Avg Price',     value: avgPrice   > 0 ? `$${avgPrice.toFixed(3)}`   : '—', icon: 'trending-down-outline', color: Colors.secondary },
               ].map(({ label, value, icon, color }) => (
                 <View key={label} style={styles.summaryCard}>
                   <Ionicons name={icon as any} size={18} color={color} />
@@ -190,10 +199,85 @@ export default function FuelLogScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="water-outline" size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No fuel stops logged</Text>
-            <Text style={styles.emptySub}>Tap + to log a fuel stop</Text>
+          <View style={{ paddingTop: 4 }}>
+
+            {/* Big CTA card */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#021B3A', borderRadius: 20, padding: 20,
+                flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20,
+              }}
+              onPress={openModal}
+              activeOpacity={0.85}
+            >
+              <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name="flame-outline" size={28} color="#FFFFFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '900' }}>Log your first stop</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 3 }}>
+                  Takes less than 30 seconds
+                </Text>
+              </View>
+              <View style={{ backgroundColor: '#FFFFFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
+                <Text style={{ color: '#021B3A', fontSize: 13, fontWeight: '800' }}>+ Add</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* What to record */}
+            <Text style={{ color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 12 }}>
+              What to record at every stop
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+              {[
+                { icon: 'location-outline',      color: '#E74C3C', title: 'Location',   sub: 'Truck stop name & city'    },
+                { icon: 'water-outline',          color: '#3498DB', title: 'Gallons',    sub: 'Exact pump reading'        },
+                { icon: 'cash-outline',           color: '#27AE60', title: 'Price/Gal',  sub: 'Diesel price at pump'      },
+                { icon: 'speedometer-outline',    color: '#E67E22', title: 'Odometer',   sub: 'Miles at fill-up'          },
+              ].map(item => (
+                <View
+                  key={item.title}
+                  style={{
+                    width: '47%',
+                    backgroundColor: Colors.surface, borderRadius: 14,
+                    padding: 14, borderWidth: 1, borderColor: Colors.border, gap: 8,
+                  }}
+                >
+                  <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: item.color + '18', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name={item.icon as any} size={20} color={item.color} />
+                  </View>
+                  <View>
+                    <Text style={{ color: Colors.text, fontSize: 13, fontWeight: '700' }}>{item.title}</Text>
+                    <Text style={{ color: Colors.textMuted, fontSize: 11, marginTop: 2 }}>{item.sub}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Common truck stops */}
+            <Text style={{ color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 10 }}>
+              Common stops
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+              {["Pilot", "Flying J", "Love's", "TA", "Petro", "Kwik Trip", "Speedway", "Casey's"].map(name => (
+                <View key={name} style={{ backgroundColor: Colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1, borderColor: Colors.border }}>
+                  <Text style={{ color: Colors.text, fontSize: 13, fontWeight: '600' }}>{name}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* IFTA tip */}
+            <View style={{ backgroundColor: '#EEF6FF', borderRadius: 14, padding: 16, flexDirection: 'row', gap: 12, alignItems: 'flex-start', borderWidth: 1, borderColor: '#C8DEFF' }}>
+              <Ionicons name="bulb-outline" size={22} color="#3498DB" style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#1A3A6E', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
+                  Fuel logs = IFTA done automatically
+                </Text>
+                <Text style={{ color: '#4A6FA0', fontSize: 12, lineHeight: 18 }}>
+                  Every stop you log here automatically fills your quarterly IFTA fuel tax report — saving hours of paperwork at filing time.
+                </Text>
+              </View>
+            </View>
           </View>
         }
         renderItem={({ item }) => {

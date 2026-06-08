@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import { getUpcomingAlerts, UpcomingAlert } from '../../utils/notifications';
 import {
@@ -26,6 +27,7 @@ const urgencyColor = (days: number) => {
 };
 
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const [alerts,  setAlerts]  = useState<UpcomingAlert[]>([]);
   const [history, setHistory] = useState<StoredNotification[]>([]);
@@ -47,9 +49,9 @@ export default function NotificationsScreen() {
   }, []));
 
   const handleClearHistory = () => {
-    Alert.alert('Clear History', 'Remove all notification history?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear', style: 'destructive', onPress: async () => {
+    Alert.alert(t('notifications.clearHistory'), t('notifications.clearHistoryMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('notifications.clearHistory'), style: 'destructive', onPress: async () => {
           await clearNotifications();
           setHistory([]);
         }},
@@ -67,10 +69,10 @@ export default function NotificationsScreen() {
           <Text style={[s.cardTitle, { color: theme.text }]}>{item.title}</Text>
           <Text style={[s.cardSub, { color: theme.textMuted }]}>
             {item.daysAway <= 0
-              ? 'Due today!'
+              ? t('notifications.dueToday')
               : item.daysAway === 1
-              ? 'Due tomorrow'
-              : `Due in ${item.daysAway} days`}
+              ? t('notifications.dueTomorrow')
+              : t('notifications.dueInDays', { count: item.daysAway })}
           </Text>
         </View>
         <View style={[s.badge, { backgroundColor: color + '22' }]}>
@@ -107,14 +109,14 @@ export default function NotificationsScreen() {
 
       {/* Tabs */}
       <View style={[s.tabs, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
-        {(['upcoming', 'history'] as const).map(t => (
+        {(['upcoming', 'history'] as const).map(tabKey => (
           <TouchableOpacity
-            key={t}
-            style={[s.tab, tab === t && { borderBottomColor: theme.secondary }]}
-            onPress={() => setTab(t)}
+            key={tabKey}
+            style={[s.tab, tab === tabKey && { borderBottomColor: theme.secondary }]}
+            onPress={() => setTab(tabKey)}
           >
-            <Text style={[s.tabTxt, { color: tab === t ? theme.secondary : theme.textMuted }]}>
-              {t === 'upcoming' ? 'Upcoming' : 'History'}
+            <Text style={[s.tabTxt, { color: tab === tabKey ? theme.secondary : theme.textMuted }]}>
+              {tabKey === 'upcoming' ? t('notifications.upcoming') : t('notifications.history')}
             </Text>
           </TouchableOpacity>
         ))}
@@ -134,7 +136,7 @@ export default function NotificationsScreen() {
         <View style={s.center}>
           <Ionicons name="notifications-off-outline" size={48} color={theme.border} />
           <Text style={[s.emptyTxt, { color: theme.textMuted }]}>
-            {tab === 'upcoming' ? 'No upcoming deadlines' : 'No notification history'}
+            {tab === 'upcoming' ? t('notifications.noUpcoming') : t('notifications.noHistory')}
           </Text>
         </View>
       ) : tab === 'upcoming' ? (

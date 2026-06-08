@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator, ScrollView,
@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../api/auth';
-import { useTheme } from '../../context/ThemeContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
 type Props = {
@@ -16,8 +16,45 @@ type Props = {
   route: RouteProp<AuthStackParamList, 'ResetPassword'>;
 };
 
+function SparkleCluster() {
+  return (
+    <View style={sp.wrap}>
+      <View style={[sp.diamond, { width: 60, height: 60, left: 0, top: 16, borderRadius: 7 }]} />
+      <View style={[sp.diamond, { width: 42, height: 42, left: 38, top: 8, borderRadius: 5 }]} />
+      <View style={[sp.diamond, { width: 26, height: 26, left: 68, top: 2, borderRadius: 3 }]} />
+    </View>
+  );
+}
+const sp = StyleSheet.create({
+  wrap: { width: 102, height: 80 },
+  diamond: { position: 'absolute', backgroundColor: '#EEF3F8', borderWidth: 1.5, borderColor: '#C0D0E0', transform: [{ rotate: '45deg' }] },
+});
+
+function OtpInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<TextInput>(null);
+  const LEN = 6;
+  return (
+    <TouchableOpacity activeOpacity={1} onPress={() => inputRef.current?.focus()} style={otp.row}>
+      <TextInput ref={inputRef} value={value} onChangeText={t => onChange(t.replace(/[^0-9]/g, ''))} keyboardType="number-pad" maxLength={LEN} style={otp.hidden} />
+      {Array.from({ length: LEN }).map((_, i) => (
+        <View key={i} style={[otp.box, value.length === i && otp.boxActive, value.length > i && otp.boxFilled]}>
+          <Text style={otp.digit}>{value[i] ?? ''}</Text>
+        </View>
+      ))}
+    </TouchableOpacity>
+  );
+}
+const otp = StyleSheet.create({
+  row:    { flexDirection: 'row', gap: 10, justifyContent: 'center' },
+  hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
+  box:    { width: 46, height: 56, borderRadius: 12, backgroundColor: '#F2F2F7', borderWidth: 1.5, borderColor: '#E5E5EA', alignItems: 'center', justifyContent: 'center' },
+  boxActive: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
+  boxFilled: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
+  digit: { fontSize: 22, fontWeight: '700', color: '#1A1A2E' },
+});
+
 export default function ResetPasswordScreen({ navigation, route }: Props) {
-  const { theme, isDark } = useTheme();
+  const { t } = useTranslation();
   const [email,           setEmail]           = useState(route.params?.email ?? '');
   const [code,            setCode]            = useState('');
   const [newPassword,     setNewPassword]     = useState('');
@@ -28,161 +65,119 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
 
   const handleReset = async () => {
     if (!email.trim() || !code.trim() || !newPassword || !confirmPassword) {
-      Alert.alert('Missing Fields', 'All fields are required.'); return;
+      Alert.alert(t('auth.register.missingFields'), 'All fields are required.'); return;
     }
-    if (code.trim().length !== 6) { Alert.alert('Invalid Code', 'Enter the 6-digit code.'); return; }
-    if (newPassword !== confirmPassword) { Alert.alert('Mismatch', 'Passwords do not match.'); return; }
-    if (newPassword.length < 8) { Alert.alert('Weak Password', 'Password must be at least 8 characters.'); return; }
+    if (code.trim().length !== 6) { Alert.alert(t('common.error'), 'Enter the 6-digit code.'); return; }
+    if (newPassword !== confirmPassword) { Alert.alert(t('auth.register.passwordMismatch'), t('auth.register.passwordMismatchMsg')); return; }
+    if (newPassword.length < 8) { Alert.alert(t('auth.register.weakPassword'), t('auth.register.weakPasswordMsg')); return; }
 
     setLoading(true);
     try {
       await authAPI.resetPassword({ email: email.trim().toLowerCase(), code: code.trim(), newPassword });
-      Alert.alert('Password Reset', 'Your password has been reset. Please sign in.', [
-        { text: 'Sign In', onPress: () => navigation.navigate('Login') },
-      ]);
+      navigation.navigate('PasswordChanged');
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('common.error'), err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const inputStyle = (field: string) => [
-    s.inputBox,
-    {
-      backgroundColor: isDark ? theme.inputBg : '#F0F4F8',
-      borderColor: focused === field ? theme.secondary : theme.border,
-      borderWidth: focused === field ? 1.5 : 1,
-    },
-  ];
-
-  const iconColor = (field: string) => focused === field ? theme.secondary : theme.textMuted;
+  const inputBox = (field: string) => [s.inputBox, focused === field && s.inputFocused];
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
-        <ScrollView
-          keyboardDismissMode="on-drag"
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={s.scroll}
-        >
-          {/* Back */}
-          <TouchableOpacity
-            style={[s.backBtn, { backgroundColor: isDark ? theme.surface : theme.surfaceLight, borderColor: theme.border }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={20} color={theme.text} />
-          </TouchableOpacity>
+    <View style={s.root}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <ScrollView keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
-          {/* Icon + heading */}
-          <View style={s.top}>
-            <View style={[s.iconCircle, { backgroundColor: theme.secondary + '1A', borderColor: theme.secondary + '40' }]}>
-              <Ionicons name="key-outline" size={38} color={theme.secondary} />
-            </View>
-            <Text style={[s.title, { color: theme.text }]}>Reset Password</Text>
-            <Text style={[s.subtitle, { color: theme.textMuted }]}>
-              Enter the code from your email and set a new password.
-            </Text>
-          </View>
+            <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+            </TouchableOpacity>
 
-          {/* Fields */}
-          <View style={s.fields}>
-            <View style={inputStyle('email')}>
-              <Ionicons name="mail-outline" size={18} color={iconColor('email')} style={s.icon} />
-              <TextInput
-                style={[s.input, { color: theme.text }]}
-                value={email} onChangeText={setEmail}
-                placeholder="Email address" placeholderTextColor={theme.textMuted}
-                keyboardType="email-address" autoCapitalize="none" autoCorrect={false}
-                onFocus={() => setFocused('email')} onBlur={() => setFocused(null)}
-              />
+            <View style={s.header}>
+              <SparkleCluster />
+              <Text style={s.title}>{t('auth.resetPassword.title')}</Text>
+              <Text style={s.subtitle}>{t('auth.resetPassword.subtitle')}</Text>
             </View>
 
-            <View style={inputStyle('code')}>
-              <Ionicons name="keypad-outline" size={18} color={iconColor('code')} style={s.icon} />
-              <TextInput
-                style={[s.input, { color: theme.text }]}
-                value={code} onChangeText={setCode}
-                placeholder="6-digit reset code" placeholderTextColor={theme.textMuted}
-                keyboardType="number-pad" maxLength={6}
-                onFocus={() => setFocused('code')} onBlur={() => setFocused(null)}
-              />
-            </View>
+            <View style={s.form}>
+              <View style={s.fieldGroup}>
+                <Text style={s.label}>{t('auth.resetPassword.emailLabel')}</Text>
+                <View style={inputBox('email')}>
+                  <TextInput style={s.input} value={email} onChangeText={setEmail} placeholder={t('auth.resetPassword.emailPlaceholder')} placeholderTextColor="#AEAEB2" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} onFocus={() => setFocused('email')} onBlur={() => setFocused(null)} />
+                </View>
+              </View>
 
-            <View style={inputStyle('password')}>
-              <Ionicons name="lock-closed-outline" size={18} color={iconColor('password')} style={s.icon} />
-              <TextInput
-                style={[s.input, { color: theme.text }]}
-                value={newPassword} onChangeText={setNewPassword}
-                placeholder="New password (min 8 chars)" placeholderTextColor={theme.textMuted}
-                secureTextEntry={!showPwd}
-                onFocus={() => setFocused('password')} onBlur={() => setFocused(null)}
-              />
-              <TouchableOpacity onPress={() => setShowPwd(v => !v)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Ionicons name={showPwd ? 'eye-outline' : 'eye-off-outline'} size={18} color={theme.textMuted} />
+              <View style={s.fieldGroup}>
+                <Text style={s.label}>{t('auth.resetPassword.codeLabel')}</Text>
+                <OtpInput value={code} onChange={setCode} />
+              </View>
+
+              <View style={s.fieldGroup}>
+                <Text style={s.label}>{t('auth.resetPassword.newPasswordLabel')}</Text>
+                <View style={inputBox('password')}>
+                  <TextInput style={[s.input, { flex: 1 }]} value={newPassword} onChangeText={setNewPassword} placeholder={t('auth.resetPassword.newPasswordPlaceholder')} placeholderTextColor="#AEAEB2" secureTextEntry={!showPwd} onFocus={() => setFocused('password')} onBlur={() => setFocused(null)} />
+                  <TouchableOpacity onPress={() => setShowPwd(v => !v)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name={showPwd ? 'eye-outline' : 'eye-off-outline'} size={18} color="#AEAEB2" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={s.fieldGroup}>
+                <Text style={s.label}>{t('auth.resetPassword.confirmPasswordLabel')}</Text>
+                <View style={inputBox('confirm')}>
+                  <TextInput style={s.input} value={confirmPassword} onChangeText={setConfirmPassword} placeholder={t('auth.resetPassword.confirmPasswordPlaceholder')} placeholderTextColor="#AEAEB2" secureTextEntry={!showPwd} onFocus={() => setFocused('confirm')} onBlur={() => setFocused(null)} />
+                </View>
+              </View>
+
+              <TouchableOpacity style={[s.primaryBtn, loading && s.disabled]} onPress={handleReset} disabled={loading} activeOpacity={0.85}>
+                {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={s.primaryBtnText}>{t('auth.resetPassword.resetBtn')}</Text>}
               </TouchableOpacity>
             </View>
 
-            <View style={inputStyle('confirm')}>
-              <Ionicons name="lock-closed-outline" size={18} color={iconColor('confirm')} style={s.icon} />
-              <TextInput
-                style={[s.input, { color: theme.text }]}
-                value={confirmPassword} onChangeText={setConfirmPassword}
-                placeholder="Confirm new password" placeholderTextColor={theme.textMuted}
-                secureTextEntry={!showPwd}
-                onFocus={() => setFocused('confirm')} onBlur={() => setFocused(null)}
-              />
+            <View style={s.footer}>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} activeOpacity={0.8}>
+                <Text style={s.footerText}>
+                  {t('auth.resetPassword.rememberIt')}{'  '}
+                  <Text style={s.footerBold}>{t('auth.resetPassword.backToLogin')}</Text>
+                </Text>
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={[s.btn, { backgroundColor: theme.secondary }, loading && s.disabled]}
-              onPress={handleReset}
-              disabled={loading}
-              activeOpacity={0.87}
-            >
-              {loading
-                ? <ActivityIndicator color="#021B3A" />
-                : <Text style={s.btnText}>Reset Password</Text>
-              }
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1 },
-  kav:    { flex: 1 },
-  scroll: { paddingHorizontal: 26, paddingTop: 16, paddingBottom: 40, gap: 24 },
-
-  backBtn: {
-    width: 40, height: 40, borderRadius: 20, borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start',
-  },
-
-  top: { alignItems: 'center', gap: 12 },
-  iconCircle: {
-    width: 88, height: 88, borderRadius: 44, borderWidth: 2,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
-  },
-  title:    { fontSize: 28, fontWeight: '800', textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center', lineHeight: 21, maxWidth: 280 },
-
-  fields: { gap: 12 },
+  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 16, paddingBottom: 40 },
+  backBtn: { padding: 4, alignSelf: 'flex-start', marginBottom: 8 },
+  header:   { paddingTop: 10, paddingBottom: 4 },
+  title:    { fontSize: 28, fontWeight: '800', color: '#1A1A2E', marginTop: 10 },
+  subtitle: { fontSize: 15, color: '#8E8E93', marginTop: 6, lineHeight: 22 },
+  form:       { gap: 16, marginTop: 24 },
+  fieldGroup: { gap: 7 },
+  label:      { fontSize: 14, fontWeight: '600', color: '#1A1A2E' },
   inputBox: {
     flexDirection: 'row', alignItems: 'center',
-    borderRadius: 14, paddingHorizontal: 14, height: 54,
+    backgroundColor: '#F2F2F7', borderRadius: 14,
+    paddingHorizontal: 16, height: 54,
+    borderWidth: 1.5, borderColor: 'transparent',
   },
-  icon:  { marginRight: 10 },
-  input: { flex: 1, fontSize: 15 },
-
-  btn: {
-    height: 54, borderRadius: 14, marginTop: 4,
-    justifyContent: 'center', alignItems: 'center',
+  inputFocused: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
+  input: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  primaryBtn: {
+    height: 56, borderRadius: 28, backgroundColor: '#021B3A',
+    justifyContent: 'center', alignItems: 'center', marginTop: 4,
+    shadowColor: '#021B3A', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22, shadowRadius: 10, elevation: 5,
   },
-  btnText:  { color: '#021B3A', fontSize: 16, fontWeight: '800', letterSpacing: 0.4 },
-  disabled: { opacity: 0.6 },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  disabled: { opacity: 0.55 },
+  footer:    { alignItems: 'center', marginTop: 24 },
+  footerText:{ fontSize: 14, color: '#8E8E93' },
+  footerBold:{ color: '#021B3A', fontWeight: '700' },
 });

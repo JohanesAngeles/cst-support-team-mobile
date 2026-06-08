@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../api/auth';
 import { registerPushToken, unregisterPushToken } from '../utils/notifications';
@@ -27,15 +27,20 @@ interface AuthContextType {
   updateUser: (data: Partial<User>) => void;
   completeOnboarding: () => Promise<void>;
   resetOnboarding: () => Promise<void>;
+  completePendingSetup: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser]         = useState<User | null>(null);
-  const [token, setToken]       = useState<string | null>(null);
-  const [loading, setLoading]   = useState(true);
+  const [user, setUser]           = useState<User | null>(null);
+  const [token, setToken]         = useState<string | null>(null);
+  const [loading, setLoading]     = useState(true);
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  // Holds registration data between register() and completePendingSetup()
+  // We intentionally do NOT set user state during registration so that
+  // BiometricLock doesn't trigger and AuthStack stays visible naturally.
+  const pendingReg = useRef<{ token: string; user: User } | null>(null);
 
   useEffect(() => {
     const loadStoredAuth = async () => {
@@ -71,10 +76,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (name: string, email: string, password: string, phone?: string) => {
     const res = await authAPI.register({ name, email, password, phone });
     const { token: t, user: u } = res.data;
+    // Save token so app restart can recover, but do NOT set user state yet.
+    // Keeping user=null means: AuthStack stays visible naturally,
+    // and BiometricLock won't trigger (it only fires when user transitions null→value).
     await AsyncStorage.setItem('token', t);
-    setToken(t);
-    setUser(u);
-    setOnboarded(false);
+    pendingReg.current = { token: t, user: u };
     registerPushToken();
   };
 
@@ -87,9 +93,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     registerPushToken();
   };
 
+  const completePendingSetup = async () => {
+    const data = pendingReg.current;
+    if (data) {
+      pendingReg.current = null;
+      setToken(data.token);
+      setUser(data.user);
+    }
+    setOnboarded(false); // triggers onboarding tutorial for new users
+  };
+
   const logout = async () => {
     unregisterPushToken();
     await AsyncStorage.removeItem('token');
+    pendingReg.current = null;
     setToken(null);
     setUser(null);
     setOnboarded(null);
@@ -118,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user, token, loading, onboarded,
       login, register, loginWithSocial, logout,
-      markVerified, updateUser, completeOnboarding, resetOnboarding,
+      markVerified, updateUser, completeOnboarding, resetOnboarding, completePendingSetup,
     }}>
       {children}
     </AuthContext.Provider>

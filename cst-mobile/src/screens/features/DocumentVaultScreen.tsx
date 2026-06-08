@@ -150,8 +150,8 @@ export default function DocumentVaultScreen() {
     } catch { Alert.alert('Error', 'Could not open file picker'); }
   };
 
-  const openModal = () => {
-    setDocName(''); setSelectedIcon('document-text-outline'); setExpiryDate(''); setPickedFile(null);
+  const openModal = (icon?: string) => {
+    setDocName(''); setSelectedIcon(icon ?? 'document-text-outline'); setExpiryDate(''); setPickedFile(null);
     setModal(true);
   };
 
@@ -197,33 +197,96 @@ export default function DocumentVaultScreen() {
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         ListHeaderComponent={
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryCard}>
-              <Ionicons name="folder-outline" size={18} color={Colors.secondary} />
-              <Text style={styles.summaryValue}>{docs.length}</Text>
-              <Text style={styles.summaryLabel}>Documents</Text>
-            </View>
-            <View style={styles.summaryCard}>
-              <Ionicons name="cloud-done-outline" size={18} color={Colors.success} />
-              <Text style={[styles.summaryValue, { color: Colors.success }]}>
-                {docs.filter(d => d.fileUrl).length}
+          <View>
+            {/* Page header */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ color: Colors.text, fontSize: 24, fontWeight: '900' }}>Document Vault</Text>
+              <Text style={{ color: Colors.textMuted, fontSize: 13, marginTop: 3 }}>
+                Keep your trucking docs safe & accessible
               </Text>
-              <Text style={styles.summaryLabel}>Uploaded</Text>
             </View>
-            <View style={styles.summaryCard}>
-              <Ionicons name="shield-checkmark-outline" size={18} color='#3498DB' />
-              <Text style={[styles.summaryValue, { color: '#3498DB' }]}>
-                {docs.filter(d => d.status === 'Active').length}
-              </Text>
-              <Text style={styles.summaryLabel}>Active</Text>
+
+            {/* Stats row */}
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryCard}>
+                <Ionicons name="folder-outline" size={18} color={Colors.secondary} />
+                <Text style={styles.summaryValue}>{docs.length}</Text>
+                <Text style={styles.summaryLabel}>Documents</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Ionicons name="cloud-done-outline" size={18} color={Colors.success} />
+                <Text style={[styles.summaryValue, { color: Colors.success }]}>
+                  {docs.filter(d => d.fileUrl).length}
+                </Text>
+                <Text style={styles.summaryLabel}>Uploaded</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Ionicons name="shield-checkmark-outline" size={18} color='#3498DB' />
+                <Text style={[styles.summaryValue, { color: '#3498DB' }]}>
+                  {docs.filter(d => d.status === 'Active').length}
+                </Text>
+                <Text style={styles.summaryLabel}>Active</Text>
+              </View>
             </View>
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="folder-open-outline" size={52} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No documents yet</Text>
-            <Text style={styles.emptySub}>Upload your CDL, insurance cards, permits, and BOLs</Text>
+          <View style={{ paddingTop: 8 }}>
+            {/* Category quick-add grid */}
+            <Text style={{ color: Colors.text, fontSize: 15, fontWeight: '800', marginBottom: 12 }}>
+              Start by adding a document
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {DOC_CATEGORIES.map(c => (
+                <TouchableOpacity
+                  key={c.icon}
+                  style={{
+                    width: '47%',
+                    backgroundColor: Colors.surface,
+                    borderRadius: 16,
+                    padding: 16,
+                    borderWidth: 1,
+                    borderColor: Colors.border,
+                    gap: 10,
+                  }}
+                  onPress={() => { setSelectedIcon(c.icon); openModal(); }}
+                  activeOpacity={0.75}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: c.color + '18', justifyContent: 'center', alignItems: 'center' }}>
+                    <Ionicons name={c.icon as any} size={22} color={c.color} />
+                  </View>
+                  <View>
+                    <Text style={{ color: Colors.text, fontSize: 14, fontWeight: '700' }}>{c.label}</Text>
+                    <Text style={{ color: Colors.textMuted, fontSize: 11, marginTop: 2 }}>
+                      {c.label === 'Insurance'    ? 'Policy, card, proof'    :
+                       c.label === 'License'      ? 'CDL, medical card'      :
+                       c.label === 'Registration' ? 'Truck & trailer reg'    :
+                       c.label === 'Permit'       ? 'IFTA, oversize, fuel'   :
+                       c.label === 'BOL'          ? 'Bills of lading, PODs'  :
+                       'Contracts, receipts, etc'}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Ionicons name="add-circle-outline" size={14} color={c.color} />
+                    <Text style={{ color: c.color, fontSize: 12, fontWeight: '700' }}>Add</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Why store docs tip */}
+            <View style={{ backgroundColor: '#EEF6FF', borderRadius: 14, padding: 16, marginTop: 20, flexDirection: 'row', gap: 12, alignItems: 'flex-start', borderWidth: 1, borderColor: '#C8DEFF' }}>
+              <Ionicons name="information-circle-outline" size={22} color='#3498DB' style={{ marginTop: 1 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: '#1A3A6E', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
+                  Why store docs here?
+                </Text>
+                <Text style={{ color: '#4A6FA0', fontSize: 12, lineHeight: 18 }}>
+                  Access your CDL, insurance, and permits instantly during roadside inspections — even offline.
+                  Set expiry dates and get alerts before they lapse.
+                </Text>
+              </View>
+            </View>
           </View>
         }
         renderItem={({ item }) => {

@@ -1,0 +1,51 @@
+{
+  "common": { "back": "Назад", "continue": "Продолжить", "skip": "Пропустить", "or": "или", "loading": "Загрузка...", "save": "Сохранить", "cancel": "Отмена", "confirm": "Подтвердить", "search": "Поиск", "yes": "Да", "no": "Нет", "ok": "ОК", "error": "Ошибка", "success": "Успех", "comingSoon": "Скоро", "comingSoonMsg": "Эта функция будет доступна в ближайшее время." },
+  "auth": {
+    "login": { "greeting": "Привет, Добро пожаловать! 👋", "subtitle": "Войдите в свой аккаунт CST", "emailLabel": "Электронная почта", "emailPlaceholder": "Ваш email", "passwordLabel": "Пароль", "passwordPlaceholder": "Ваш пароль", "forgotPassword": "Забыли пароль?", "loginBtn": "Войти", "orContinueWith": "или продолжить через", "google": "Google", "apple": "Apple", "noAccount": "Нет аккаунта?", "signUp": "Зарегистрироваться", "allOptions": "Все варианты входа", "terms": "Условия использования", "privacy": "Политика конфиденциальности" },
+    "register": { "title": "Создать аккаунт", "subtitle": "Присоединяйтесь к сети водителей CST", "nameLabel": "Полное имя", "namePlaceholder": "Ваше полное имя", "emailLabel": "Электронная почта", "emailPlaceholder": "Ваш email", "phoneLabel": "Номер телефона", "phoneOptional": "(необязательно)", "phonePlaceholder": "Ваш телефон", "passwordLabel": "Пароль", "passwordPlaceholder": "Мин. 8 символов", "confirmPasswordLabel": "Подтвердите пароль", "confirmPasswordPlaceholder": "Повторите пароль", "createBtn": "Создать аккаунт", "alreadyHaveAccount": "Уже есть аккаунт?", "signIn": "Войти", "missingFields": "Заполните поля", "missingFieldsMsg": "Пожалуйста, заполните все обязательные поля.", "passwordMismatch": "Пароли не совпадают", "passwordMismatchMsg": "Пароли не совпадают.", "weakPassword": "Слабый пароль", "weakPasswordMsg": "Пароль должен содержать не менее 8 символов.", "registrationFailed": "Ошибка регистрации" },
+    "forgotPassword": { "title": "Забыли пароль?", "subtitle": "Не волнуйтесь! Введите email вашего аккаунта и мы пришлём код.", "emailLabel": "Электронная почта", "emailPlaceholder": "Ваш email", "sendBtn": "Отправить код", "haveCode": "Уже есть код?", "enterHere": "Введите здесь" },
+    "resetPassword": { "title": "Сброс пароля", "subtitle": "Введите код из письма и установите новый пароль.", "emailLabel": "Электронная почта", "emailPlaceholder": "Ваш email", "codeLabel": "Код подтверждения", "newPasswordLabel": "Новый пароль", "newPasswordPlaceholder": "Мин. 8 символов", "confirmPasswordLabel": "Подтвердите пароль", "confirmPasswordPlaceholder": "Повторите новый пароль", "resetBtn": "Сбросить пароль", "rememberIt": "Вспомнили?", "backToLogin": "Вернуться к входу" },
+    "passwordChanged": { "title": "Пароль изменён!", "subtitle": "Ваш пароль был успешно изменён.", "backBtn": "Вернуться к входу" },
+    "verifyEmail": { "title": "Подтвердите email", "subtitle": "Мы отправили 6-значный код на", "verifyBtn": "Подтвердить email", "didntReceive": "Не получили?", "resendCode": "Отправить снова", "differentAccount": "Использовать другой аккаунт", "invalidCode": "Неверный код", "invalidCodeMsg": "Введите 6-значный код из письма.", "verificationFailed": "Ошибка подтверждения" },
+    "signInOptions": { "greeting": "Привет, Добро пожаловать! 👋", "subtitle": "Выберите способ входа", "email": "Войти через email", "phone": "Войти через телефон", "google": "Войти через Google", "apple": "Войти через Apple", "facebook": "Войти через Facebook", "github": "Войти через GitHub", "microsoft": "Войти через Microsoft", "linkedin": "Войти через LinkedIn", "instagram": "Войти через Instagram", "noAccount": "Нет аккаунта?", "signUp": "Зарегистрироваться" },
+    "phoneLogin": { "title": "Вход по телефону", "subtitle": "Введите номер телефона и мы отправим код.", "phoneLabel": "Номер телефона", "sendBtn": "Отправить код", "alreadyHaveAccount": "Уже есть аккаунт?", "signInEmail": "Войти по email", "selectCountry": "Выбрать страну", "searchCountry": "Поиск страны...", "invalidPhone": "Неверный телефон", "invalidPhoneMsg": "Введите действительный номер телефона." },
+    "phoneOTP": { "title": "Подтвердите номер телефона", "subtitle": "Мы отправили 6-значный код на", "verifyBtn": "Подтвердить", "wrongCode": "Неверный код, попробуйте снова", "resendCode": "Отправить код снова", "didntReceive": "Не получили код?", "verificationFailed": "Ошибка подтверждения", "invalidCode": "Неверный код", "invalidCodeMsg": "Введите 6-значный код, отправленный на ваш телефон." },
+    "preferences": { "title": "Всё готово!", "subtitle": "Настройте уведомления. Изменить можно в настройках.", "pushNotifications": "Push-уведомления", "pushNotificationsDesc": "Оповещения о поездках, платежах и многом другом", "weeklyReport": "Еженедельный отчёт", "weeklyReportDesc": "Получайте еженедельный отчёт", "dailyAlerts": "Ежедневные оповещения", "dailyAlertsDesc": "Утренний дайджест поездок", "hosReminders": "Напоминания HOS", "hosRemindersDesc": "Оповещения при приближении к лимиту часов", "fuelUpdates": "Цены на топливо", "fuelUpdatesDesc": "Оповещения о ценах по маршруту", "continueBtn": "Продолжить" },
+    "language": { "title": "Выберите язык", "subtitle": "Выберите предпочтительный язык приложения.", "search": "Поиск языка...", "selected": "Выбрано", "saveBtn": "Сохранить и продолжить", "languages": { "en": "Английский", "es": "Испанский", "fr": "Французский", "de": "Немецкий", "it": "Итальянский", "zh": "Китайский", "ru": "Русский", "pt": "Португальский", "ar": "Арабский", "ja": "Японский", "ko": "Корейский", "hi": "Хинди" } }
+  },
+  "tabs": { "dashboard": "Главная", "docs": "Docs", "tools": "Инструменты", "fuel": "Топливо", "profile": "Профиль" },
+  "dashboard": {
+    "greeting": "Доброе утро", "subtitle": "Ваш обзор на сегодня", "quickActions": "Быстрые действия", "recentActivity": "Недавняя активность", "noActivity": "Нет недавней активности",
+    "welcomeBack": "С возвращением,", "searchPlaceholder": "Поиск функций...", "noResults": "Функции не найдены",
+    "signOut": "Выйти", "emergency": "Центр экстренного реагирования", "emergencySub": "ОДНА КНОПКА. МЫ ВАС НАЙДЁМ. МЫ ПОДДЕРЖИМ.",
+    "stats": { "grossRevenue": "Валовая выручка", "netProfit": "Чистая прибыль", "costPerMile": "Затраты / миля", "fuelPct": "% Топлива" },
+    "cats": { "all": "Все", "financial": "Финансы", "legal": "Право", "operations": "Операции", "community": "Сообщество", "tools": "Инструменты", "career": "Карьера" }
+  },
+  "profile": {
+    "appearance": "Внешний вид", "themeLight": "Светлая", "themeDark": "Тёмная", "themeSystem": "Системная",
+    "security": "Безопасность", "biometricLock": "Биометрическая блокировка", "biometricSub": "Требовать Face ID / отпечаток при возврате",
+    "language": "Язык", "myTruck": "Мой грузовик", "subscription": "Подписка", "editProfile": "Редактировать профиль",
+    "changePassword": "Сменить пароль", "notifications": "Уведомления", "helpSupport": "Помощь и поддержка",
+    "terms": "Условия использования", "privacy": "Конфиденциальность", "replayTour": "Повторить тур",
+    "emailVerified": "Email подтверждён", "emailNotVerified": "Email не подтверждён", "tapToVerify": "Нажмите для подтверждения →",
+    "signOut": "Выйти", "deleteAccount": "Удалить аккаунт", "editProfileTitle": "Редактировать профиль",
+    "fullName": "Полное имя *", "phoneNumber": "Номер телефона",
+    "changePwTitle": "Сменить пароль", "currentPw": "Текущий пароль", "newPw": "Новый пароль (мин. 8 симв.)", "confirmNewPw": "Подтвердите новый пароль",
+    "showPasswords": "Показать пароли", "hidePasswords": "Скрыть пароли", "change": "Изменить",
+    "deleteTitle": "Удалить аккаунт", "deleteWarning": "Это навсегда удалит ваш аккаунт и все связанные данные. Это действие нельзя отменить.",
+    "enterPwToConfirm": "Введите пароль для подтверждения", "deleteForever": "Удалить навсегда",
+    "replayConfirmTitle": "Повторить тур?", "replayConfirmMsg": "Вводный тур будет показан снова.", "freePlan": "БЕСПЛАТНЫЙ ПЛАН",
+    "rateApp": "Оценить приложение", "shareApp": "Поделиться CST App", "version": "Версия",
+    "downloadDataWarning": "Загрузите ваши счета, журналы топлива и документы перед удалением — их нельзя будет восстановить.",
+    "downloadDataBtn": "Сначала скачать мои данные", "passwordPlaceholder": "Ваш пароль",
+    "exportingData": "Экспорт данных...", "exportTitle": "Экспорт моих данных CST",
+    "shareMessage": "Откройте для себя CST Driver — лучшее приложение для дальнобойщиков! Скачайте бесплатно в App Store и Google Play.",
+    "rateAlertTitle": "Оценить CST Driver", "rateAlertMsg": "Нравится приложение? Оставьте отзыв — это помогает другим водителям нас найти!"
+  },
+  "notifications": {
+    "upcoming": "Предстоящие", "history": "История",
+    "clearHistory": "Очистить историю", "clearHistoryMsg": "Удалить всю историю уведомлений?",
+    "noUpcoming": "Нет предстоящих дедлайнов", "noHistory": "История уведомлений пуста",
+    "dueToday": "Сегодня!", "dueTomorrow": "Завтра", "dueInDays": "Через {{count}} дней"
+  }
+}

@@ -34,4 +34,10 @@ export const authAPI = {
 
   deleteAccount: (password: string) =>
     client.delete('/auth/me', { data: { password } }),
+
+  sendPhoneOTP: (phone: string) =>
+    client.post('/auth/send-phone-otp', { phone }),
+
+  verifyPhoneOTP: (phone: string, otp: string) =>
+    client.post('/auth/verify-phone-otp', { phone, otp }),
 };

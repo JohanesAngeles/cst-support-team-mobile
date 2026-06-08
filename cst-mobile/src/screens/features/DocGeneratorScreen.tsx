@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useColors } from '../../constants/colors';
+import { uploadDocument } from '../../api/features';
 
 type DocType = 'rate_confirmation' | 'proof_of_delivery' | 'invoice';
 
@@ -266,19 +267,21 @@ export default function DocGeneratorScreen() {
   const [selected, setSelected] = useState<DocType | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [generating, setGenerating] = useState(false);
+  const [vaultSaving, setVaultSaving] = useState(false);
 
   const setField = (key: string) => (val: string) => setForm(f => ({ ...f, [key]: val }));
+
+  const buildHTML = () => {
+    if (selected === 'rate_confirmation') return buildRateConfirmationHTML(form);
+    if (selected === 'proof_of_delivery') return buildPODHTML(form);
+    return buildInvoiceHTML(form);
+  };
 
   const generate = async () => {
     if (!selected) return;
     setGenerating(true);
     try {
-      let html = '';
-      if (selected === 'rate_confirmation') html = buildRateConfirmationHTML(form);
-      else if (selected === 'proof_of_delivery') html = buildPODHTML(form);
-      else html = buildInvoiceHTML(form);
-
-      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const { uri } = await Print.printToFileAsync({ html: buildHTML(), base64: false });
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Share Document' });
@@ -289,6 +292,22 @@ export default function DocGeneratorScreen() {
       Alert.alert('Error', err.message ?? 'Failed to generate PDF');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const saveToVault = async () => {
+    if (!selected) return;
+    setVaultSaving(true);
+    try {
+      const { uri } = await Print.printToFileAsync({ html: buildHTML(), base64: false });
+      const docInfo = DOC_TYPES.find(d => d.type === selected)!;
+      const fileName = `${docInfo.label}${form.loadNumber ? ` — ${form.loadNumber}` : ''}`;
+      await uploadDocument(fileName, { uri, type: 'application/pdf', name: `${docInfo.label.replace(/ /g, '_')}.pdf` });
+      Alert.alert('Saved!', `${docInfo.label} saved to your Document Vault.`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Could not save to vault.');
+    } finally {
+      setVaultSaving(false);
     }
   };
 
@@ -363,6 +382,21 @@ export default function DocGeneratorScreen() {
             <>
               <Ionicons name="document-text-outline" size={20} color="#fff" />
               <Text style={s.generateText}>Generate PDF</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[s.generateBtn, vaultSaving && { opacity: 0.6 }, { backgroundColor: '#2ECC71', marginTop: 10 }]}
+          onPress={saveToVault}
+          disabled={vaultSaving}
+        >
+          {vaultSaving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+              <Text style={s.generateText}>Save to Vault</Text>
             </>
           )}
         </TouchableOpacity>

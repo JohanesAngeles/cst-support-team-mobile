@@ -1,0 +1,51 @@
+{
+  "common": { "back": "Retour", "continue": "Continuer", "skip": "Passer pour l'instant", "or": "ou", "loading": "Chargement...", "save": "Enregistrer", "cancel": "Annuler", "confirm": "Confirmer", "search": "Rechercher", "yes": "Oui", "no": "Non", "ok": "OK", "error": "Erreur", "success": "Succès", "comingSoon": "Bientôt disponible", "comingSoonMsg": "Cette fonctionnalité sera disponible prochainement." },
+  "auth": {
+    "login": { "greeting": "Bonjour, Bienvenu ! 👋", "subtitle": "Connectez-vous à votre compte CST", "emailLabel": "Adresse e-mail", "emailPlaceholder": "Votre e-mail", "passwordLabel": "Mot de passe", "passwordPlaceholder": "Votre mot de passe", "forgotPassword": "Mot de passe oublié ?", "loginBtn": "Se connecter", "orContinueWith": "ou continuer avec", "google": "Google", "apple": "Apple", "noAccount": "Pas de compte ?", "signUp": "S'inscrire", "allOptions": "Toutes les options", "terms": "Conditions d'utilisation", "privacy": "Politique de confidentialité" },
+    "register": { "title": "Créer un compte", "subtitle": "Rejoignez le réseau de conducteurs CST", "nameLabel": "Nom complet", "namePlaceholder": "Votre nom complet", "emailLabel": "Adresse e-mail", "emailPlaceholder": "Votre e-mail", "phoneLabel": "Numéro de téléphone", "phoneOptional": "(optionnel)", "phonePlaceholder": "Votre numéro", "passwordLabel": "Mot de passe", "passwordPlaceholder": "Min. 8 caractères", "confirmPasswordLabel": "Confirmer le mot de passe", "confirmPasswordPlaceholder": "Répétez votre mot de passe", "createBtn": "Créer un compte", "alreadyHaveAccount": "Déjà un compte ?", "signIn": "Se connecter", "missingFields": "Champs manquants", "missingFieldsMsg": "Veuillez remplir tous les champs requis.", "passwordMismatch": "Mots de passe différents", "passwordMismatchMsg": "Les mots de passe ne correspondent pas.", "weakPassword": "Mot de passe faible", "weakPasswordMsg": "Le mot de passe doit avoir au moins 8 caractères.", "registrationFailed": "Échec de l'inscription" },
+    "forgotPassword": { "title": "Mot de passe oublié ?", "subtitle": "Ne vous inquiétez pas ! Entrez l'e-mail associé à votre compte.", "emailLabel": "Adresse e-mail", "emailPlaceholder": "Votre e-mail", "sendBtn": "Envoyer le code", "haveCode": "Vous avez déjà un code ?", "enterHere": "Entrez-le ici" },
+    "resetPassword": { "title": "Réinitialiser le mot de passe", "subtitle": "Entrez le code de votre e-mail et définissez un nouveau mot de passe.", "emailLabel": "Adresse e-mail", "emailPlaceholder": "Votre e-mail", "codeLabel": "Code de vérification", "newPasswordLabel": "Nouveau mot de passe", "newPasswordPlaceholder": "Min. 8 caractères", "confirmPasswordLabel": "Confirmer le mot de passe", "confirmPasswordPlaceholder": "Répétez le nouveau mot de passe", "resetBtn": "Réinitialiser", "rememberIt": "Vous vous en souvenez ?", "backToLogin": "Retour à la connexion" },
+    "passwordChanged": { "title": "Mot de passe modifié !", "subtitle": "Votre mot de passe a été modifié avec succès.", "backBtn": "Retour à la connexion" },
+    "verifyEmail": { "title": "Vérifiez votre e-mail", "subtitle": "Nous avons envoyé un code à 6 chiffres à", "verifyBtn": "Vérifier l'e-mail", "didntReceive": "Vous ne l'avez pas reçu ?", "resendCode": "Renvoyer le code", "differentAccount": "Utiliser un autre compte", "invalidCode": "Code invalide", "invalidCodeMsg": "Entrez le code à 6 chiffres de votre e-mail.", "verificationFailed": "Échec de la vérification" },
+    "signInOptions": { "greeting": "Bonjour, Bienvenu ! 👋", "subtitle": "Choisissez comment vous connecter", "email": "Se connecter par e-mail", "phone": "Se connecter par téléphone", "google": "Se connecter avec Google", "apple": "Se connecter avec Apple", "facebook": "Se connecter avec Facebook", "github": "Se connecter avec GitHub", "microsoft": "Se connecter avec Microsoft", "linkedin": "Se connecter avec LinkedIn", "instagram": "Se connecter avec Instagram", "noAccount": "Pas de compte ?", "signUp": "S'inscrire" },
+    "phoneLogin": { "title": "Connexion par téléphone", "subtitle": "Entrez votre numéro et nous vous enverrons un code.", "phoneLabel": "Numéro de téléphone", "sendBtn": "Envoyer le code", "alreadyHaveAccount": "Déjà un compte ?", "signInEmail": "Se connecter par e-mail", "selectCountry": "Sélectionner un pays", "searchCountry": "Rechercher un pays...", "invalidPhone": "Téléphone invalide", "invalidPhoneMsg": "Veuillez entrer un numéro valide." },
+    "phoneOTP": { "title": "Vérifiez votre numéro", "subtitle": "Nous avons envoyé un code à 6 chiffres à", "verifyBtn": "Vérifier", "wrongCode": "Code incorrect, réessayez", "resendCode": "Renvoyer le code", "didntReceive": "Vous n'avez pas reçu de code ?", "verificationFailed": "Échec de la vérification", "invalidCode": "Code invalide", "invalidCodeMsg": "Entrez le code à 6 chiffres envoyé sur votre téléphone." },
+    "preferences": { "title": "Tout est prêt !", "subtitle": "Personnalisez vos préférences. Vous pouvez les modifier plus tard.", "pushNotifications": "Notifications push", "pushNotificationsDesc": "Alertes en temps réel pour voyages, paiements et plus", "weeklyReport": "Résumé hebdomadaire", "weeklyReportDesc": "Recevez un rapport hebdomadaire", "dailyAlerts": "Alertes quotidiennes", "dailyAlertsDesc": "Résumé matinal de vos prochains voyages", "hosReminders": "Rappels HOS", "hosRemindersDesc": "Alertes quand vous approchez des limites d'heures", "fuelUpdates": "Prix du carburant", "fuelUpdatesDesc": "Alertes de prix à proximité", "continueBtn": "Continuer" },
+    "language": { "title": "Choisir la langue", "subtitle": "Sélectionnez votre langue préférée.", "search": "Rechercher une langue...", "selected": "Sélectionné", "saveBtn": "Enregistrer et continuer", "languages": { "en": "Anglais", "es": "Espagnol", "fr": "Français", "de": "Allemand", "it": "Italien", "zh": "Chinois", "ru": "Russe", "pt": "Portugais", "ar": "Arabe", "ja": "Japonais", "ko": "Coréen", "hi": "Hindi" } }
+  },
+  "tabs": { "dashboard": "Accueil", "docs": "Docs", "tools": "Outils", "fuel": "Carburant", "profile": "Profil" },
+  "dashboard": {
+    "greeting": "Bonjour", "subtitle": "Voici votre aperçu d'aujourd'hui", "quickActions": "Actions rapides", "recentActivity": "Activité récente", "noActivity": "Aucune activité récente",
+    "welcomeBack": "Bon retour,", "searchPlaceholder": "Rechercher des fonctions...", "noResults": "Aucune fonction trouvée",
+    "signOut": "Se déconnecter", "emergency": "Centre de Réponse d'Urgence", "emergencySub": "UN BOUTON. ON VOUS TROUVE. ON VOUS SOUTIENT.",
+    "stats": { "grossRevenue": "Revenus Bruts", "netProfit": "Bénéfice Net", "costPerMile": "Coût / Mile", "fuelPct": "% Carburant" },
+    "cats": { "all": "Tout", "financial": "Finances", "legal": "Légal", "operations": "Opérations", "community": "Communauté", "tools": "Outils", "career": "Carrière" }
+  },
+  "profile": {
+    "appearance": "Apparence", "themeLight": "Clair", "themeDark": "Sombre", "themeSystem": "Système",
+    "security": "Sécurité", "biometricLock": "Verrouillage biométrique", "biometricSub": "Exiger Face ID / empreinte au retour",
+    "language": "Langue", "myTruck": "Mon Camion", "subscription": "Abonnement", "editProfile": "Modifier le profil",
+    "changePassword": "Changer le mot de passe", "notifications": "Notifications", "helpSupport": "Aide et support",
+    "terms": "Conditions d'utilisation", "privacy": "Confidentialité", "replayTour": "Revoir le tour",
+    "emailVerified": "E-mail vérifié", "emailNotVerified": "E-mail non vérifié", "tapToVerify": "Appuyer pour vérifier →",
+    "signOut": "Se déconnecter", "deleteAccount": "Supprimer le compte", "editProfileTitle": "Modifier le profil",
+    "fullName": "Nom complet *", "phoneNumber": "Numéro de téléphone",
+    "changePwTitle": "Changer le mot de passe", "currentPw": "Mot de passe actuel", "newPw": "Nouveau mot de passe (min 8 chars)", "confirmNewPw": "Confirmer le nouveau mot de passe",
+    "showPasswords": "Afficher les mots de passe", "hidePasswords": "Masquer les mots de passe", "change": "Changer",
+    "deleteTitle": "Supprimer le compte", "deleteWarning": "Cela supprimera définitivement votre compte et toutes les données associées. Cette action est irréversible.",
+    "enterPwToConfirm": "Entrez votre mot de passe pour confirmer", "deleteForever": "Supprimer définitivement",
+    "replayConfirmTitle": "Revoir le tour ?", "replayConfirmMsg": "Cela affichera à nouveau le tour d'introduction.", "freePlan": "PLAN GRATUIT",
+    "rateApp": "Noter l'application", "shareApp": "Partager CST App", "version": "Version",
+    "downloadDataWarning": "Téléchargez vos factures, journaux de carburant et documents avant de supprimer — ils ne pourront pas être récupérés.",
+    "downloadDataBtn": "Télécharger mes données d'abord", "passwordPlaceholder": "Votre mot de passe",
+    "exportingData": "Export en cours...", "exportTitle": "Mon export de données CST",
+    "shareMessage": "Découvrez CST Driver — l'application ultime pour les chauffeurs ! Téléchargez-la gratuitement sur l'App Store et Google Play.",
+    "rateAlertTitle": "Notez CST Driver", "rateAlertMsg": "Vous appréciez l'application ? Laissez-nous un avis — cela aide d'autres conducteurs à nous trouver !"
+  },
+  "notifications": {
+    "upcoming": "À venir", "history": "Historique",
+    "clearHistory": "Effacer l'historique", "clearHistoryMsg": "Supprimer tout l'historique des notifications ?",
+    "noUpcoming": "Aucune échéance à venir", "noHistory": "Aucun historique de notification",
+    "dueToday": "Dû aujourd'hui !", "dueTomorrow": "Dû demain", "dueInDays": "Dû dans {{count}} jours"
+  }
+}

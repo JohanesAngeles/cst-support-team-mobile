@@ -48,6 +48,7 @@ import socialAuthRoutes from './routes/social-auth';
 import fuelRoutes from './routes/fuel';
 import legalRoutes from './routes/legal';
 import uploadsRoutes from './routes/uploads';
+import translateRoutes from './routes/translate';
 import { initCronJobs } from './cron/notificationCron';
 
 if (process.env.SENTRY_DSN) {
@@ -172,6 +173,7 @@ app.use('/api/cdl-docs', cdlDocsRoutes);
 app.use('/api/cargo-claims', cargoClaimsRoutes);
 app.use('/api/fuel', fuelRoutes);
 app.use('/api/uploads', uploadsRoutes);
+app.use('/api/translate', translateRoutes);
 app.use('/', legalRoutes);
 
 app.get('/api/health', (_req, res) => {

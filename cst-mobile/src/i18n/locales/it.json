@@ -1,0 +1,51 @@
+{
+  "common": { "back": "Indietro", "continue": "Continua", "skip": "Salta per ora", "or": "o", "loading": "Caricamento...", "save": "Salva", "cancel": "Annulla", "confirm": "Conferma", "search": "Cerca", "yes": "Sì", "no": "No", "ok": "OK", "error": "Errore", "success": "Successo", "comingSoon": "Prossimamente", "comingSoonMsg": "Questa funzione sarà disponibile presto." },
+  "auth": {
+    "login": { "greeting": "Ciao, Benvenuto! 👋", "subtitle": "Accedi al tuo account CST", "emailLabel": "Indirizzo e-mail", "emailPlaceholder": "La tua e-mail", "passwordLabel": "Password", "passwordPlaceholder": "La tua password", "forgotPassword": "Password dimenticata?", "loginBtn": "Accedi", "orContinueWith": "o continua con", "google": "Google", "apple": "Apple", "noAccount": "Non hai un account?", "signUp": "Registrati", "allOptions": "Tutte le opzioni", "terms": "Termini di servizio", "privacy": "Informativa sulla privacy" },
+    "register": { "title": "Crea account", "subtitle": "Unisciti alla rete di autisti CST", "nameLabel": "Nome completo", "namePlaceholder": "Il tuo nome completo", "emailLabel": "Indirizzo e-mail", "emailPlaceholder": "La tua e-mail", "phoneLabel": "Numero di telefono", "phoneOptional": "(facoltativo)", "phonePlaceholder": "Il tuo numero", "passwordLabel": "Password", "passwordPlaceholder": "Min. 8 caratteri", "confirmPasswordLabel": "Conferma password", "confirmPasswordPlaceholder": "Ripeti la password", "createBtn": "Crea account", "alreadyHaveAccount": "Hai già un account?", "signIn": "Accedi", "missingFields": "Campi mancanti", "missingFieldsMsg": "Compila tutti i campi obbligatori.", "passwordMismatch": "Password non corrispondenti", "passwordMismatchMsg": "Le password non corrispondono.", "weakPassword": "Password debole", "weakPasswordMsg": "La password deve avere almeno 8 caratteri.", "registrationFailed": "Registrazione fallita" },
+    "forgotPassword": { "title": "Password dimenticata?", "subtitle": "Inserisci l'e-mail associata al tuo account e ti invieremo un codice.", "emailLabel": "Indirizzo e-mail", "emailPlaceholder": "La tua e-mail", "sendBtn": "Invia codice", "haveCode": "Hai già un codice?", "enterHere": "Inseriscilo qui" },
+    "resetPassword": { "title": "Reimposta password", "subtitle": "Inserisci il codice dalla tua e-mail e imposta una nuova password.", "emailLabel": "Indirizzo e-mail", "emailPlaceholder": "La tua e-mail", "codeLabel": "Codice di verifica", "newPasswordLabel": "Nuova password", "newPasswordPlaceholder": "Min. 8 caratteri", "confirmPasswordLabel": "Conferma password", "confirmPasswordPlaceholder": "Ripeti la nuova password", "resetBtn": "Reimposta password", "rememberIt": "La ricordi?", "backToLogin": "Torna al login" },
+    "passwordChanged": { "title": "Password modificata!", "subtitle": "La tua password è stata modificata con successo.", "backBtn": "Torna al login" },
+    "verifyEmail": { "title": "Verifica la tua e-mail", "subtitle": "Abbiamo inviato un codice a 6 cifre a", "verifyBtn": "Verifica e-mail", "didntReceive": "Non l'hai ricevuto?", "resendCode": "Invia di nuovo", "differentAccount": "Usa un altro account", "invalidCode": "Codice non valido", "invalidCodeMsg": "Inserisci il codice a 6 cifre dalla tua e-mail.", "verificationFailed": "Verifica fallita" },
+    "signInOptions": { "greeting": "Ciao, Benvenuto! 👋", "subtitle": "Scegli come vuoi accedere", "email": "Accedi con e-mail", "phone": "Accedi con telefono", "google": "Accedi con Google", "apple": "Accedi con Apple", "facebook": "Accedi con Facebook", "github": "Accedi con GitHub", "microsoft": "Accedi con Microsoft", "linkedin": "Accedi con LinkedIn", "instagram": "Accedi con Instagram", "noAccount": "Non hai un account?", "signUp": "Registrati" },
+    "phoneLogin": { "title": "Accedi con telefono", "subtitle": "Inserisci il tuo numero e ti invieremo un codice.", "phoneLabel": "Numero di telefono", "sendBtn": "Invia codice", "alreadyHaveAccount": "Hai già un account?", "signInEmail": "Accedi con e-mail", "selectCountry": "Seleziona paese", "searchCountry": "Cerca paese...", "invalidPhone": "Telefono non valido", "invalidPhoneMsg": "Inserisci un numero di telefono valido." },
+    "phoneOTP": { "title": "Verifica il tuo numero", "subtitle": "Abbiamo inviato un codice a 6 cifre a", "verifyBtn": "Verifica", "wrongCode": "Codice errato, riprova", "resendCode": "Invia codice di nuovo", "didntReceive": "Non hai ricevuto il codice?", "verificationFailed": "Verifica fallita", "invalidCode": "Codice non valido", "invalidCodeMsg": "Inserisci il codice a 6 cifre inviato al tuo telefono." },
+    "preferences": { "title": "Tutto pronto!", "subtitle": "Personalizza le tue preferenze. Puoi cambiarle in Impostazioni.", "pushNotifications": "Notifiche push", "pushNotificationsDesc": "Avvisi in tempo reale per viaggi, pagamenti e altro", "weeklyReport": "Riepilogo settimanale", "weeklyReportDesc": "Ricevi un report settimanale", "dailyAlerts": "Avvisi giornalieri", "dailyAlertsDesc": "Riepilogo mattutino dei tuoi prossimi viaggi", "hosReminders": "Promemoria HOS", "hosRemindersDesc": "Avvisi quando ti avvicini ai limiti orari", "fuelUpdates": "Prezzi carburante", "fuelUpdatesDesc": "Avvisi sui prezzi vicino al tuo percorso", "continueBtn": "Continua" },
+    "language": { "title": "Scegli la lingua", "subtitle": "Seleziona la tua lingua preferita.", "search": "Cerca lingua...", "selected": "Selezionato", "saveBtn": "Salva e continua", "languages": { "en": "Inglese", "es": "Spagnolo", "fr": "Francese", "de": "Tedesco", "it": "Italiano", "zh": "Cinese", "ru": "Russo", "pt": "Portoghese", "ar": "Arabo", "ja": "Giapponese", "ko": "Coreano", "hi": "Hindi" } }
+  },
+  "tabs": { "dashboard": "Home", "docs": "Docs", "tools": "Strumenti", "fuel": "Carburante", "profile": "Profilo" },
+  "dashboard": {
+    "greeting": "Buongiorno", "subtitle": "Ecco la tua panoramica di oggi", "quickActions": "Azioni rapide", "recentActivity": "Attività recente", "noActivity": "Nessuna attività recente",
+    "welcomeBack": "Bentornato,", "searchPlaceholder": "Cerca funzioni...", "noResults": "Nessuna funzione trovata",
+    "signOut": "Esci", "emergency": "Centro di Risposta d'Emergenza", "emergencySub": "UN PULSANTE. TI TROVIAMO. TI SUPPORTIAMO.",
+    "stats": { "grossRevenue": "Ricavi Lordi", "netProfit": "Profitto Netto", "costPerMile": "Costo / Miglio", "fuelPct": "% Carburante" },
+    "cats": { "all": "Tutto", "financial": "Finanze", "legal": "Legale", "operations": "Operazioni", "community": "Comunità", "tools": "Strumenti", "career": "Carriera" }
+  },
+  "profile": {
+    "appearance": "Aspetto", "themeLight": "Chiaro", "themeDark": "Scuro", "themeSystem": "Sistema",
+    "security": "Sicurezza", "biometricLock": "Blocco biometrico", "biometricSub": "Richiedi Face ID / impronta al rientro",
+    "language": "Lingua", "myTruck": "Il Mio Camion", "subscription": "Abbonamento", "editProfile": "Modifica profilo",
+    "changePassword": "Cambia password", "notifications": "Notifiche", "helpSupport": "Aiuto e supporto",
+    "terms": "Termini di servizio", "privacy": "Privacy", "replayTour": "Rivedi il tour",
+    "emailVerified": "Email verificata", "emailNotVerified": "Email non verificata", "tapToVerify": "Tocca per verificare →",
+    "signOut": "Esci", "deleteAccount": "Elimina account", "editProfileTitle": "Modifica profilo",
+    "fullName": "Nome completo *", "phoneNumber": "Numero di telefono",
+    "changePwTitle": "Cambia password", "currentPw": "Password attuale", "newPw": "Nuova password (min 8 char)", "confirmNewPw": "Conferma nuova password",
+    "showPasswords": "Mostra password", "hidePasswords": "Nascondi password", "change": "Cambia",
+    "deleteTitle": "Elimina account", "deleteWarning": "Questo eliminerà definitivamente il tuo account e tutti i dati associati. Non può essere annullato.",
+    "enterPwToConfirm": "Inserisci la password per confermare", "deleteForever": "Elimina per sempre",
+    "replayConfirmTitle": "Rivedere il tour?", "replayConfirmMsg": "Verrà mostrato nuovamente il tour introduttivo.", "freePlan": "PIANO GRATUITO",
+    "rateApp": "Valuta l'app", "shareApp": "Condividi CST App", "version": "Versione",
+    "downloadDataWarning": "Scarica le tue fatture, i registri carburante e i documenti prima di eliminare — non potranno essere recuperati.",
+    "downloadDataBtn": "Scarica prima i miei dati", "passwordPlaceholder": "La tua password",
+    "exportingData": "Esportazione dati...", "exportTitle": "Il mio export dati CST",
+    "shareMessage": "Scopri CST Driver — l'app definitiva per i camionisti! Scaricala gratis su App Store e Google Play.",
+    "rateAlertTitle": "Valuta CST Driver", "rateAlertMsg": "Ti piace l'app? Lasciaci una recensione — aiuta altri conducenti a trovarci!"
+  },
+  "notifications": {
+    "upcoming": "In arrivo", "history": "Cronologia",
+    "clearHistory": "Cancella cronologia", "clearHistoryMsg": "Rimuovere tutta la cronologia delle notifiche?",
+    "noUpcoming": "Nessuna scadenza imminente", "noHistory": "Nessuna cronologia notifiche",
+    "dueToday": "Scade oggi!", "dueTomorrow": "Scade domani", "dueInDays": "Scade tra {{count}} giorni"
+  }
+}

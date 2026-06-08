@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import { FREIGHT_LOADS, BUSINESS_EXPENSES, VirtualLoad } from '../../data/freightLoads';
 import { getRoadReadyProfile, updateFreightCareer } from '../../api/roadReady';
+import { getEIADieselPrices } from '../../api/features';
 
 type ScreenView = 'career' | 'accept' | 'result';
 
@@ -24,8 +25,8 @@ function pickLoads(): VirtualLoad[] {
   return [...FREIGHT_LOADS].sort(() => Math.random() - 0.5).slice(0, 3);
 }
 
-function calcProfit(load: VirtualLoad) {
-  const fuelCost = load.miles * BUSINESS_EXPENSES.fuelCostPerMile;
+function calcProfit(load: VirtualLoad, fuelPpm = BUSINESS_EXPENSES.fuelCostPerMile) {
+  const fuelCost = load.miles * fuelPpm;
   const maintenanceCost = load.miles * BUSINESS_EXPENSES.maintenanceCostPerMile;
   const fixedWeeklyCost = (BUSINESS_EXPENSES.insurancePerMonth + BUSINESS_EXPENSES.truckPaymentPerMonth + BUSINESS_EXPENSES.miscPerMonth) / 4;
   const totalCost = fuelCost + maintenanceCost + fixedWeeklyCost;
@@ -106,16 +107,26 @@ export default function FreightCareerScreen() {
   const [selectedLoad, setSelectedLoad] = useState<VirtualLoad | null>(null);
   const [tripResult, setTripResult] = useState<{ profit: number; onTime: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
+  // fuel price per mile derived from live EIA diesel price (assume 6 mpg)
+  const [fuelPpm, setFuelPpm] = useState(BUSINESS_EXPENSES.fuelCostPerMile);
+  const [dieselPrice, setDieselPrice] = useState<number | null>(null);
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
-    getRoadReadyProfile()
-      .then(d => {
-        setStats(d.profile.freightCareerStats);
-        setAvailableLoads(pickLoads());
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getRoadReadyProfile(),
+      getEIADieselPrices().catch(() => null),
+    ]).then(([profile, eia]) => {
+      setStats(profile.profile.freightCareerStats);
+      setAvailableLoads(pickLoads());
+      if (eia?.price) {
+        const price = parseFloat(eia.price);
+        if (!isNaN(price) && price > 0) {
+          setDieselPrice(price);
+          setFuelPpm(parseFloat((price / 6).toFixed(4))); // 6 mpg average
+        }
+      }
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []));
 
   const acceptLoad = (load: VirtualLoad) => {
@@ -126,7 +137,7 @@ export default function FreightCareerScreen() {
   const confirmLoad = async () => {
     if (!selectedLoad || !stats) return;
     setSaving(true);
-    const profit = calcProfit(selectedLoad);
+    const profit = calcProfit(selectedLoad, fuelPpm);
     const onTimeChance = selectedLoad.difficulty === 'easy' ? 0.95 : selectedLoad.difficulty === 'medium' ? 0.80 : 0.65;
     const onTime = Math.random() < onTimeChance;
     setTripResult({ profit, onTime });
@@ -173,7 +184,14 @@ export default function FreightCareerScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           {/* Stats card */}
           <View style={styles.statsCard}>
-            <Text style={styles.statsTitle}>CAREER STATS</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.statsTitle}>CAREER STATS</Text>
+              {dieselPrice != null && (
+                <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: '700' }}>
+                  ⛽ ${dieselPrice.toFixed(3)}/gal (live)
+                </Text>
+              )}
+            </View>
             <View style={styles.statsGrid}>
               <StatItem label="Loads" value={String(stats?.loadsCompleted ?? 0)} icon="cube-outline" />
               <StatItem label="Miles" value={((stats?.totalMiles ?? 0) / 1000).toFixed(1) + 'k'} icon="speedometer-outline" />
@@ -216,8 +234,8 @@ export default function FreightCareerScreen() {
 
               <View style={styles.loadProfit}>
                 <Text style={styles.loadProfitLabel}>Est. Profit</Text>
-                <Text style={[styles.loadProfitValue, { color: calcProfit(load) > 0 ? '#2ECC71' : '#E74C3C' }]}>
-                  ${calcProfit(load).toFixed(0)}
+                <Text style={[styles.loadProfitValue, { color: calcProfit(load, fuelPpm) > 0 ? '#2ECC71' : '#E74C3C' }]}>
+                  ${calcProfit(load, fuelPpm).toFixed(0)}
                 </Text>
               </View>
 
@@ -238,7 +256,7 @@ export default function FreightCareerScreen() {
 
   // ── Accept confirmation ────────────────────────────────────────────────────
   if (view === 'accept' && selectedLoad) {
-    const profit = calcProfit(selectedLoad);
+    const profit = calcProfit(selectedLoad, fuelPpm);
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -255,8 +273,10 @@ export default function FreightCareerScreen() {
               <ConfirmRow label="Broker" value={`${selectedLoad.broker} (${selectedLoad.brokerRating}★)`} />
             </View>
             <View style={styles.costBreakdown}>
-              <Text style={styles.costTitle}>Cost Breakdown</Text>
-              <ConfirmRow label="Fuel" value={`-$${(selectedLoad.miles * 0.55).toFixed(0)}`} valueColor="#E74C3C" />
+              <Text style={styles.costTitle}>
+                Cost Breakdown{dieselPrice != null ? ` — ⛽ $${dieselPrice.toFixed(3)}/gal` : ''}
+              </Text>
+              <ConfirmRow label="Fuel" value={`-$${(selectedLoad.miles * fuelPpm).toFixed(0)}`} valueColor="#E74C3C" />
               <ConfirmRow label="Maintenance" value={`-$${(selectedLoad.miles * 0.12).toFixed(0)}`} valueColor="#E74C3C" />
               <ConfirmRow label="Fixed (weekly)" value="-$1,100" valueColor="#E74C3C" />
               <View style={styles.divider} />

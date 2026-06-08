@@ -8,6 +8,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import { FREIGHT_LOADS, BUSINESS_EXPENSES, VirtualLoad } from '../../data/freightLoads';
 import { getRoadReadyProfile, updateOOStats } from '../../api/roadReady';
+import { getEIADieselPrices } from '../../api/features';
 
 interface OOStats {
   weekNumber: number;
@@ -125,13 +126,24 @@ export default function OOSimScreen() {
   const [weekLoads, setWeekLoads] = useState<[VirtualLoad, VirtualLoad] | null>(null);
   const [weekResult, setWeekResult] = useState<WeekResult | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fuelPpm, setFuelPpm] = useState(BUSINESS_EXPENSES.fuelCostPerMile);
+  const [dieselPrice, setDieselPrice] = useState<number | null>(null);
 
   useFocusEffect(useCallback(() => {
     setLoading(true);
-    getRoadReadyProfile()
-      .then(d => setOo(d.profile.ooStats))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      getRoadReadyProfile(),
+      getEIADieselPrices().catch(() => null),
+    ]).then(([data, eia]) => {
+      setOo(data.profile.ooStats);
+      if (eia?.price) {
+        const p = parseFloat(eia.price);
+        if (!isNaN(p) && p > 0) {
+          setDieselPrice(p);
+          setFuelPpm(parseFloat((p / 6).toFixed(4)));
+        }
+      }
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []));
 
   const openLoadPicker = () => {
@@ -143,7 +155,7 @@ export default function OOSimScreen() {
     if (!oo) return;
     setSaving(true);
     const revenue = load.rate;
-    const fuelCost = load.miles * BUSINESS_EXPENSES.fuelCostPerMile;
+    const fuelCost = load.miles * fuelPpm;
     const maintenanceCost = load.miles * BUSINESS_EXPENSES.maintenanceCostPerMile;
     const event = maybeEvent();
     const eventAmount = event?.amount ?? 0;
@@ -221,13 +233,20 @@ export default function OOSimScreen() {
 
           {/* Weekly expenses info */}
           <View style={styles.expensesCard}>
-            <Text style={styles.expensesTitle}>Weekly Fixed Expenses</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.expensesTitle}>Weekly Fixed Expenses</Text>
+              {dieselPrice != null && (
+                <Text style={{ color: Colors.secondary, fontSize: 11, fontWeight: '700' }}>
+                  ⛽ ${dieselPrice.toFixed(3)}/gal live
+                </Text>
+              )}
+            </View>
             <ExpRow label="Insurance" value={`$${(BUSINESS_EXPENSES.insurancePerMonth / 4).toFixed(0)}/wk`} />
             <ExpRow label="Truck Payment" value={`$${(BUSINESS_EXPENSES.truckPaymentPerMonth / 4).toFixed(0)}/wk`} />
             <ExpRow label="Misc (permits, phone)" value={`$${(BUSINESS_EXPENSES.miscPerMonth / 4).toFixed(0)}/wk`} />
             <View style={styles.divider} />
             <ExpRow label="Total Fixed" value={`$${WEEKLY_FIXED.toFixed(0)}/wk`} bold />
-            <ExpRow label="Fuel & Maintenance" value={`$${(BUSINESS_EXPENSES.fuelCostPerMile + BUSINESS_EXPENSES.maintenanceCostPerMile).toFixed(2)}/mi`} />
+            <ExpRow label="Fuel & Maintenance" value={`$${(fuelPpm + BUSINESS_EXPENSES.maintenanceCostPerMile).toFixed(2)}/mi`} />
           </View>
 
           {/* Progress milestones */}
@@ -257,7 +276,7 @@ export default function OOSimScreen() {
           <Text style={styles.pickTitle}>Week {oo.weekNumber} — Pick Your Load</Text>
           <Text style={styles.pickSub}>Choose wisely — your cash depends on it</Text>
           {weekLoads.map((load, i) => {
-            const fuel = load.miles * BUSINESS_EXPENSES.fuelCostPerMile;
+            const fuel = load.miles * fuelPpm;
             const maint = load.miles * BUSINESS_EXPENSES.maintenanceCostPerMile;
             const estNet = load.rate - fuel - maint - WEEKLY_FIXED;
             const color = i === 0 ? '#3498DB' : '#9B59B6';

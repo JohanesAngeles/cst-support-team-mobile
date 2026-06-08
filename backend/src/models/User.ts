@@ -12,6 +12,9 @@ export interface IUser extends Document {
   verificationExpires?: Date;
   resetCode?: string;
   resetExpires?: Date;
+  phoneOtp?: string;
+  phoneOtpExpires?: Date;
+  isPhoneVerified?: boolean;
   avatarUrl?: string;
   stripeCustomerId?: string;
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
@@ -35,6 +38,9 @@ const UserSchema = new Schema<IUser>(
     verificationExpires: { type: Date,   select: false },
     resetCode:           { type: String, select: false },
     resetExpires:        { type: Date,   select: false },
+    phoneOtp:            { type: String, select: false },
+    phoneOtpExpires:     { type: Date,   select: false },
+    isPhoneVerified:     { type: Boolean, default: false },
     avatarUrl:           { type: String },
     stripeCustomerId:    { type: String },
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },

@@ -1,11 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
-import MainTabs from './MainTabs';
+import MainStack from './MainStack';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
-import OfflineBanner from '../components/OfflineBanner';
 import { useColors } from '../constants/colors';
 
 export default function AppNavigator() {
@@ -25,11 +24,8 @@ export default function AppNavigator() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <OfflineBanner />
-      <NavigationContainer>
-        {!user ? <AuthStack /> : <MainTabs />}
-      </NavigationContainer>
-    </View>
+    <NavigationContainer>
+      {!user ? <AuthStack /> : <MainStack />}
+    </NavigationContainer>
   );
 }

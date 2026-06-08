@@ -79,7 +79,8 @@
           "photosPermission": "CST needs access to your photos to update your profile picture.",
           "cameraPermission": "CST uses the camera to take a profile photo."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {

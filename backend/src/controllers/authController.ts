@@ -7,6 +7,15 @@ import { AuthRequest } from '../middleware/auth';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
 import { upload, uploadToCloudinary } from '../middleware/upload';
 
+// Lazy-init Twilio client so missing credentials don't crash the server
+function getTwilioClient() {
+  const sid   = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token) throw new Error('Twilio credentials not configured. Add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to .env');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('twilio')(sid, token);
+}
+
 const signToken = (id: string) =>
   jwt.sign({ id }, process.env.JWT_SECRET!, {
     expiresIn: process.env.JWT_EXPIRES_IN ?? '30d',
@@ -251,6 +260,66 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
   ]);
 
   res.json({ message: 'Account and all associated data deleted' });
+};
+
+// ─── Phone OTP ────────────────────────────────────────────────────────────────
+
+export const sendPhoneOTP = async (req: Request, res: Response) => {
+  const { phone } = req.body;
+  if (!phone) { res.status(400).json({ message: 'Phone number is required' }); return; }
+
+  const otp     = makeCode();
+  const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+  try {
+    const client = getTwilioClient();
+    const from   = process.env.TWILIO_PHONE_NUMBER;
+    if (!from) { res.status(500).json({ message: 'TWILIO_PHONE_NUMBER not configured' }); return; }
+
+    await client.messages.create({
+      body: `Your CST verification code is: ${otp}`,
+      from,
+      to: phone,
+    });
+
+    // Upsert by phone — create a placeholder user if one doesn't exist yet
+    await User.findOneAndUpdate(
+      { phone },
+      { phone, phoneOtp: otp, phoneOtpExpires: expires },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    res.json({ message: 'OTP sent' });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message ?? 'Failed to send OTP' });
+  }
+};
+
+export const verifyPhoneOTP = async (req: Request, res: Response) => {
+  const { phone, otp } = req.body;
+  if (!phone || !otp) { res.status(400).json({ message: 'Phone and OTP are required' }); return; }
+
+  try {
+    const user = await User.findOne({ phone }).select('+phoneOtp +phoneOtpExpires');
+    if (!user) { res.status(404).json({ message: 'Phone number not found' }); return; }
+    if (!user.phoneOtp || user.phoneOtp !== otp) {
+      res.status(400).json({ message: 'Invalid OTP code' }); return;
+    }
+    if (!user.phoneOtpExpires || user.phoneOtpExpires < new Date()) {
+      res.status(400).json({ message: 'OTP has expired. Request a new one.' }); return;
+    }
+
+    user.phoneOtp        = undefined;
+    user.phoneOtpExpires = undefined;
+    user.isPhoneVerified = true;
+    if (!user.isVerified) user.isVerified = true;
+    await user.save();
+
+    const token = signToken(user._id.toString());
+    res.json({ token, user: safeUser(user) });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message ?? 'Server error' });
+  }
 };
 
 // Avatar upload — multipart/form-data field name "avatar"

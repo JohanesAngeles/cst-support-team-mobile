@@ -1,12 +1,13 @@
-﻿import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import { CDL_LESSONS, CDLLesson } from '../../data/cdlQuestions';
-import { completeLesson } from '../../api/roadReady';
+import { completeLesson, getRoadReadyProfile } from '../../api/roadReady';
 
 type ScreenView = 'lessons' | 'quiz' | 'results';
 
@@ -65,6 +66,20 @@ export default function StudentDriverScreen() {
   const [selected, setSelected] = useState<number | null>(null);
   const [correct, setCorrect] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [completedLessons, setCompletedLessons] = useState<string[]>([]);
+  const [educationScore, setEducationScore] = useState(0);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useFocusEffect(useCallback(() => {
+    setProfileLoading(true);
+    getRoadReadyProfile()
+      .then(d => {
+        setCompletedLessons(d.profile.lessonsCompleted ?? []);
+        setEducationScore(d.profile.educationScore ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => setProfileLoading(false));
+  }, []));
 
   const startLesson = (lesson: CDLLesson) => {
     setActiveLesson(lesson);
@@ -90,7 +105,11 @@ export default function StudentDriverScreen() {
     } else {
       setSaving(true);
       const gained = Math.round((correct / qs.length) * 10);
-      try { await completeLesson(activeLesson!.id, gained); } catch (_) {}
+      try {
+        const updated = await completeLesson(activeLesson!.id, gained);
+        setCompletedLessons(updated.profile.lessonsCompleted ?? []);
+        setEducationScore(updated.profile.educationScore ?? 0);
+      } catch (_) {}
       setSaving(false);
       setView('results');
     }
@@ -98,28 +117,63 @@ export default function StudentDriverScreen() {
 
   // ── Lesson select ──────────────────────────────────────────────────────────
   if (view === 'lessons') {
+    const totalLessons = CDL_LESSONS.length;
+    const doneCount = CDL_LESSONS.filter(l => completedLessons.includes(l.id)).length;
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.header}>Select a Lesson</Text>
           <Text style={styles.sub}>Complete lessons to earn Education score points</Text>
-          {CDL_LESSONS.map(lesson => (
-            <TouchableOpacity
-              key={lesson.id}
-              style={styles.lessonCard}
-              onPress={() => startLesson(lesson)}
-              activeOpacity={0.8}
-            >
-              <View style={[styles.lessonIcon, { backgroundColor: lesson.color + '22' }]}>
-                <Ionicons name={lesson.icon as any} size={28} color={lesson.color} />
+
+          {/* Progress summary */}
+          {profileLoading ? (
+            <ActivityIndicator size="small" color={Colors.secondary} style={{ marginBottom: 4 }} />
+          ) : (
+            <View style={{
+              backgroundColor: Colors.surface, borderRadius: 12, padding: 14,
+              borderWidth: 1, borderColor: Colors.border,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <View style={{ gap: 4 }}>
+                <Text style={{ color: Colors.text, fontWeight: '800', fontSize: 14 }}>
+                  {doneCount}/{totalLessons} Lessons Completed
+                </Text>
+                <View style={{ height: 4, width: 180, backgroundColor: Colors.surfaceLight, borderRadius: 2 }}>
+                  <View style={{
+                    height: '100%', borderRadius: 2, backgroundColor: Colors.secondary,
+                    width: `${(doneCount / totalLessons) * 100}%` as any,
+                  }} />
+                </View>
               </View>
-              <View style={styles.lessonInfo}>
-                <Text style={styles.lessonTitle}>{lesson.title}</Text>
-                <Text style={styles.lessonMeta}>{lesson.questions.length} questions • Up to 10 pts</Text>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ color: Colors.secondary, fontSize: 22, fontWeight: '900' }}>{educationScore}</Text>
+                <Text style={{ color: Colors.textMuted, fontSize: 11 }}>Edu pts</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-            </TouchableOpacity>
-          ))}
+            </View>
+          )}
+
+          {CDL_LESSONS.map(lesson => {
+            const done = completedLessons.includes(lesson.id);
+            return (
+              <TouchableOpacity
+                key={lesson.id}
+                style={[styles.lessonCard, done && { borderColor: '#2ECC71', borderWidth: 1.5 }]}
+                onPress={() => startLesson(lesson)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.lessonIcon, { backgroundColor: done ? '#2ECC7122' : lesson.color + '22' }]}>
+                  <Ionicons name={done ? 'checkmark-circle' : lesson.icon as any} size={28} color={done ? '#2ECC71' : lesson.color} />
+                </View>
+                <View style={styles.lessonInfo}>
+                  <Text style={styles.lessonTitle}>{lesson.title}</Text>
+                  <Text style={styles.lessonMeta}>
+                    {lesson.questions.length} questions • {done ? 'Completed ✓' : 'Up to 10 pts'}
+                  </Text>
+                </View>
+                <Ionicons name={done ? 'refresh-outline' : 'chevron-forward'} size={20} color={done ? '#2ECC71' : Colors.textMuted} />
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
     );

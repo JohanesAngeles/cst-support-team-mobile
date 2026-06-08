@@ -1,4 +1,6 @@
 import 'react-native-gesture-handler';
+import { initI18n } from './src/i18n';
+initI18n(); // synchronous — i18next ready before first render, language updated from AsyncStorage in background
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
@@ -24,6 +26,20 @@ import BiometricLock from './src/components/BiometricLock';
 import { addNotification } from './src/utils/notificationHistory';
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
+
+// Wrapper that skips PostHog entirely when no key is configured,
+// preventing "must pass api key" errors and navigation-hook crashes.
+function Analytics({ children }: { children: React.ReactNode }) {
+  if (!POSTHOG_KEY) return <>{children}</>;
+  return (
+    <PostHogProvider
+      apiKey={POSTHOG_KEY}
+      options={{ host: 'https://us.i.posthog.com' }}
+    >
+      {children}
+    </PostHogProvider>
+  );
+}
 
 function Root() {
   const { isDark } = useTheme();
@@ -55,10 +71,7 @@ function Root() {
 
 function App() {
   return (
-    <PostHogProvider
-      apiKey={POSTHOG_KEY}
-      options={{ host: 'https://us.i.posthog.com', disabled: !POSTHOG_KEY }}
-    >
+    <Analytics>
       <GestureHandlerRootView style={s.root}>
         <SafeAreaProvider>
           <ThemeProvider>
@@ -68,7 +81,7 @@ function App() {
           </ThemeProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
-    </PostHogProvider>
+    </Analytics>
   );
 }
 

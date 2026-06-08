@@ -5,7 +5,7 @@ const BASE_URL = 'https://cst-support-api-3020a5341eb4.herokuapp.com/api';
 
 const client = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });
 

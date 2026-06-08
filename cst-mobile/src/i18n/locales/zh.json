@@ -1,0 +1,51 @@
+{
+  "common": { "back": "返回", "continue": "继续", "skip": "暂时跳过", "or": "或", "loading": "加载中...", "save": "保存", "cancel": "取消", "confirm": "确认", "search": "搜索", "yes": "是", "no": "否", "ok": "确定", "error": "错误", "success": "成功", "comingSoon": "即将推出", "comingSoonMsg": "此功能即将推出。" },
+  "auth": {
+    "login": { "greeting": "你好，欢迎！👋", "subtitle": "登录您的CST账户", "emailLabel": "电子邮件", "emailPlaceholder": "您的邮件", "passwordLabel": "密码", "passwordPlaceholder": "您的密码", "forgotPassword": "忘记密码？", "loginBtn": "登录", "orContinueWith": "或继续使用", "google": "谷歌", "apple": "苹果", "noAccount": "没有账户？", "signUp": "注册", "allOptions": "所有登录选项", "terms": "服务条款", "privacy": "隐私政策" },
+    "register": { "title": "创建账户", "subtitle": "加入CST司机网络", "nameLabel": "全名", "namePlaceholder": "您的全名", "emailLabel": "电子邮件", "emailPlaceholder": "您的邮件", "phoneLabel": "电话号码", "phoneOptional": "（可选）", "phonePlaceholder": "您的电话", "passwordLabel": "密码", "passwordPlaceholder": "最少8个字符", "confirmPasswordLabel": "确认密码", "confirmPasswordPlaceholder": "重复密码", "createBtn": "创建账户", "alreadyHaveAccount": "已有账户？", "signIn": "登录", "missingFields": "缺少字段", "missingFieldsMsg": "请填写所有必填字段。", "passwordMismatch": "密码不匹配", "passwordMismatchMsg": "密码不匹配。", "weakPassword": "密码太弱", "weakPasswordMsg": "密码必须至少8个字符。", "registrationFailed": "注册失败" },
+    "forgotPassword": { "title": "忘记密码？", "subtitle": "没关系！输入您账户关联的邮件，我们将发送重置码。", "emailLabel": "电子邮件", "emailPlaceholder": "您的邮件", "sendBtn": "发送验证码", "haveCode": "已有验证码？", "enterHere": "在这里输入" },
+    "resetPassword": { "title": "重置密码", "subtitle": "输入邮件中的验证码并设置新密码。", "emailLabel": "电子邮件", "emailPlaceholder": "您的邮件", "codeLabel": "验证码", "newPasswordLabel": "新密码", "newPasswordPlaceholder": "最少8个字符", "confirmPasswordLabel": "确认密码", "confirmPasswordPlaceholder": "重复新密码", "resetBtn": "重置密码", "rememberIt": "想起来了？", "backToLogin": "返回登录" },
+    "passwordChanged": { "title": "密码已更改！", "subtitle": "您的密码已成功更改。", "backBtn": "返回登录" },
+    "verifyEmail": { "title": "验证您的邮件", "subtitle": "我们已向以下地址发送了6位验证码", "verifyBtn": "验证邮件", "didntReceive": "没有收到？", "resendCode": "重新发送", "differentAccount": "使用其他账户", "invalidCode": "无效验证码", "invalidCodeMsg": "请输入邮件中的6位验证码。", "verificationFailed": "验证失败" },
+    "signInOptions": { "greeting": "你好，欢迎！👋", "subtitle": "选择您的登录方式", "email": "用邮件登录", "phone": "用电话登录", "google": "用谷歌登录", "apple": "用苹果登录", "facebook": "用脸书登录", "github": "用GitHub登录", "microsoft": "用微软登录", "linkedin": "用领英登录", "instagram": "用Instagram登录", "noAccount": "没有账户？", "signUp": "注册" },
+    "phoneLogin": { "title": "用电话登录", "subtitle": "输入您的电话号码，我们将发送验证码。", "phoneLabel": "电话号码", "sendBtn": "发送验证码", "alreadyHaveAccount": "已有账户？", "signInEmail": "用邮件登录", "selectCountry": "选择国家", "searchCountry": "搜索国家...", "invalidPhone": "无效电话", "invalidPhoneMsg": "请输入有效的电话号码。" },
+    "phoneOTP": { "title": "验证您的电话号码", "subtitle": "我们已向以下号码发送了6位验证码", "verifyBtn": "验证", "wrongCode": "验证码错误，请重试", "resendCode": "重新发送验证码", "didntReceive": "没有收到验证码？", "verificationFailed": "验证失败", "invalidCode": "无效验证码", "invalidCodeMsg": "请输入发送到您手机的6位验证码。" },
+    "preferences": { "title": "一切就绪！", "subtitle": "自定义您的通知偏好，以后可在设置中更改。", "pushNotifications": "推送通知", "pushNotificationsDesc": "行程、付款等实时提醒", "weeklyReport": "每周摘要", "weeklyReportDesc": "获取每周收益和里程报告", "dailyAlerts": "每日提醒", "dailyAlertsDesc": "每天早上的行程摘要", "hosReminders": "HOS提醒", "hosRemindersDesc": "接近小时限制时发出警报", "fuelUpdates": "油价更新", "fuelUpdatesDesc": "路线附近的价格提醒", "continueBtn": "继续" },
+    "language": { "title": "选择语言", "subtitle": "选择您偏好的应用语言。", "search": "搜索语言...", "selected": "已选择", "saveBtn": "保存并继续", "languages": { "en": "英语", "es": "西班牙语", "fr": "法语", "de": "德语", "it": "意大利语", "zh": "中文", "ru": "俄语", "pt": "葡萄牙语", "ar": "阿拉伯语", "ja": "日语", "ko": "韩语", "hi": "印地语" } }
+  },
+  "tabs": { "dashboard": "首页", "docs": "文件", "tools": "工具", "fuel": "燃料", "profile": "我的" },
+  "dashboard": {
+    "greeting": "早上好", "subtitle": "这是您今天的概览", "quickActions": "快速操作", "recentActivity": "最近活动", "noActivity": "没有最近活动",
+    "welcomeBack": "欢迎回来，", "searchPlaceholder": "搜索功能...", "noResults": "未找到功能",
+    "signOut": "退出登录", "emergency": "紧急响应中心", "emergencySub": "一键呼叫，我们找到您，支援您。",
+    "stats": { "grossRevenue": "总收入", "netProfit": "净利润", "costPerMile": "每英里成本", "fuelPct": "燃料%" },
+    "cats": { "all": "全部", "financial": "财务", "legal": "法律", "operations": "运营", "community": "社区", "tools": "工具", "career": "职业" }
+  },
+  "profile": {
+    "appearance": "外观", "themeLight": "浅色", "themeDark": "深色", "themeSystem": "系统",
+    "security": "安全", "biometricLock": "生物识别锁", "biometricSub": "返回时需要Face ID / 指纹",
+    "language": "语言", "myTruck": "我的卡车", "subscription": "订阅", "editProfile": "编辑资料",
+    "changePassword": "更改密码", "notifications": "通知", "helpSupport": "帮助与支持",
+    "terms": "服务条款", "privacy": "隐私政策", "replayTour": "重播引导",
+    "emailVerified": "邮箱已验证", "emailNotVerified": "邮箱未验证", "tapToVerify": "点击验证 →",
+    "signOut": "退出登录", "deleteAccount": "删除账户", "editProfileTitle": "编辑资料",
+    "fullName": "全名 *", "phoneNumber": "电话号码",
+    "changePwTitle": "更改密码", "currentPw": "当前密码", "newPw": "新密码（最少8字符）", "confirmNewPw": "确认新密码",
+    "showPasswords": "显示密码", "hidePasswords": "隐藏密码", "change": "更改",
+    "deleteTitle": "删除账户", "deleteWarning": "这将永久删除您的账户和所有相关数据。此操作无法撤销。",
+    "enterPwToConfirm": "输入密码以确认", "deleteForever": "永久删除",
+    "replayConfirmTitle": "重播引导？", "replayConfirmMsg": "将再次显示入门引导。", "freePlan": "免费计划",
+    "rateApp": "给应用评分", "shareApp": "分享CST应用", "version": "版本",
+    "downloadDataWarning": "删除前请下载您的发票、燃料日志、行程记录和文件 — 删除后将无法恢复。",
+    "downloadDataBtn": "先下载我的数据", "passwordPlaceholder": "您的密码",
+    "exportingData": "正在导出数据...", "exportTitle": "我的CST数据导出",
+    "shareMessage": "发现CST Driver — 卡车司机的终极应用！在App Store和Google Play免费下载。",
+    "rateAlertTitle": "评价CST Driver", "rateAlertMsg": "喜欢这款应用吗？给我们留下评价 — 帮助其他司机找到我们！"
+  },
+  "notifications": {
+    "upcoming": "即将到期", "history": "历史记录",
+    "clearHistory": "清除历史", "clearHistoryMsg": "删除所有通知历史记录？",
+    "noUpcoming": "没有即将到期的任务", "noHistory": "没有通知历史记录",
+    "dueToday": "今天到期！", "dueTomorrow": "明天到期", "dueInDays": "{{count}}天后到期"
+  }
+}
