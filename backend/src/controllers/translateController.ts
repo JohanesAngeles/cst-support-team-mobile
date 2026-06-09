@@ -79,7 +79,7 @@ export const translate = async (req: Request, res: Response) => {
     res.json({ translatedText: translated, detectedSourceLang: detectedLang });
   } catch (err: any) {
     if (err.message?.includes('DEEPL_API_KEY')) {
-      res.status(500).json({ message: 'Translation service not configured. Add DEEPL_API_KEY to server .env' });
+      res.status(503).json({ message: 'Translation service is currently unavailable.' });
     } else {
       res.status(500).json({ message: err.message ?? 'Translation failed' });
     }
@@ -87,6 +87,13 @@ export const translate = async (req: Request, res: Response) => {
 };
 
 export const getSupportedLanguages = async (_req: Request, res: Response) => {
+  if (!process.env.DEEPL_API_KEY) {
+    res.json({
+      source: Object.keys(SOURCE_MAP).map(code => ({ language: code.toUpperCase(), name: code })),
+      target: Object.keys(LANG_MAP).map(code => ({ language: LANG_MAP[code], name: code })),
+    });
+    return;
+  }
   try {
     const translator = getTranslator();
     const [source, target] = await Promise.all([
@@ -95,6 +102,6 @@ export const getSupportedLanguages = async (_req: Request, res: Response) => {
     ]);
     res.json({ source, target });
   } catch (err: any) {
-    res.status(500).json({ message: err.message ?? 'Failed to fetch languages' });
+    res.status(503).json({ message: 'Translation service is currently unavailable.' });
   }
 };

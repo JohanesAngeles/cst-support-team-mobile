@@ -12,6 +12,14 @@ export interface User {
   avatarUrl?: string | null;
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual' | null;
+  notificationPreferences?: {
+    pushNotifications: boolean;
+    weeklyReport: boolean;
+    dailyAlerts: boolean;
+    hosReminders: boolean;
+    fuelUpdates: boolean;
+  } | null;
+  preferredLanguage?: string;
 }
 
 interface AuthContextType {

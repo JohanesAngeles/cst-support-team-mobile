@@ -3,6 +3,9 @@ import { protect, AuthRequest } from '../middleware/auth';
 import RoadReadyScore from '../models/RoadReadyScore';
 import HOSEntry from '../models/HOSEntry';
 import DVIREntry from '../models/DVIREntry';
+import TripLog from '../models/TripLog';
+import BrokerNote from '../models/BrokerNote';
+import Deadline from '../models/Deadline';
 
 const router = Router();
 router.use(protect);
@@ -154,6 +157,81 @@ router.patch('/oo', async (req: AuthRequest, res: Response) => {
 
   if (weeks >= 10 && !profile.badges.includes('oo-survivor')) profile.badges.push('oo-survivor');
   if (profit >= 50000 && !profile.badges.includes('oo-profitable')) profile.badges.push('oo-profitable');
+
+  await profile.save();
+  res.json({ profile });
+});
+
+// PATCH — sync compliance, business, and reputation from real activity data
+router.patch('/sync', async (req: AuthRequest, res: Response) => {
+  const uid = req.user._id;
+
+  const [hosEntries, dvirEntries, trips, brokerNotes, deadlines] = await Promise.all([
+    HOSEntry.find({ userId: uid }).sort({ date: -1 }).limit(60),
+    DVIREntry.find({ userId: uid }).sort({ createdAt: -1 }).limit(90),
+    TripLog.find({ userId: uid }).lean(),
+    BrokerNote.find({ userId: uid }).lean(),
+    Deadline.find({ userId: uid }).lean(),
+  ]);
+
+  let profile = await RoadReadyScore.findOne({ userId: uid });
+  if (!profile) profile = await RoadReadyScore.create({ userId: uid });
+
+  // ── Compliance Score (0–200) ───────────────────────────────────────────────
+  // 100 pts from clean HOS (≤11h drive, ≤14h on-duty)
+  const recentHOS = hosEntries.slice(0, 30);
+  const cleanHOS = recentHOS.filter((h: any) => h.drivingHours <= 11 && h.onDutyHours <= 14).length;
+  const hosCompliancePts = recentHOS.length > 0
+    ? Math.round((cleanHOS / recentHOS.length) * 100)
+    : 0;
+
+  // 60 pts from DVIR inspection frequency
+  const dvirPts = Math.min(60, dvirEntries.length * 4);
+
+  // 40 pts: no overdue deadlines (each overdue deadline costs 10 pts)
+  const now = new Date();
+  const overdue = deadlines.filter(d => new Date(d.dueDate) < now).length;
+  const deadlinePts = Math.max(0, 40 - overdue * 10);
+
+  profile.complianceScore = Math.min(200, hosCompliancePts + dvirPts + deadlinePts);
+
+  // ── Business Score (0–150) ────────────────────────────────────────────────
+  // From real TripLog data: loads completed + revenue per mile + net profit
+  const tripCount = trips.length;
+  const totalMiles = trips.reduce((s, t) => s + (t.miles ?? t.distance ?? 0), 0);
+  const totalRevenue = trips.reduce((s, t) => s + (t.totalPay ?? t.revenue ?? 0), 0);
+  const rpm = totalMiles > 0 ? totalRevenue / totalMiles : 0;
+
+  const tripPts   = Math.min(60, tripCount * 3);        // 3 pts per trip, max 60
+  const rpmPts    = rpm >= 3.5 ? 50 : rpm >= 2.5 ? 30 : rpm >= 2 ? 15 : 0;
+  const volumePts = Math.min(40, Math.floor(totalRevenue / 5000)); // 1 pt per $5k gross
+
+  profile.businessScore = Math.min(150, tripPts + rpmPts + volumePts);
+
+  // ── Reputation Score (0–100) ──────────────────────────────────────────────
+  // From broker notes and trip completion volume
+  const noteCount   = brokerNotes.length;
+  const notePts     = Math.min(50, noteCount * 5);       // 5 pts per broker reviewed
+  const tripRepPts  = Math.min(50, Math.floor(tripCount * 1.5)); // 1.5 pts per completed trip
+
+  profile.reputationScore = Math.min(100, notePts + tripRepPts);
+
+  // ── Recalculate total ─────────────────────────────────────────────────────
+  profile.totalScore =
+    profile.safetyScore +
+    profile.skillScore +
+    profile.complianceScore +
+    profile.businessScore +
+    profile.reputationScore +
+    profile.educationScore;
+
+  // ── Badges from real activity ─────────────────────────────────────────────
+  if (tripCount >= 10 && !profile.badges.includes('freight-veteran'))
+    profile.badges.push('freight-veteran');
+  if (rpm >= 3.5 && !profile.badges.includes('rate-master'))
+    profile.badges.push('rate-master');
+  if (cleanHOS >= 30 && !profile.badges.includes('hos-champion'))
+    profile.badges.push('hos-champion');
 
   await profile.save();
   res.json({ profile });

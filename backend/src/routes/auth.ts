@@ -7,6 +7,7 @@ import {
   updateProfile, changePassword, deleteAccount,
   updateAvatar, updateAvatarMiddleware,
   sendPhoneOTP, verifyPhoneOTP,
+  updatePreferences,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 
@@ -44,5 +45,8 @@ router.delete('/me', protect, deleteAccount);
 // Phone OTP login
 router.post('/send-phone-otp',   [body('phone').notEmpty().withMessage('Phone is required')],   sendPhoneOTP);
 router.post('/verify-phone-otp', [body('phone').notEmpty(), body('otp').isLength({ min: 6, max: 6 })], verifyPhoneOTP);
+
+// Notification & language preferences
+router.put('/preferences', protect, updatePreferences);
 
 export default router;

@@ -40,4 +40,7 @@ export const authAPI = {
 
   verifyPhoneOTP: (phone: string, otp: string) =>
     client.post('/auth/verify-phone-otp', { phone, otp }),
+
+  updatePreferences: (data: { notificationPreferences?: Record<string, boolean>; preferredLanguage?: string }) =>
+    client.put('/auth/preferences', data),
 };

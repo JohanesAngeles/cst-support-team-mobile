@@ -32,6 +32,8 @@ export const safeUser = (user: any) => ({
   avatarUrl: user.avatarUrl ?? null,
   subscriptionStatus: user.subscriptionStatus ?? 'free',
   subscriptionPlan: user.subscriptionPlan ?? null,
+  notificationPreferences: user.notificationPreferences ?? null,
+  preferredLanguage: user.preferredLanguage ?? 'en',
 });
 
 export const register = async (req: Request, res: Response) => {
@@ -150,6 +152,27 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
 
   if (name?.trim()) user.name = name.trim();
   if (phone !== undefined) user.phone = phone.trim() || undefined;
+  await user.save();
+  res.json({ user: safeUser(user) });
+};
+
+export const updatePreferences = async (req: AuthRequest, res: Response) => {
+  const { notificationPreferences, preferredLanguage } = req.body;
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+  if (notificationPreferences && typeof notificationPreferences === 'object') {
+    user.notificationPreferences = {
+      pushNotifications: notificationPreferences.pushNotifications ?? true,
+      weeklyReport:      notificationPreferences.weeklyReport      ?? true,
+      dailyAlerts:       notificationPreferences.dailyAlerts       ?? false,
+      hosReminders:      notificationPreferences.hosReminders      ?? true,
+      fuelUpdates:       notificationPreferences.fuelUpdates       ?? false,
+    };
+  }
+  if (typeof preferredLanguage === 'string' && preferredLanguage.length === 2) {
+    user.preferredLanguage = preferredLanguage;
+  }
   await user.save();
   res.json({ user: safeUser(user) });
 };

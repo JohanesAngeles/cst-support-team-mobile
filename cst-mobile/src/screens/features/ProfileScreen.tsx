@@ -213,9 +213,9 @@ export default function ProfileScreen() {
         onPress: async () => {
           try {
             const [trips, expenses, fuel] = await Promise.allSettled([
-              client.get('/api/triplog?limit=1000'),
-              client.get('/api/expenses?limit=1000'),
-              client.get('/api/fuellog?limit=1000'),
+              client.get('/triplog?limit=1000'),
+              client.get('/expenses?limit=1000'),
+              client.get('/fuellog?limit=1000'),
             ]);
 
             const tripCount     = trips.status     === 'fulfilled' ? (trips.value.data?.length     ?? trips.value.data?.total     ?? 0) : 'N/A';

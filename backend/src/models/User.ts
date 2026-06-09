@@ -1,6 +1,14 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+export interface INotificationPreferences {
+  pushNotifications: boolean;
+  weeklyReport: boolean;
+  dailyAlerts: boolean;
+  hosReminders: boolean;
+  fuelUpdates: boolean;
+}
+
 export interface IUser extends Document {
   name: string;
   email: string;
@@ -22,6 +30,8 @@ export interface IUser extends Document {
   subscriptionEnd?: Date;
   referralCode?: string;
   referredBy?: string;
+  notificationPreferences?: INotificationPreferences;
+  preferredLanguage?: string;
   createdAt: Date;
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -48,6 +58,14 @@ const UserSchema = new Schema<IUser>(
     subscriptionEnd:     { type: Date },
     referralCode:        { type: String, unique: true, sparse: true },
     referredBy:          { type: String },
+    notificationPreferences: {
+      pushNotifications: { type: Boolean, default: true },
+      weeklyReport:      { type: Boolean, default: true },
+      dailyAlerts:       { type: Boolean, default: false },
+      hosReminders:      { type: Boolean, default: true },
+      fuelUpdates:       { type: Boolean, default: false },
+    },
+    preferredLanguage: { type: String, default: 'en' },
   },
   { timestamps: true }
 );

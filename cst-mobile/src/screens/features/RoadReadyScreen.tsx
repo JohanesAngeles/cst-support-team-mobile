@@ -9,7 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useColors } from '../../constants/colors';
 import { MainStackParamList } from '../../navigation/MainStack';
-import { getRoadReadyProfile, refreshSafetyScore } from '../../api/roadReady';
+import { getRoadReadyProfile, refreshSafetyScore, syncRoadReadyScores } from '../../api/roadReady';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -127,9 +127,8 @@ export default function RoadReadyScreen() {
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(useCallback(() => {
-    // Refresh safety score from real HOS/DVIR data, then load full profile
-    refreshSafetyScore()
-      .catch(() => {})
+    // Sync all score buckets from real activity data, then load profile
+    Promise.allSettled([refreshSafetyScore(), syncRoadReadyScores()])
       .finally(() => {
         getRoadReadyProfile()
           .then(d => setProfile(d.profile))
@@ -217,11 +216,44 @@ export default function RoadReadyScreen() {
           </TouchableOpacity>
         ))}
 
-        {/* Coming soon */}
-        <View style={styles.comingSoonCard}>
-          <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
-          <Text style={styles.comingSoonText}>Fleet Owner Mode, America's Top Trucker Competition & TRAC Community Mode — coming tomorrow</Text>
-        </View>
+        {/* Phase 2 */}
+        <Text style={styles.sectionTitle}>Game Modes — Phase 2</Text>
+        {[
+          { screen: 'FleetOwner' as keyof MainStackParamList,    icon: 'people-outline',  color: '#E74C3C', label: 'Fleet Owner Mode',                  desc: 'Manage a full fleet — hire drivers, buy trucks, scale your business', tag: 'NEW' },
+          { screen: 'TRACCommunity' as keyof MainStackParamList, icon: 'globe-outline',   color: '#1ABC9C', label: 'TRAC Community Mode',               desc: 'Driver-to-driver network — share tips, routes, and road knowledge',   tag: 'EARLY ACCESS' },
+        ].map(m => (
+          <TouchableOpacity key={m.label} style={styles.modeCard} onPress={() => navigation.navigate(m.screen as any)} activeOpacity={0.8}>
+            <View style={[styles.modeIcon, { backgroundColor: m.color + '22' }]}>
+              <Ionicons name={m.icon as any} size={28} color={m.color} />
+            </View>
+            <View style={styles.modeInfo}>
+              <View style={styles.modeTitleRow}>
+                <Text style={styles.modeLabel}>{m.label}</Text>
+                <View style={[styles.modeTag, { backgroundColor: m.color + '22' }]}>
+                  <Text style={[styles.modeTagText, { color: m.color }]}>{m.tag}</Text>
+                </View>
+              </View>
+              <Text style={styles.modeDesc}>{m.desc}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+          </TouchableOpacity>
+        ))}
+        {/* Top Trucker Competition */}
+        <TouchableOpacity style={styles.modeCard} onPress={() => navigation.navigate('AmericasTopTrucker' as any)} activeOpacity={0.8}>
+          <View style={[styles.modeIcon, { backgroundColor: '#FFD70022' }]}>
+            <Ionicons name="trophy-outline" size={28} color="#FFD700" />
+          </View>
+          <View style={styles.modeInfo}>
+            <View style={styles.modeTitleRow}>
+              <Text style={styles.modeLabel}>America's Top Trucker</Text>
+              <View style={[styles.modeTag, { backgroundColor: '#FFD70022' }]}>
+                <Text style={[styles.modeTagText, { color: '#FFD700' }]}>COMPETE</Text>
+              </View>
+            </View>
+            <Text style={styles.modeDesc}>Compete nationally — leaderboards, prizes, and industry recognition</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

@@ -57,6 +57,25 @@ export const rateAdvisor = async (req: AuthRequest, res: Response) => {
   const rpm = rate / m;
   const estimatedProfit = rate - fuelCost;
   const profitPerMile = estimatedProfit / m;
+  const isPremium = req.user?.subscriptionStatus === 'active';
+
+  // Free tier: return math only, no AI verdict
+  if (!isPremium) {
+    res.json({
+      verdict: null,
+      marketRpmMin: null,
+      marketRpmMax: null,
+      suggestedCounter: null,
+      reason: null,
+      fuelCost: parseFloat(fuelCost.toFixed(2)),
+      estimatedProfit: parseFloat(estimatedProfit.toFixed(2)),
+      profitPerMile: parseFloat(profitPerMile.toFixed(2)),
+      rpm: parseFloat(rpm.toFixed(2)),
+      upgrade: true,
+      upgradeMsg: 'Upgrade to Premium to get an AI verdict, market rate comparison, and counter-offer suggestion for this lane.',
+    });
+    return;
+  }
 
   const prompt = `A truck driver is evaluating this load:
 - Lane: ${origin} to ${destination}
@@ -115,6 +134,21 @@ export const rateBenchmark = async (req: AuthRequest, res: Response) => {
   }
 
   const type = truckType || 'Dry Van';
+  const isPremium = req.user?.subscriptionStatus === 'active';
+
+  // Free tier: acknowledge the lane but withhold rate data
+  if (!isPremium) {
+    res.json({
+      rpmMin: null,
+      rpmMax: null,
+      rpmAvg: null,
+      marketCondition: null,
+      insight: null,
+      upgrade: true,
+      upgradeMsg: `Upgrade to Premium to see live rate benchmarks for ${origin} → ${destination} (${type}), including market condition and negotiation tips.`,
+    });
+    return;
+  }
 
   const prompt = `Provide freight rate benchmarks for a ${type} truck on the lane: ${origin} to ${destination}.
 
@@ -168,6 +202,7 @@ export const legalChat = async (req: AuthRequest, res: Response) => {
     return;
   }
 
+  const isPremium = req.user?.subscriptionStatus === 'active';
   const prior: ChatMessage[] = Array.isArray(history)
     ? history
         .filter((m: any) => m.role === 'user' || m.role === 'assistant')
@@ -175,20 +210,34 @@ export const legalChat = async (req: AuthRequest, res: Response) => {
         .map((m: any) => ({ role: m.role, content: String(m.content).slice(0, 2000) }))
     : [];
 
+  // Free tier: allow first question only (no prior history), short response + upsell
+  if (!isPremium && prior.length > 0) {
+    res.json({
+      reply: 'You\'ve used your free preview. Upgrade to Premium for unlimited AI Legal Assistant access — ask as many questions as you need, 24/7.',
+      upgrade: true,
+    });
+    return;
+  }
+
   const messages: ChatMessage[] = [...prior, { role: 'user', content: message.trim() }];
+  const maxTokens = isPremium ? 1024 : 300;
 
   try {
     const response = await getXai().chat.completions.create({
       model: 'grok-3',
-      max_tokens: 1024,
+      max_tokens: maxTokens,
       messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: SYSTEM_PROMPT + (isPremium ? '' : '\n\nNote: This is a free preview. Give a concise but helpful answer (2-3 sentences max).') },
         ...messages,
       ],
     });
 
     const reply = response.choices[0]?.message?.content ?? '';
-    res.json({ reply });
+    res.json({
+      reply,
+      upgrade: !isPremium,
+      upgradeMsg: isPremium ? undefined : 'This was your free preview question. Upgrade to Premium for unlimited AI Legal Assistant access.',
+    });
   } catch (err: any) {
     console.error('AI error:', err.message);
     res.status(503).json({ message: 'AI service temporarily unavailable' });

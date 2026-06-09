@@ -11,3 +11,5 @@ export const updateOOStats = (stats: object) =>
   client.patch('/road-ready/oo', stats).then(r => r.data);
 export const refreshSafetyScore = () =>
   client.patch('/road-ready/safety', {}).then(r => r.data);
+export const syncRoadReadyScores = () =>
+  client.patch('/road-ready/sync', {}).then(r => r.data);

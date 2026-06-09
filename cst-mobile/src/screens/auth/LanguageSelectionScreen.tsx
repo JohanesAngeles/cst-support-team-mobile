@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguage, LanguageCode } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'LanguageSelection'> };
@@ -30,6 +31,7 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
     setSaving(true);
     try {
       await changeLanguage(selected);
+      authAPI.updatePreferences({ preferredLanguage: selected }).catch(() => {});
     } catch {
       Alert.alert('Error', 'Failed to save language preference.');
     } finally {

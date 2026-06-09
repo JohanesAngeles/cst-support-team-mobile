@@ -9,15 +9,17 @@ import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 
 interface AdvisorResult {
-  verdict: 'LOW' | 'FAIR' | 'GOOD';
+  verdict: 'LOW' | 'FAIR' | 'GOOD' | null;
   marketRpmMin: number | null;
   marketRpmMax: number | null;
   suggestedCounter: number | null;
-  reason: string;
+  reason: string | null;
   fuelCost: number;
   estimatedProfit: number;
   profitPerMile: number;
   rpm: number;
+  upgrade?: boolean;
+  upgradeMsg?: string;
 }
 
 const VERDICT_CONFIG = {
@@ -102,7 +104,7 @@ export default function AILoadRateScreen() {
     }
   };
 
-  const vc = result ? VERDICT_CONFIG[result.verdict] : null;
+  const vc = result?.verdict ? VERDICT_CONFIG[result.verdict] : null;
 
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
@@ -175,20 +177,32 @@ export default function AILoadRateScreen() {
           </TouchableOpacity>
 
           {/* Results */}
-          {result && vc && (
+          {result && (
             <>
-              {/* Verdict */}
-              <View style={[s.verdictCard, { borderColor: vc.color, backgroundColor: vc.bg }]}>
-                <View style={s.verdictRow}>
-                  <Ionicons name={vc.icon} size={32} color={vc.color} />
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={[s.verdictLabel, { color: vc.color }]}>{result.verdict} — {vc.label}</Text>
-                    <Text style={s.verdictReason}>{result.reason}</Text>
+              {/* AI Verdict — premium only */}
+              {vc ? (
+                <View style={[s.verdictCard, { borderColor: vc.color, backgroundColor: vc.bg }]}>
+                  <View style={s.verdictRow}>
+                    <Ionicons name={vc.icon} size={32} color={vc.color} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[s.verdictLabel, { color: vc.color }]}>{result.verdict} — {vc.label}</Text>
+                      <Text style={s.verdictReason}>{result.reason}</Text>
+                    </View>
                   </View>
                 </View>
-              </View>
+              ) : result.upgrade ? (
+                <View style={[s.verdictCard, { borderColor: Colors.border, backgroundColor: Colors.surface }]}>
+                  <View style={s.verdictRow}>
+                    <Ionicons name="lock-closed-outline" size={28} color={Colors.textMuted} />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={[s.verdictLabel, { color: Colors.text }]}>AI Verdict — Premium</Text>
+                      <Text style={s.verdictReason}>{result.upgradeMsg}</Text>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
 
-              {/* Numbers */}
+              {/* Numbers — always shown */}
               <View style={s.card}>
                 <Text style={s.cardTitle}>Profit Breakdown</Text>
                 <View style={s.statGrid}>
@@ -199,7 +213,7 @@ export default function AILoadRateScreen() {
                 </View>
               </View>
 
-              {/* Market context */}
+              {/* Market context — premium only */}
               {(result.marketRpmMin || result.suggestedCounter) ? (
                 <View style={s.card}>
                   <Text style={s.cardTitle}>Market Intelligence</Text>

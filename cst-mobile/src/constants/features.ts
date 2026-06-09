@@ -72,6 +72,8 @@ export const FEATURES: Feature[] = [
   { icon: 'car-outline',              label: 'Parking Tracker',    color: '#E67E22', desc: 'Manage reservations',     screen: 'ParkingTracker',   cat: 'community'  },
   { icon: 'gift-outline',             label: 'Referral Program',   color: '#F1C40F', desc: 'Earn free months',        screen: 'Referral',         cat: 'community'  },
   { icon: 'ribbon-outline',           label: 'Partners & Sponsors',color: '#021B3A', desc: 'Trusted industry partners',screen: 'Sponsors',        cat: 'community'  },
+  { icon: 'people-outline',           label: 'Fleet Owner Mode',   color: '#E74C3C', desc: 'Manage drivers & trucks',  screen: 'FleetOwner',       cat: 'community'  },
+  { icon: 'globe-outline',            label: 'TRAC Community',     color: '#1ABC9C', desc: 'Driver-to-driver network', screen: 'TRACCommunity',    cat: 'community'  },
   // Tools
   { icon: 'language-outline',         label: 'Translator',         color: '#3498DB', desc: 'Translate in 16 languages',screen: 'Translator',      cat: 'tools'      },
   { icon: 'scale-outline',            label: 'Axle Weight',        color: '#E67E22', desc: 'Weight limit checker',    screen: 'AxleWeight',       cat: 'tools'      },
@@ -87,6 +89,7 @@ export const FEATURES: Feature[] = [
   // Career
   { icon: 'stopwatch-outline',        label: 'CDL Challenge',      color: '#3498DB', desc: 'Timed skill challenges',  screen: 'CDLChallenge',     cat: 'career'     },
   { icon: 'star-outline',             label: 'Road Ready',         color: '#2C6EBD', desc: 'Driver score & rank',     screen: 'RoadReady',        cat: 'career'     },
+  { icon: 'trophy-outline',           label: "America's Top Trucker", color: '#FFD700', desc: 'National competition',   screen: 'AmericasTopTrucker', cat: 'career'   },
   { icon: 'game-controller-outline',  label: 'Driver Games',       color: '#9B59B6', desc: 'Trivia & crosswords',     screen: 'Games',            cat: 'career'     },
   { icon: 'trophy-outline',           label: 'Driver Scorecard',   color: '#F1C40F', desc: 'Weekly performance',      screen: 'Scorecard',        cat: 'career'     },
   { icon: 'school-outline',           label: 'Student Driver',     color: '#1ABC9C', desc: 'CDL lessons & quizzes',   screen: 'StudentDriver',    cat: 'career'     },

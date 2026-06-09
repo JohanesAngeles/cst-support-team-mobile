@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
 export const PREFERENCES_KEY = '@cst_preferences';
@@ -46,8 +47,9 @@ export default function PostSignupPreferencesScreen({ navigation }: Props) {
     setLoading(true);
     try {
       await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
+      await authAPI.updatePreferences({ notificationPreferences: prefs }).catch(() => {});
     } catch {
-      // Non-blocking — preferences saved locally, can be changed in settings
+      // Non-blocking — preferences saved locally even if backend sync fails
     } finally {
       setLoading(false);
     }

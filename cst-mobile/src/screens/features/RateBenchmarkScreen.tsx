@@ -12,8 +12,10 @@ interface BenchmarkResult {
   rpmMin: number | null;
   rpmMax: number | null;
   rpmAvg: number | null;
-  marketCondition: 'TIGHT' | 'BALANCED' | 'SOFT';
-  insight: string;
+  marketCondition: 'TIGHT' | 'BALANCED' | 'SOFT' | null;
+  insight: string | null;
+  upgrade?: boolean;
+  upgradeMsg?: string;
 }
 
 const TRUCK_TYPES = ['Dry Van', 'Reefer', 'Flatbed', 'Step Deck', 'Tanker', 'LTL'];
@@ -112,8 +114,10 @@ export default function RateBenchmarkScreen() {
     }
   };
 
-  const cc = result ? CONDITION_CONFIG[result.marketCondition] ?? CONDITION_CONFIG.BALANCED : null;
-
+  const cond = result?.marketCondition;
+  const cc = cond === 'TIGHT' || cond === 'BALANCED' || cond === 'SOFT'
+    ? CONDITION_CONFIG[cond]
+    : null;
 
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
@@ -170,10 +174,22 @@ export default function RateBenchmarkScreen() {
             )}
           </TouchableOpacity>
 
-          {/* Results */}
+          {/* Free-tier upgrade prompt */}
+          {result?.upgrade && (
+            <View style={[s.conditionCard, { borderColor: Colors.border, backgroundColor: Colors.surface }]}>
+              <View style={s.conditionRow}>
+                <Ionicons name="lock-closed-outline" size={22} color={Colors.textMuted} />
+                <View style={{ flex: 1, marginLeft: 10 }}>
+                  <Text style={[s.conditionLabel, { color: Colors.text }]}>Rate Benchmarks — Premium</Text>
+                  <Text style={s.conditionDesc}>{result.upgradeMsg}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Premium results */}
           {result && cc && (
             <>
-              {/* Market condition badge */}
               <View style={[s.conditionCard, { borderColor: cc.color, backgroundColor: cc.bg }]}>
                 <View style={s.conditionRow}>
                   <View style={[s.conditionDot, { backgroundColor: cc.color }]} />
@@ -184,12 +200,10 @@ export default function RateBenchmarkScreen() {
                 </View>
               </View>
 
-              {/* Rate range */}
               {result.rpmMin && result.rpmMax ? (
                 <View style={s.card}>
                   <Text style={s.cardTitle}>Market Rate Range — {truckType}</Text>
                   <Text style={s.laneLabel}>{origin} → {dest}</Text>
-
                   <View style={s.rateRow}>
                     <View style={s.rateBox}>
                       <Text style={s.rateBoxLabel}>Low</Text>
@@ -209,7 +223,6 @@ export default function RateBenchmarkScreen() {
                 </View>
               ) : null}
 
-              {/* AI Insight */}
               {result.insight ? (
                 <View style={s.insightCard}>
                   <View style={s.insightHeader}>

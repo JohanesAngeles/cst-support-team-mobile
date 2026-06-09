@@ -78,6 +78,9 @@ import FuelMapScreen from '../screens/features/FuelMapScreen';
 import TripPlannerScreen from '../screens/features/TripPlannerScreen';
 import SponsorsScreen from '../screens/features/SponsorsScreen';
 import TripProfitScreen from '../screens/features/TripProfitScreen';
+import FleetOwnerScreen from '../screens/features/FleetOwnerScreen';
+import TRACCommunityScreen from '../screens/features/TRACCommunityScreen';
+import AmericasTopTruckerScreen from '../screens/features/AmericasTopTruckerScreen';
 
 export type MainStackParamList = {
   Home: undefined;
@@ -157,6 +160,9 @@ export type MainStackParamList = {
   TripPlanner: undefined;
   Sponsors: undefined;
   TripProfit: undefined;
+  FleetOwner: undefined;
+  TRACCommunity: undefined;
+  AmericasTopTrucker: undefined;
 };
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
@@ -252,6 +258,9 @@ export default function MainStack() {
       <Stack.Screen name="TripPlanner" component={TripPlannerScreen} options={{ title: 'Trip Planner' }} />
       <Stack.Screen name="Sponsors" component={SponsorsScreen} options={{ title: 'Partners & Sponsors' }} />
       <Stack.Screen name="TripProfit" component={TripProfitScreen} options={{ title: 'Trip Profit Calculator' }} />
+      <Stack.Screen name="FleetOwner" component={FleetOwnerScreen} options={{ title: 'Fleet Owner Mode' }} />
+      <Stack.Screen name="TRACCommunity" component={TRACCommunityScreen} options={{ title: 'TRAC Community' }} />
+      <Stack.Screen name="AmericasTopTrucker" component={AmericasTopTruckerScreen} options={{ title: "America's Top Trucker" }} />
     </Stack.Navigator>
   );
 }

@@ -11,11 +11,18 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 const games = [
   {
     icon: 'trophy-outline',
-    label: "Road Ready: America's Top Trucker™",
-    desc: 'Build your Road Ready Score — 4 game modes, 1,000 points at stake',
+    label: "America's Top Trucker™",
+    desc: 'National leaderboards — compete by safety, skill, business & more',
+    color: '#FFD700',
+    screen: 'AmericasTopTrucker' as const,
+    featured: true,
+  },
+  {
+    icon: 'star-outline',
+    label: 'Road Ready Score',
+    desc: 'Build your 1,000-point driver profile across 4 game modes',
     color: '#2C6EBD',
     screen: 'RoadReady' as const,
-    featured: true,
   },
   {
     icon: 'stopwatch-outline',
