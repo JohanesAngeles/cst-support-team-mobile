@@ -12,6 +12,7 @@ import { useColors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import SparkleCluster from '../../components/auth/SparkleCluster';
+import BlobBackground from '../../components/BlobBackground';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'> };
 
@@ -51,7 +52,7 @@ export default function RegisterScreen({ navigation }: Props) {
   ];
 
   return (
-    <View style={[s.root, { backgroundColor: Colors.background }]}>
+    <BlobBackground style={s.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
@@ -120,7 +121,7 @@ export default function RegisterScreen({ navigation }: Props) {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    </BlobBackground>
   );
 }
 

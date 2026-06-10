@@ -11,14 +11,17 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import BlobBackground from '../../components/BlobBackground';
 import { MainStackParamList } from '../../navigation/MainStack';
 import {
   getLiveRevenue, getRevenue, getHOSEntries, getDeadlines,
 } from '../../api/features';
 import { getRecentFeatures, recordFeatureUse, RecentFeature } from '../../utils/recentFeatures';
 
-const NAVY = '#021B3A';
-const BG   = '#F5F7FA';
+const NAVY   = '#021B3A';
+const ORANGE = '#F97316';
+const INDIGO = '#6366F1';
+const VIOLET = '#8B5CF6';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -157,14 +160,14 @@ export default function DashboardScreen() {
   const chartData = weekTrend.length === 7 ? weekTrend : Array(7).fill(0);
 
   return (
-    <View style={{ flex: 1, backgroundColor: BG }}>
+    <BlobBackground style={{ flex: 1 }}>
 
-      {/* ── White header (fixed) ─────────────────────────────────────────── */}
-      <SafeAreaView style={{ backgroundColor: '#FFFFFF' }} edges={['top']}>
+      {/* ── Header (fixed) ───────────────────────────────────────────────── */}
+      <SafeAreaView style={{ backgroundColor: 'rgba(250,251,255,0.95)' }} edges={['top']}>
         <View style={{
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'transparent',
           paddingHorizontal: 20, paddingTop: 14, paddingBottom: 16,
-          borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
+          borderBottomWidth: 1, borderBottomColor: 'rgba(99,102,241,0.12)',
           flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
         }}>
           <View>
@@ -205,7 +208,7 @@ export default function DashboardScreen() {
         <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingTop: 16, gap: 12, marginBottom: 4 }}>
           {/* Revenue tile */}
           <TouchableOpacity
-            style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E6EEF8', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}
+            style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 }}
             onPress={() => navigation.navigate('ProfitLoss')}
             activeOpacity={0.8}
           >
@@ -228,7 +231,7 @@ export default function DashboardScreen() {
 
           {/* HOS remaining tile */}
           <TouchableOpacity
-            style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#E6EEF8', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 }}
+            style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 }}
             onPress={() => navigation.navigate('HOSTracker')}
             activeOpacity={0.8}
           >
@@ -251,12 +254,18 @@ export default function DashboardScreen() {
         {/* ② Primary CTA — Start Today's Log */}
         <View style={{ paddingHorizontal: 16, paddingTop: 12, marginBottom: 4 }}>
           <TouchableOpacity
-            style={{ backgroundColor: NAVY, borderRadius: 14, height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            style={{ borderRadius: 14, overflow: 'hidden' }}
             onPress={() => navigation.navigate('HOSTracker')}
             activeOpacity={0.85}
           >
-            <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>Start Today's Log</Text>
+            <LinearGradient
+              colors={[ORANGE, INDIGO]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={{ height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            >
+              <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700' }}>Start Today's Log</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
@@ -269,7 +278,7 @@ export default function DashboardScreen() {
           ].map(a => (
             <TouchableOpacity
               key={a.label}
-              style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 10, alignItems: 'center', gap: 5, borderWidth: 1, borderColor: '#E6EEF8' }}
+              style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.78)', borderRadius: 12, paddingVertical: 10, alignItems: 'center', gap: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' }}
               onPress={() => navigation.navigate(a.screen as any)}
               activeOpacity={0.75}
             >
@@ -282,7 +291,7 @@ export default function DashboardScreen() {
         {/* ④ "On the Road" dark card — HOS live status (like Testora's Live Exams) */}
         <View style={{ marginHorizontal: 16, marginTop: 16, borderRadius: 20, overflow: 'hidden', marginBottom: 4 }}>
           <LinearGradient
-            colors={[NAVY, '#0A2E5C']}
+            colors={['#0D1B3E', '#2D1B69']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={{ padding: 20 }}
           >
@@ -302,9 +311,9 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            <HosBar label="Driving"      used={hos.driving} total={11} color="#4FC3F7" />
-            <HosBar label="On Duty"      used={hos.onDuty}  total={14} color="#81C784" />
-            <HosBar label="70-Hr Cycle"  used={hos.cycle}   total={70} color="#FFB74D" />
+            <HosBar label="Driving"      used={hos.driving} total={11} color={ORANGE} />
+            <HosBar label="On Duty"      used={hos.onDuty}  total={14} color={INDIGO} />
+            <HosBar label="70-Hr Cycle"  used={hos.cycle}   total={70} color={VIOLET} />
 
             {hos.driving === 0 && hos.onDuty === 0 && (
               <TouchableOpacity
@@ -366,7 +375,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* ⑥ This Week chart + period selector */}
-        <View style={{ backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: '#E6EEF8', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, marginBottom: 4 }}>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.82)', marginHorizontal: 16, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, marginBottom: 4 }}>
           {/* Header */}
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <View>
@@ -403,7 +412,7 @@ export default function DashboardScreen() {
                 const today = i === todayIdx;
                 return (
                   <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
-                    <View style={{ width: 10, height: barH, borderRadius: 5, backgroundColor: today ? NAVY : '#DCE6F0' }} />
+                    <View style={{ width: 10, height: barH, borderRadius: 5, backgroundColor: today ? ORANGE : '#DCE6F0' }} />
                     <Text style={{ fontSize: 10, color: today ? NAVY : '#AEAEB2', fontWeight: today ? '800' : '400' }}>
                       {WEEK_DAYS[i]}
                     </Text>
@@ -423,7 +432,7 @@ export default function DashboardScreen() {
         </View>
 
         {/* ⑦ Due Soon */}
-        <View style={{ backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: '#E6EEF8', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, marginBottom: 4 }}>
+        <View style={{ backgroundColor: 'rgba(255,255,255,0.82)', marginHorizontal: 16, borderRadius: 16, padding: 16, marginTop: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', shadowColor: '#6366F1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2, marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <Text style={{ color: '#1A1A2E', fontSize: 15, fontWeight: '800' }}>Due Soon</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Calendar')} activeOpacity={0.7}>
@@ -471,7 +480,7 @@ export default function DashboardScreen() {
 
           {recent.length === 0 ? (
             <TouchableOpacity
-              style={{ backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#E6EEF8', padding: 22, alignItems: 'center', gap: 8 }}
+              style={{ backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', padding: 22, alignItems: 'center', gap: 8 }}
               onPress={() => navigation.navigate('Tools' as any)}
               activeOpacity={0.8}
             >
@@ -486,7 +495,7 @@ export default function DashboardScreen() {
               {recent.map(f => (
                 <TouchableOpacity
                   key={f.screen}
-                  style={{ width: RECENT_W, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#E6EEF8', gap: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1 }}
+                  style={{ width: RECENT_W, backgroundColor: 'rgba(255,255,255,0.82)', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)', gap: 6, shadowColor: '#6366F1', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 1 }}
                   onPress={() => goTo(f)}
                   activeOpacity={0.75}
                 >
@@ -516,6 +525,6 @@ export default function DashboardScreen() {
 
 
       </ScrollView>
-    </View>
+    </BlobBackground>
   );
 }

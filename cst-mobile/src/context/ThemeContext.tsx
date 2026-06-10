@@ -9,21 +9,25 @@ const STORAGE_KEY = '@cst_theme';
 
 export const LightTheme = {
   dark: false,
-  background:   '#FFFFFF',
+  background:   '#FAFBFF',
   surface:      '#F5F7FA',
   surfaceLight: '#EBEEF2',
   primary:      '#021B3A',
-  secondary:    '#2C6EBD',    // gold CTA — same in both modes
+  secondary:    '#2C6EBD',
   danger:       '#CC0000',
   success:      '#27AE60',
-  text:         '#021B3A',    // primary text on light bg
-  textMuted:    '#757575',    // muted text, borders labels
-  textDark:     '#021B3A',    // text ON gold button
+  text:         '#021B3A',
+  textMuted:    '#757575',
+  textDark:     '#021B3A',
   border:       '#D9DCE0',
   inputBg:      '#F5F7FA',
   white:        '#FFFFFF',
   black:        '#000000',
   cardShadow:   'rgba(2,27,58,0.08)',
+  // Gradient palette — matches the landing site's ambient blob colors
+  orange:       '#F97316',
+  indigo:       '#6366F1',
+  violet:       '#8B5CF6',
 };
 
 export const DarkTheme = {
@@ -36,13 +40,17 @@ export const DarkTheme = {
   danger:       '#CC0000',
   success:      '#2ECC71',
   text:         '#FFFFFF',
-  textMuted:    '#757575',    // same gray in dark mode
+  textMuted:    '#757575',
   textDark:     '#021B3A',
   border:       '#1A3560',
   inputBg:      '#0A2447',
   white:        '#FFFFFF',
   black:        '#000000',
   cardShadow:   'rgba(0,0,0,0.4)',
+  // Same gradient palette in dark mode
+  orange:       '#F97316',
+  indigo:       '#6366F1',
+  violet:       '#8B5CF6',
 };
 
 export type Theme = typeof LightTheme;
