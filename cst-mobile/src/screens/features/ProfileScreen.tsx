@@ -309,20 +309,32 @@ export default function ProfileScreen() {
   const subStatus = user?.subscriptionStatus ?? 'free';
   const isPro     = subStatus === 'active';
 
-  const menuItems = [
-    { icon: 'bus-outline',           label: t('profile.myTruck'),        onPress: () => navigation.navigate('TruckProfile') },
-    { icon: 'card-outline',          label: t('profile.subscription'),   onPress: () => navigation.navigate('Subscription') },
-    { icon: 'person-outline',        label: t('profile.editProfile'),    onPress: openEdit },
-    { icon: 'lock-closed-outline',   label: t('profile.changePassword'), onPress: () => setPwModal(true) },
-    { icon: 'notifications-outline', label: t('profile.notifications'),  onPress: () => navigation.navigate('Notifications') },
-    { icon: 'language-outline',      label: t('profile.language'),       onPress: () => navigation.navigate('LanguageSelection') },
-    { icon: 'star-outline',          label: t('profile.rateApp'),        onPress: handleRateApp },
-    { icon: 'share-social-outline',  label: t('profile.shareApp'),       onPress: handleShareApp },
+  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U';
+
+  const cardBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.84)';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.92)';
+
+  const ACCOUNT_ITEMS = [
+    { icon: 'bus-outline',         label: t('profile.myTruck'),        onPress: () => navigation.navigate('TruckProfile') },
+    { icon: 'card-outline',        label: t('profile.subscription'),   onPress: () => navigation.navigate('Subscription'),
+      right: isPro ? <View style={s.proBadge}><Text style={s.proBadgeText}>PRO</Text></View> : undefined },
+    { icon: 'person-outline',      label: t('profile.editProfile'),    onPress: openEdit },
+    { icon: 'lock-closed-outline', label: t('profile.changePassword'), onPress: () => setPwModal(true) },
+  ];
+
+  const APP_ITEMS = [
+    { icon: 'notifications-outline', label: t('profile.notifications'), onPress: () => navigation.navigate('Notifications') },
+    { icon: 'language-outline',      label: t('profile.language'),      onPress: () => navigation.navigate('LanguageSelection') },
+    { icon: 'star-outline',          label: t('profile.rateApp'),       onPress: handleRateApp },
+    { icon: 'share-social-outline',  label: t('profile.shareApp'),      onPress: handleShareApp },
     {
       icon: 'help-circle-outline',
       label: t('profile.helpSupport'),
       onPress: () => Linking.openURL('mailto:support@commercialsupporttech.com?subject=CST%20App%20Support'),
     },
+  ];
+
+  const LEGAL_ITEMS = [
     { icon: 'document-text-outline', label: t('profile.terms'),   onPress: () => navigation.navigate('Terms') },
     { icon: 'shield-outline',        label: t('profile.privacy'), onPress: () => navigation.navigate('Privacy') },
     {
@@ -335,60 +347,98 @@ export default function ProfileScreen() {
     },
   ];
 
-  const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U';
+  const renderMenuGroup = (
+    title: string,
+    icon: string,
+    items: { icon: string; label: string; onPress: () => void; right?: React.ReactNode }[],
+    extra?: React.ReactNode,
+  ) => (
+    <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+      <View style={s.groupHeader}>
+        <Ionicons name={icon as any} size={15} color={muted} />
+        <Text style={[s.groupTitle, { color: muted }]}>{title}</Text>
+      </View>
+      {extra}
+      {items.map((item, idx) => (
+        <TouchableOpacity
+          key={item.label}
+          style={[s.menuRow, { borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)' },
+            idx === items.length - 1 && { borderBottomWidth: 0 }]}
+          onPress={item.onPress}
+          activeOpacity={0.7}
+        >
+          <View style={[s.menuIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+            <Ionicons name={item.icon as any} size={17} color={isDark ? 'rgba(255,255,255,0.75)' : '#374151'} />
+          </View>
+          <Text style={[s.menuLabel, { color: text }]}>{item.label}</Text>
+          {item.right ?? <Ionicons name="chevron-forward" size={15} color={muted} />}
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: bg }]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={[s.safe, { backgroundColor: bg }]} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 48 }}>
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
+        {/* ── Header banner ──────────────────────────────────────────────── */}
         <LinearGradient
           colors={isDark ? ['#021B3A', '#1A1040', '#0B1E3A'] : ['#021B3A', '#4F46E5', '#6366F1']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={s.header}
         >
-          {/* Avatar with gradient ring */}
-          <TouchableOpacity style={s.avatarWrap} onPress={handleAvatarPress} activeOpacity={0.8}>
-            <LinearGradient
-              colors={['#F97316', '#6366F1']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={s.avatarRing}
-            >
-              {avatarLoading ? (
-                <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
-                  <ActivityIndicator color="#F97316" />
-                </View>
-              ) : user?.avatarUrl ? (
-                <Image source={{ uri: user.avatarUrl }} style={s.avatar} />
-              ) : (
-                <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
-                  <Text style={[s.avatarText, { color: '#F97316' }]}>{initials}</Text>
-                </View>
-              )}
-            </LinearGradient>
-            <LinearGradient colors={['#F97316', '#6366F1']} style={s.cameraBtn}>
-              <Ionicons name="camera" size={12} color="#FFFFFF" />
-            </LinearGradient>
+          {/* Edit button top-right */}
+          <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
+            <Ionicons name="pencil-outline" size={14} color="#FFFFFF" />
+            <Text style={s.editBtnText}>Edit</Text>
           </TouchableOpacity>
 
-          <Text style={[s.name, { color: '#FFFFFF' }]}>{user?.name}</Text>
-          <Text style={[s.email, { color: 'rgba(255,255,255,0.65)' }]}>{user?.email}</Text>
-          {user?.phone ? <Text style={[s.phone, { color: 'rgba(255,255,255,0.55)' }]}>{user.phone}</Text> : null}
+          {/* Avatar + info row */}
+          <View style={s.headerBody}>
+            <TouchableOpacity style={s.avatarWrap} onPress={handleAvatarPress} activeOpacity={0.8}>
+              <LinearGradient
+                colors={['#F97316', '#6366F1']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={s.avatarRing}
+              >
+                {avatarLoading ? (
+                  <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
+                    <ActivityIndicator color="#F97316" />
+                  </View>
+                ) : user?.avatarUrl ? (
+                  <Image source={{ uri: user.avatarUrl }} style={s.avatar} />
+                ) : (
+                  <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
+                    <Text style={[s.avatarText, { color: '#F97316' }]}>{initials}</Text>
+                  </View>
+                )}
+              </LinearGradient>
+              <LinearGradient colors={['#F97316', '#6366F1']} style={s.cameraBtn}>
+                <Ionicons name="camera" size={11} color="#FFFFFF" />
+              </LinearGradient>
+            </TouchableOpacity>
 
-          {/* Subscription badge */}
-          <View style={[s.badge,
-            { backgroundColor: isPro ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.15)',
-              borderColor: isPro ? '#F97316' : 'rgba(255,255,255,0.3)' }]}>
-            {isPro && <Ionicons name="star" size={11} color="#F97316" style={{ marginRight: 4 }} />}
-            <Text style={[s.badgeText, { color: isPro ? '#F97316' : 'rgba(255,255,255,0.75)' }]}>
-              {isPro ? `CST PRO · ${user?.subscriptionPlan === 'annual' ? 'Annual' : 'Monthly'}` : t('profile.freePlan')}
-            </Text>
+            <View style={s.headerInfo}>
+              <Text style={s.name} numberOfLines={1}>{user?.name}</Text>
+              <Text style={s.email} numberOfLines={1}>{user?.email}</Text>
+              {user?.phone ? <Text style={s.phone} numberOfLines={1}>{user.phone}</Text> : null}
+
+              {/* Subscription badge */}
+              <View style={[s.badge,
+                { backgroundColor: isPro ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.15)',
+                  borderColor:      isPro ? '#F97316'               : 'rgba(255,255,255,0.3)' }]}>
+                {isPro && <Ionicons name="star" size={10} color="#F97316" style={{ marginRight: 3 }} />}
+                <Text style={[s.badgeText, { color: isPro ? '#F97316' : 'rgba(255,255,255,0.75)' }]}>
+                  {isPro ? `CST PRO` : t('profile.freePlan')}
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* Verification status */}
           {user?.isVerified ? (
             <View style={s.verifiedRow}>
-              <Ionicons name="checkmark-circle" size={14} color="#4ADE80" />
+              <Ionicons name="checkmark-circle" size={13} color="#4ADE80" />
               <Text style={[s.verifiedText, { color: '#4ADE80' }]}>{t('profile.emailVerified')}</Text>
             </View>
           ) : (
@@ -398,10 +448,10 @@ export default function ProfileScreen() {
               disabled={resending}
               activeOpacity={0.7}
             >
-              <Ionicons name="alert-circle" size={14} color="#E67E22" />
+              <Ionicons name="alert-circle" size={13} color="#E67E22" />
               <Text style={s.verifyBannerText}>{t('profile.emailNotVerified')}</Text>
               {resending
-                ? <ActivityIndicator size="small" color="#E67E22" style={{ marginLeft: 8 }} />
+                ? <ActivityIndicator size="small" color="#E67E22" style={{ marginLeft: 6 }} />
                 : <Text style={s.verifyAction}>{t('profile.tapToVerify')}</Text>
               }
             </TouchableOpacity>
@@ -409,86 +459,101 @@ export default function ProfileScreen() {
         </LinearGradient>
 
         {/* ── Appearance ─────────────────────────────────────────────────── */}
-        <View style={[s.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.84)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.92)' }]}>
-          <Text style={[s.sectionLabel, { color: text }]}>{t('profile.appearance')}</Text>
+        <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+          <View style={s.groupHeader}>
+            <Ionicons name="color-palette-outline" size={15} color={muted} />
+            <Text style={[s.groupTitle, { color: muted }]}>{t('profile.appearance')}</Text>
+          </View>
           <View style={s.themeRow}>
             {([
               { id: 'light',  icon: 'sunny-outline',          label: t('profile.themeLight')  },
               { id: 'dark',   icon: 'moon-outline',           label: t('profile.themeDark')   },
               { id: 'system', icon: 'phone-portrait-outline', label: t('profile.themeSystem') },
-            ] as { id: ColorMode; icon: string; label: string }[]).map(opt => (
-              <TouchableOpacity
-                key={opt.id}
-                style={[s.themeBtn, { backgroundColor: surfL, borderColor: border },
-                  mode === opt.id && { backgroundColor: theme.primary, borderColor: theme.primary }]}
-                onPress={() => setMode(opt.id)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name={opt.icon as any} size={16} color={mode === opt.id ? '#FFFFFF' : muted} />
-                <Text style={[s.themeBtnTxt, { color: mode === opt.id ? '#FFFFFF' : muted }]}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
+            ] as { id: ColorMode; icon: string; label: string }[]).map(opt => {
+              const active = mode === opt.id;
+              return (
+                <TouchableOpacity
+                  key={opt.id}
+                  style={[s.themeBtn,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                      borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' },
+                    active && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                  onPress={() => setMode(opt.id)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name={opt.icon as any} size={16} color={active ? '#FFFFFF' : muted} />
+                  <Text style={[s.themeBtnTxt, { color: active ? '#FFFFFF' : muted }]}>{opt.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
-        {/* ── Security ───────────────────────────────────────────────────── */}
+        {/* ── Security (biometric) ────────────────────────────────────────── */}
         {biometricAvailable && (
-          <View style={[s.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.84)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.92)' }]}>
-            <Text style={[s.sectionLabel, { color: text }]}>{t('profile.security')}</Text>
-            <View style={[s.settingRow, { borderColor: border }]}>
-              <View style={[s.settingIcon, { backgroundColor: gold + '1A' }]}>
-                <Ionicons name="finger-print-outline" size={20} color={gold} />
+          <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+            <View style={s.groupHeader}>
+              <Ionicons name="shield-checkmark-outline" size={15} color={muted} />
+              <Text style={[s.groupTitle, { color: muted }]}>{t('profile.security')}</Text>
+            </View>
+            <View style={[s.menuRow, { borderBottomWidth: 0, borderBottomColor: 'transparent' }]}>
+              <View style={[s.menuIconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                <Ionicons name="finger-print-outline" size={17} color={isDark ? 'rgba(255,255,255,0.75)' : '#374151'} />
               </View>
-              <View style={s.settingBody}>
-                <Text style={[s.settingLabel, { color: text }]}>{t('profile.biometricLock')}</Text>
-                <Text style={[s.settingSub, { color: muted }]}>{t('profile.biometricSub')}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.menuLabel, { color: text }]}>{t('profile.biometricLock')}</Text>
+                <Text style={[s.menuSub, { color: muted }]}>{t('profile.biometricSub')}</Text>
               </View>
               <Switch
                 value={biometricEnabled}
                 onValueChange={toggleBiometric}
-                trackColor={{ false: border, true: gold }}
+                trackColor={{ false: isDark ? 'rgba(255,255,255,0.15)' : '#E5E7EB', true: gold }}
                 thumbColor="#FFFFFF"
               />
             </View>
           </View>
         )}
 
-        {/* ── Menu ───────────────────────────────────────────────────────── */}
-        <View style={[s.menuSection, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.84)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.92)' }]}>
-          {menuItems.map((item, idx) => (
-            <TouchableOpacity
-              key={item.label}
-              style={[s.menuRow, { borderBottomColor: border },
-                idx === menuItems.length - 1 && { borderBottomWidth: 0 }]}
-              onPress={item.onPress}
-            >
-              <Ionicons name={item.icon as any} size={20} color={gold} />
-              <Text style={[s.menuLabel, { color: text }]}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color={muted} />
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* ── Account ─────────────────────────────────────────────────────── */}
+        {renderMenuGroup('Account', 'person-circle-outline', ACCOUNT_ITEMS)}
 
-        {/* ── Sign Out button ─────────────────────────────────────────────── */}
-        <TouchableOpacity style={s.logoutBtn} onPress={handleLogout} activeOpacity={0.85}>
-          <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-          <Text style={s.logoutText}>{t('profile.signOut')}</Text>
-        </TouchableOpacity>
+        {/* ── App ─────────────────────────────────────────────────────────── */}
+        {renderMenuGroup('App', 'grid-outline', APP_ITEMS)}
 
-        {/* ── Delete Account button ───────────────────────────────────────── */}
+        {/* ── Legal ───────────────────────────────────────────────────────── */}
+        {renderMenuGroup('Legal & About', 'information-circle-outline', LEGAL_ITEMS)}
+
+        {/* ── Sign Out ────────────────────────────────────────────────────── */}
         <TouchableOpacity
-          style={s.deleteBtn}
-          onPress={() => { setDeletePw(''); setDeleteModal(true); }}
-          activeOpacity={0.85}
+          style={[s.signOutRow, { backgroundColor: cardBg, borderColor: cardBorder }]}
+          onPress={handleLogout}
+          activeOpacity={0.7}
         >
-          <Ionicons name="trash-outline" size={16} color="#CC0000" />
-          <Text style={s.deleteBtnText}>{t('profile.deleteAccount')}</Text>
+          <View style={[s.menuIconBox, { backgroundColor: 'rgba(220,38,38,0.10)' }]}>
+            <Ionicons name="log-out-outline" size={17} color="#DC2626" />
+          </View>
+          <Text style={[s.menuLabel, { color: '#DC2626', fontWeight: '700' }]}>{t('profile.signOut')}</Text>
         </TouchableOpacity>
 
-        {/* ── App version ─────────────────────────────────────────────────── */}
-        <Text style={[s.versionText, { color: muted }]}>
-          {t('profile.version')} {APP_VERSION} ({BUILD_NUMBER})
-        </Text>
+        {/* ── Footer ──────────────────────────────────────────────────────── */}
+        <View style={[s.footer, { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
+          <View>
+            <Text style={[s.versionText, { color: muted }]}>
+              {t('profile.version')} {APP_VERSION} ({BUILD_NUMBER})
+            </Text>
+            <Text style={[s.copyrightText, { color: muted }]}>
+              © CST Driver · Commercial Support Tech
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[s.deleteAcctLink]}
+            onPress={() => { setDeletePw(''); setDeleteModal(true); }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={13} color="#CC0000" />
+            <Text style={s.deleteAcctText}>{t('profile.deleteAccount')}</Text>
+          </TouchableOpacity>
+        </View>
 
       </ScrollView>
 
@@ -640,61 +705,70 @@ export default function ProfileScreen() {
 const s = StyleSheet.create({
   safe: { flex: 1 },
 
-  // Header
-  header:      { alignItems: 'center', padding: 28, paddingBottom: 24 },
-  avatarWrap:  { position: 'relative', marginBottom: 12 },
-  avatarRing:  { width: 96, height: 96, borderRadius: 48, padding: 3, justifyContent: 'center', alignItems: 'center' },
-  avatar:      { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  avatarText:  { fontSize: 30, fontWeight: '900' },
-  cameraBtn:   { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  name:        { fontSize: 22, fontWeight: '800' },
-  email:       { fontSize: 14, marginTop: 4 },
-  phone:       { fontSize: 13, marginTop: 2 },
-  badge:       { flexDirection: 'row', alignItems: 'center', marginTop: 10, paddingHorizontal: 14, paddingVertical: 5, borderRadius: 20, borderWidth: 1 },
-  badgeText:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  verifiedRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
-  verifiedText:   { fontSize: 12, fontWeight: '600' },
-  verifyBanner:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
-  verifyBannerText: { color: '#E67E22', fontSize: 12, fontWeight: '600' },
-  verifyAction:   { color: '#E67E22', fontSize: 12, fontWeight: '800', marginLeft: 4 },
+  // ── Header ──────────────────────────────────────────────────────────────────
+  header:       { paddingTop: 20, paddingBottom: 20, paddingHorizontal: 20 },
+  editBtn:      {
+    position: 'absolute', top: 14, right: 16, zIndex: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)', borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 6,
+  },
+  editBtnText:  { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  headerBody:   { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 10 },
+  avatarWrap:   { position: 'relative' },
+  avatarRing:   { width: 80, height: 80, borderRadius: 40, padding: 3, justifyContent: 'center', alignItems: 'center' },
+  avatar:       { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  avatarText:   { fontSize: 24, fontWeight: '900' },
+  cameraBtn:    { position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  headerInfo:   { flex: 1, gap: 2 },
+  name:         { fontSize: 20, fontWeight: '800', color: '#FFFFFF' },
+  email:        { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  phone:        { fontSize: 12, color: 'rgba(255,255,255,0.50)' },
+  badge:        { flexDirection: 'row', alignItems: 'center', marginTop: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+  badgeText:    { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
+  verifiedRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },
+  verifiedText:   { fontSize: 11, fontWeight: '600' },
+  verifyBanner:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
+  verifyBannerText: { color: '#E67E22', fontSize: 11, fontWeight: '600' },
+  verifyAction:   { color: '#E67E22', fontSize: 11, fontWeight: '800', marginLeft: 4 },
 
-  // Cards
-  card:        { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, borderWidth: 1, padding: 16, gap: 12 },
-  sectionLabel:{ fontSize: 13, fontWeight: '700', letterSpacing: 0.3 },
+  // ── Group cards ─────────────────────────────────────────────────────────────
+  groupCard:    { marginHorizontal: 16, marginBottom: 10, borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  groupHeader:  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  groupTitle:   { fontSize: 11, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
 
-  // Appearance
-  themeRow:    { flexDirection: 'row', gap: 8 },
-  themeBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
+  // ── Appearance ──────────────────────────────────────────────────────────────
+  themeRow:    { flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
+  themeBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, borderWidth: 1 },
   themeBtnTxt: { fontSize: 12, fontWeight: '700' },
 
-  // Security
-  settingRow:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  settingIcon:  { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center' },
-  settingBody:  { flex: 1 },
-  settingLabel: { fontSize: 14, fontWeight: '600' },
-  settingSub:   { fontSize: 11, marginTop: 2, lineHeight: 16 },
+  // ── Menu rows ───────────────────────────────────────────────────────────────
+  menuRow:      { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  menuIconBox:  { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  menuLabel:    { flex: 1, fontSize: 15, fontWeight: '500' },
+  menuSub:      { fontSize: 11, marginTop: 1 },
+  proBadge:     { backgroundColor: '#F97316', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  proBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
 
-  // Menu
-  menuSection:  { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
-  menuRow:      { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14, borderBottomWidth: 1 },
-  menuLabel:    { flex: 1, fontSize: 15 },
+  // ── Sign Out row ─────────────────────────────────────────────────────────────
+  signOutRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 13,
+    marginHorizontal: 16, marginBottom: 10, borderRadius: 18,
+    borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14,
+  },
 
-  // Logout + Delete
-  logoutBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, marginHorizontal: 16, marginTop: 8, marginBottom: 10,
-    backgroundColor: '#CC0000', borderRadius: 14, paddingVertical: 16,
-    shadowColor: '#CC0000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25, shadowRadius: 8, elevation: 4,
+  // ── Footer ──────────────────────────────────────────────────────────────────
+  footer: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
+    marginHorizontal: 16, marginTop: 8, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth,
   },
-  logoutText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
-  deleteBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, marginHorizontal: 16, marginBottom: 16,
-    borderWidth: 1.5, borderColor: '#CC000055', borderRadius: 14, paddingVertical: 14,
-  },
-  deleteBtnText: { color: '#CC0000', fontSize: 14, fontWeight: '700' },
-  versionText: { textAlign: 'center', fontSize: 12, marginBottom: 36, opacity: 0.5 },
+  versionText:    { fontSize: 12, marginBottom: 2 },
+  copyrightText:  { fontSize: 11 },
+  deleteAcctLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  deleteAcctText: { color: '#CC0000', fontSize: 12, fontWeight: '600' },
+
+  // ── Delete warning ───────────────────────────────────────────────────────────
   deleteWarningHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   deleteWarningText:   { fontSize: 13, lineHeight: 20, marginBottom: 8 },
   exportBox:       { flexDirection: 'row', gap: 8, padding: 10, borderRadius: 10, borderWidth: 1, alignItems: 'flex-start' },
@@ -703,7 +777,7 @@ const s = StyleSheet.create({
   exportDataBtnTxt:{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
   modalDivider:    { height: 1, marginVertical: 6 },
 
-  // Modals
+  // ── Modals ───────────────────────────────────────────────────────────────────
   overlay:     { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
   modalBox:    { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
   modalTitle:  { fontSize: 18, fontWeight: '800', marginBottom: 8 },
