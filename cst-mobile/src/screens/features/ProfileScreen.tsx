@@ -383,7 +383,7 @@ export default function ProfileScreen() {
 
         {/* ── Header banner ──────────────────────────────────────────────── */}
         <LinearGradient
-          colors={isDark ? ['#021B3A', '#1A1040', '#0B1E3A'] : ['#021B3A', '#4F46E5', '#6366F1']}
+          colors={isDark ? ['#0B1845', '#180838', '#1A0830'] : ['#818CF8', '#A78BFA', '#C084FC']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={s.header}
         >
