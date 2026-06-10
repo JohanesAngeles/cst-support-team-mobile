@@ -28,16 +28,19 @@ const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-
 export default function FuelLogScreen() {
   const Colors = useColors();
   const { t } = useTranslation();
-  const styles = useMemo(() => StyleSheet.create({
+  const styles = useMemo(() => {
+    const frosted = Colors.dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.84)';
+    const frostedBorder = Colors.dark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.92)';
+    return StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
     header: { marginBottom: 8 },
     summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
-    summaryCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, padding: 12, alignItems: 'center', gap: 4 },
+    summaryCard: { flex: 1, backgroundColor: frosted, borderRadius: 12, borderWidth: 1, borderColor: frostedBorder, padding: 12, alignItems: 'center', gap: 4 },
     summaryValue: { fontSize: 15, fontWeight: '900' },
     summaryLabel: { color: Colors.textMuted, fontSize: 10, textAlign: 'center' },
     list: { padding: 16, paddingBottom: 100 },
-    card: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 14, gap: 6 },
+    card: { backgroundColor: frosted, borderRadius: 14, borderWidth: 1, borderColor: frostedBorder, padding: 14, gap: 6 },
     cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
     cardLeft: { flex: 1, gap: 4 },
     cardLocation: { color: Colors.text, fontSize: 14, fontWeight: '700' },
@@ -56,7 +59,7 @@ export default function FuelLogScreen() {
     emptySub: { color: Colors.textMuted, fontSize: 13 },
     fab: { position: 'absolute', bottom: 28, right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center', elevation: 4 },
     modalOverlay: { flex: 1, backgroundColor: '#000000AA', justifyContent: 'flex-end' },
-    modalBox: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
+    modalBox: { backgroundColor: Colors.dark ? 'rgba(10,14,30,0.97)' : 'rgba(255,255,255,0.97)', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 4 },
     modalTitle: { color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4 },
     modalLabel: { color: Colors.textMuted, fontSize: 13, marginTop: 8 },
     modalInput: { backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, padding: 12, color: Colors.text, fontSize: 14, marginTop: 4 },
@@ -67,7 +70,7 @@ export default function FuelLogScreen() {
     cancelText: { color: Colors.textMuted, fontWeight: '700' },
     saveBtn: { flex: 1, backgroundColor: Colors.secondary, borderRadius: 10, padding: 14, alignItems: 'center' },
     saveText: { color: Colors.textDark, fontWeight: '800' },
-  }), [Colors]);
+  }); }, [Colors]);
   const [stops, setStops] = useState<FuelStop[]>([]);
   const [totalGallons, setTotalGallons] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);

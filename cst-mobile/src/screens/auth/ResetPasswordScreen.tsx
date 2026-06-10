@@ -10,6 +10,7 @@ import { RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
+import BlobBackground from '../../components/BlobBackground';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'ResetPassword'>;
@@ -85,7 +86,7 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
   const inputBox = (field: string) => [s.inputBox, focused === field && s.inputFocused];
 
   return (
-    <View style={s.root}>
+    <BlobBackground style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
@@ -147,7 +148,7 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    </BlobBackground>
   );
 }
 

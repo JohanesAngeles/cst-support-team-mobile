@@ -11,6 +11,7 @@ import { useColors } from '../../constants/colors';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import SparkleCluster from '../../components/auth/SparkleCluster';
+import BlobBackground from '../../components/BlobBackground';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'ForgotPassword'> };
 
@@ -32,7 +33,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[s.root, { backgroundColor: Colors.background }]}>
+    <BlobBackground style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
           <View style={s.inner}>
@@ -63,7 +64,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </View>
+    </BlobBackground>
   );
 }
 

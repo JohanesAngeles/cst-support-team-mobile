@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import client from '../../api/client';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme, ColorMode } from '../../context/ThemeContext';
 import { BIOMETRIC_STORAGE_KEY } from '../../components/BiometricLock';
 import { MainStackParamList } from '../../navigation/MainStack';
@@ -341,35 +342,45 @@ export default function ProfileScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* ── Header ─────────────────────────────────────────────────────── */}
-        <View style={[s.header, { backgroundColor: isDark ? '#011628' : '#EEF3F8' }]}>
-
-          {/* Avatar */}
+        <LinearGradient
+          colors={isDark ? ['#021B3A', '#1A1040', '#0B1E3A'] : ['#021B3A', '#4F46E5', '#6366F1']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={s.header}
+        >
+          {/* Avatar with gradient ring */}
           <TouchableOpacity style={s.avatarWrap} onPress={handleAvatarPress} activeOpacity={0.8}>
-            {avatarLoading ? (
-              <View style={[s.avatar, { backgroundColor: theme.primary, borderColor: gold }]}>
-                <ActivityIndicator color={gold} />
-              </View>
-            ) : user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={[s.avatar, { borderColor: gold }]} />
-            ) : (
-              <View style={[s.avatar, { backgroundColor: theme.primary, borderColor: gold }]}>
-                <Text style={[s.avatarText, { color: gold }]}>{initials}</Text>
-              </View>
-            )}
-            <View style={[s.cameraBtn, { backgroundColor: gold }]}>
-              <Ionicons name="camera" size={12} color="#021B3A" />
-            </View>
+            <LinearGradient
+              colors={['#F97316', '#6366F1']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={s.avatarRing}
+            >
+              {avatarLoading ? (
+                <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
+                  <ActivityIndicator color="#F97316" />
+                </View>
+              ) : user?.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={s.avatar} />
+              ) : (
+                <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
+                  <Text style={[s.avatarText, { color: '#F97316' }]}>{initials}</Text>
+                </View>
+              )}
+            </LinearGradient>
+            <LinearGradient colors={['#F97316', '#6366F1']} style={s.cameraBtn}>
+              <Ionicons name="camera" size={12} color="#FFFFFF" />
+            </LinearGradient>
           </TouchableOpacity>
 
-          <Text style={[s.name, { color: text }]}>{user?.name}</Text>
-          <Text style={[s.email, { color: muted }]}>{user?.email}</Text>
-          {user?.phone ? <Text style={[s.phone, { color: muted }]}>{user.phone}</Text> : null}
+          <Text style={[s.name, { color: '#FFFFFF' }]}>{user?.name}</Text>
+          <Text style={[s.email, { color: 'rgba(255,255,255,0.65)' }]}>{user?.email}</Text>
+          {user?.phone ? <Text style={[s.phone, { color: 'rgba(255,255,255,0.55)' }]}>{user.phone}</Text> : null}
 
           {/* Subscription badge */}
           <View style={[s.badge,
-            { backgroundColor: isPro ? gold + '22' : surfL, borderColor: isPro ? gold : border }]}>
-            {isPro && <Ionicons name="star" size={11} color={gold} style={{ marginRight: 4 }} />}
-            <Text style={[s.badgeText, { color: isPro ? gold : muted }]}>
+            { backgroundColor: isPro ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.15)',
+              borderColor: isPro ? '#F97316' : 'rgba(255,255,255,0.3)' }]}>
+            {isPro && <Ionicons name="star" size={11} color="#F97316" style={{ marginRight: 4 }} />}
+            <Text style={[s.badgeText, { color: isPro ? '#F97316' : 'rgba(255,255,255,0.75)' }]}>
               {isPro ? `CST PRO · ${user?.subscriptionPlan === 'annual' ? 'Annual' : 'Monthly'}` : t('profile.freePlan')}
             </Text>
           </View>
@@ -377,12 +388,12 @@ export default function ProfileScreen() {
           {/* Verification status */}
           {user?.isVerified ? (
             <View style={s.verifiedRow}>
-              <Ionicons name="checkmark-circle" size={14} color="#2ECC71" />
-              <Text style={[s.verifiedText, { color: '#2ECC71' }]}>{t('profile.emailVerified')}</Text>
+              <Ionicons name="checkmark-circle" size={14} color="#4ADE80" />
+              <Text style={[s.verifiedText, { color: '#4ADE80' }]}>{t('profile.emailVerified')}</Text>
             </View>
           ) : (
             <TouchableOpacity
-              style={[s.verifyBanner, { backgroundColor: '#E67E2218', borderColor: '#E67E22' }]}
+              style={[s.verifyBanner, { backgroundColor: 'rgba(230,126,34,0.2)', borderColor: '#E67E22' }]}
               onPress={handleResendVerification}
               disabled={resending}
               activeOpacity={0.7}
@@ -395,10 +406,10 @@ export default function ProfileScreen() {
               }
             </TouchableOpacity>
           )}
-        </View>
+        </LinearGradient>
 
         {/* ── Appearance ─────────────────────────────────────────────────── */}
-        <View style={[s.card, { backgroundColor: surf, borderColor: border }]}>
+        <View style={[s.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.84)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.92)' }]}>
           <Text style={[s.sectionLabel, { color: text }]}>{t('profile.appearance')}</Text>
           <View style={s.themeRow}>
             {([
@@ -422,7 +433,7 @@ export default function ProfileScreen() {
 
         {/* ── Security ───────────────────────────────────────────────────── */}
         {biometricAvailable && (
-          <View style={[s.card, { backgroundColor: surf, borderColor: border }]}>
+          <View style={[s.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.84)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.92)' }]}>
             <Text style={[s.sectionLabel, { color: text }]}>{t('profile.security')}</Text>
             <View style={[s.settingRow, { borderColor: border }]}>
               <View style={[s.settingIcon, { backgroundColor: gold + '1A' }]}>
@@ -443,7 +454,7 @@ export default function ProfileScreen() {
         )}
 
         {/* ── Menu ───────────────────────────────────────────────────────── */}
-        <View style={[s.menuSection, { backgroundColor: surf, borderColor: border }]}>
+        <View style={[s.menuSection, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.84)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.92)' }]}>
           {menuItems.map((item, idx) => (
             <TouchableOpacity
               key={item.label}
@@ -632,9 +643,10 @@ const s = StyleSheet.create({
   // Header
   header:      { alignItems: 'center', padding: 28, paddingBottom: 24 },
   avatarWrap:  { position: 'relative', marginBottom: 12 },
-  avatar:      { width: 88, height: 88, borderRadius: 44, borderWidth: 3, justifyContent: 'center', alignItems: 'center' },
+  avatarRing:  { width: 96, height: 96, borderRadius: 48, padding: 3, justifyContent: 'center', alignItems: 'center' },
+  avatar:      { width: 88, height: 88, borderRadius: 44, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   avatarText:  { fontSize: 30, fontWeight: '900' },
-  cameraBtn:   { position: 'absolute', bottom: 0, right: 0, width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#021B3A' },
+  cameraBtn:   { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   name:        { fontSize: 22, fontWeight: '800' },
   email:       { fontSize: 14, marginTop: 4 },
   phone:       { fontSize: 13, marginTop: 2 },
