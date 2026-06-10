@@ -383,7 +383,7 @@ export default function ProfileScreen() {
 
         {/* ── Header banner ──────────────────────────────────────────────── */}
         <LinearGradient
-          colors={isDark ? ['#0B1845', '#180838', '#1A0830'] : ['#818CF8', '#A78BFA', '#C084FC']}
+          colors={['#021B3A', '#0A2A5C', '#0D3270']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={s.header}
         >
@@ -397,7 +397,7 @@ export default function ProfileScreen() {
           <View style={s.headerBody}>
             <TouchableOpacity style={s.avatarWrap} onPress={handleAvatarPress} activeOpacity={0.8}>
               <LinearGradient
-                colors={['#F97316', '#6366F1']}
+                colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.5)']}
                 start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={s.avatarRing}
               >
@@ -413,8 +413,8 @@ export default function ProfileScreen() {
                   </View>
                 )}
               </LinearGradient>
-              <LinearGradient colors={['#F97316', '#6366F1']} style={s.cameraBtn}>
-                <Ionicons name="camera" size={11} color="#FFFFFF" />
+              <LinearGradient colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.75)']} style={s.cameraBtn}>
+                <Ionicons name="camera" size={11} color="#021B3A" />
               </LinearGradient>
             </TouchableOpacity>
 
