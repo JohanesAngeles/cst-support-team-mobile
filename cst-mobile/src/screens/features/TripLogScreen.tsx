@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, Share, ScrollView,
@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getTrips, addTrip, updateTrip, deleteTrip } from '../../api/features';
 
@@ -28,6 +29,7 @@ const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-
 
 export default function TripLogScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
@@ -95,9 +97,9 @@ export default function TripLogScreen() {
     try {
       const data = await getTrips();
       setTrips(data.trips ?? []);
-    } catch { Alert.alert('Error', 'Could not load trips'); }
+    } catch { Alert.alert(t('common.error'), t('tripLog.loadError')); }
     finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -115,21 +117,21 @@ export default function TripLogScreen() {
       from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       to = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
     }
-    return trips.filter(t => {
-      const d = new Date(t.date + 'T12:00:00');
+    return trips.filter(tr => {
+      const d = new Date(tr.date + 'T12:00:00');
       return d >= from && d <= to;
     });
   }, [trips, datePreset]);
 
   const exportCSV = useCallback(() => {
-    if (filteredTrips.length === 0) { Alert.alert('Nothing to export', 'No trips in selected range.'); return; }
+    if (filteredTrips.length === 0) { Alert.alert(t('tripLog.nothingToExport'), t('tripLog.noTripsRangeMsg')); return; }
     const q = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
     const header = 'Date,Origin,Destination,Miles,Rate ($),Load #,Broker,Status,Notes';
-    const rows = filteredTrips.map(t =>
-      [t.date, q(t.origin), q(t.destination), t.miles, t.rate, q(t.loadNum), q(t.broker), t.status, q(t.notes)].join(',')
+    const rows = filteredTrips.map(tr =>
+      [tr.date, q(tr.origin), q(tr.destination), tr.miles, tr.rate, q(tr.loadNum), q(tr.broker), tr.status, q(tr.notes)].join(',')
     );
     Share.share({ message: [header, ...rows].join('\n'), title: 'Trip Log.csv' });
-  }, [filteredTrips]);
+  }, [filteredTrips, t]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -159,7 +161,7 @@ export default function TripLogScreen() {
 
   const handleSave = async () => {
     if (!origin.trim() || !destination.trim() || !miles) {
-      Alert.alert('Error', 'Origin, destination, and miles are required'); return;
+      Alert.alert(t('common.error'), t('tripLog.requiredFields')); return;
     }
     const payload = {
       date, origin: origin.trim(), destination: destination.trim(),
@@ -175,33 +177,66 @@ export default function TripLogScreen() {
       }
       setModal(false);
       load();
-    } catch (err: any) { Alert.alert('Error', err.message); }
+    } catch (err: any) { Alert.alert(t('common.error'), err.message); }
     finally { setSaving(false); }
   };
 
   const handleDelete = (trip: Trip) => {
-    Alert.alert('Delete Trip', `Remove ${trip.origin} → ${trip.destination}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteTrip(trip._id); load(); } },
+    Alert.alert(t('tripLog.deleteTitle'), `Remove ${trip.origin} → ${trip.destination}?`, [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await deleteTrip(trip._id);
+            load();
+          } catch (e: any) {
+            Alert.alert(t('common.error'), e.message ?? t('tripLog.deleteError'));
+          }
+        },
+      },
     ]);
   };
 
-  const totalMiles = filteredTrips.reduce((s, t) => s + t.miles, 0);
-  const totalRevenue = filteredTrips.reduce((s, t) => s + t.rate, 0);
-  const completedTrips = filteredTrips.filter(t => t.status === 'Completed').length;
+  const statusLabel = (s: Trip['status']) => {
+    if (s === 'Completed') return t('tripLog.completed');
+    if (s === 'In Progress') return t('tripLog.inProgress');
+    return t('tripLog.cancelled');
+  };
+
+  const FILTER_PRESETS: { key: DatePreset; label: string }[] = [
+    { key: 'All', label: t('tripLog.filterAll') },
+    { key: 'Week', label: t('tripLog.filterWeek') },
+    { key: 'Month', label: t('tripLog.filterMonth') },
+    { key: 'Last Month', label: t('tripLog.filterLastMonth') },
+  ];
+
+  const totalMiles = filteredTrips.reduce((s, tr) => s + tr.miles, 0);
+  const totalRevenue = filteredTrips.reduce((s, tr) => s + tr.rate, 0);
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
 
+  const summaryCards = [
+    { label: t('tripLog.totalTrips'), value: String(filteredTrips.length), icon: 'map-outline', color: Colors.secondary },
+    { label: t('tripLog.totalMiles'), value: totalMiles.toLocaleString(), icon: 'speedometer-outline', color: '#3498DB' },
+    { label: t('tripLog.revenue'), value: totalRevenue > 0 ? `$${totalRevenue.toLocaleString()}` : '—', icon: 'cash-outline', color: Colors.success },
+  ];
+
+  const formFields = [
+    { label: t('tripLog.date'), value: date, set: setDate, placeholder: 'YYYY-MM-DD' },
+    { label: t('tripLog.origin'), value: origin, set: setOrigin, placeholder: 'City, State' },
+    { label: t('tripLog.destination'), value: destination, set: setDestination, placeholder: 'City, State' },
+    { label: t('tripLog.miles'), value: miles, set: setMiles, placeholder: '0', keyboard: 'decimal-pad' as const },
+    { label: t('tripLog.loadNum'), value: loadNum, set: setLoadNum, placeholder: 'Optional' },
+    { label: t('tripLog.rate'), value: rate, set: setRate, placeholder: '0.00', keyboard: 'decimal-pad' as const },
+    { label: t('tripLog.broker'), value: broker, set: setBroker, placeholder: 'Broker name' },
+    { label: t('tripLog.notes'), value: notes, set: setNotes, placeholder: 'Optional' },
+  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Summary */}
       <View style={styles.summaryRow}>
-        {[
-          { label: 'Total Trips', value: String(filteredTrips.length), icon: 'map-outline', color: Colors.secondary },
-          { label: 'Total Miles', value: totalMiles.toLocaleString(), icon: 'speedometer-outline', color: '#3498DB' },
-          { label: 'Revenue', value: totalRevenue > 0 ? `$${totalRevenue.toLocaleString()}` : '—', icon: 'cash-outline', color: Colors.success },
-        ].map(({ label, value, icon, color }) => (
+        {summaryCards.map(({ label, value, icon, color }) => (
           <View key={label} style={styles.summaryCard}>
             <Ionicons name={icon as any} size={18} color={color} />
             <Text style={[styles.summaryValue, { color }]}>{value}</Text>
@@ -212,20 +247,20 @@ export default function TripLogScreen() {
 
       <FlatList
         data={filteredTrips}
-        keyExtractor={t => t._id}
+        keyExtractor={tr => tr._id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={Colors.secondary} />}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         ListHeaderComponent={
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8, paddingRight: 8 }}>
-            {(['All', 'Week', 'Month', 'Last Month'] as const).map(p => (
+            {FILTER_PRESETS.map(({ key, label }) => (
               <TouchableOpacity
-                key={p}
-                style={[styles.filterChip, datePreset === p && styles.filterChipActive]}
-                onPress={() => setDatePreset(p)}
+                key={key}
+                style={[styles.filterChip, datePreset === key && styles.filterChipActive]}
+                onPress={() => setDatePreset(key)}
               >
-                <Text style={[styles.filterChipText, datePreset === p && styles.filterChipTextActive]}>{p}</Text>
+                <Text style={[styles.filterChipText, datePreset === key && styles.filterChipTextActive]}>{label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -233,8 +268,12 @@ export default function TripLogScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="map-outline" size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>{datePreset === 'All' ? 'No trips logged yet' : `No trips in ${datePreset}`}</Text>
-            <Text style={styles.emptySub}>{datePreset === 'All' ? 'Tap + to log your first trip' : 'Try a different date range'}</Text>
+            <Text style={styles.emptyText}>
+              {datePreset === 'All' ? t('tripLog.noTrips') : t('tripLog.noTripsInRange', { range: datePreset })}
+            </Text>
+            <Text style={styles.emptySub}>
+              {datePreset === 'All' ? t('tripLog.tapToAdd') : t('tripLog.tryDifferentRange')}
+            </Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -246,7 +285,7 @@ export default function TripLogScreen() {
                 <Text style={styles.dest} numberOfLines={1}>{item.destination}</Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: STATUS_COLORS[item.status] + '22' }]}>
-                <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{item.status}</Text>
+                <Text style={[styles.statusText, { color: STATUS_COLORS[item.status] }]}>{statusLabel(item.status)}</Text>
               </View>
             </View>
             <View style={styles.cardMeta}>
@@ -256,7 +295,7 @@ export default function TripLogScreen() {
               {item.rate > 0 && <><Text style={styles.metaDot}>·</Text><Text style={[styles.metaText, { color: Colors.success }]}>${item.rate.toLocaleString()}</Text></>}
               {item.broker ? <><Text style={styles.metaDot}>·</Text><Text style={styles.metaText}>{item.broker}</Text></> : null}
             </View>
-            {item.loadNum ? <Text style={styles.loadNum}>Load: {item.loadNum}</Text> : null}
+            {item.loadNum ? <Text style={styles.loadNum}>{t('tripLog.loadPrefix')} {item.loadNum}</Text> : null}
             {item.notes ? <Text style={styles.cardNotes}>{item.notes}</Text> : null}
           </TouchableOpacity>
         )}
@@ -269,45 +308,40 @@ export default function TripLogScreen() {
       <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{editTarget ? 'Edit Trip' : 'Log Trip'}</Text>
+            <Text style={styles.modalTitle}>{editTarget ? t('tripLog.editTrip') : t('tripLog.logTrip')}</Text>
 
-            {[
-              { label: 'Date', value: date, set: setDate, placeholder: 'YYYY-MM-DD' },
-              { label: 'Origin *', value: origin, set: setOrigin, placeholder: 'City, State' },
-              { label: 'Destination *', value: destination, set: setDestination, placeholder: 'City, State' },
-              { label: 'Miles *', value: miles, set: setMiles, placeholder: '0', keyboard: 'decimal-pad' as const },
-              { label: 'Load #', value: loadNum, set: setLoadNum, placeholder: 'Optional' },
-              { label: 'Rate ($)', value: rate, set: setRate, placeholder: '0.00', keyboard: 'decimal-pad' as const },
-              { label: 'Broker', value: broker, set: setBroker, placeholder: 'Broker name' },
-              { label: 'Notes', value: notes, set: setNotes, placeholder: 'Optional' },
-            ].map(({ label, value, set, placeholder, keyboard }) => (
-              <View key={label}>
-                <Text style={styles.modalLabel}>{label}</Text>
-                <TextInput
-                  style={styles.modalInput} value={value} onChangeText={set}
-                  placeholder={placeholder} placeholderTextColor={Colors.textMuted}
-                  keyboardType={keyboard ?? 'default'}
-                />
-              </View>
-            ))}
-
-            <Text style={styles.modalLabel}>Status</Text>
-            <View style={styles.statusRow}>
-              {(['Completed', 'In Progress', 'Cancelled'] as Trip['status'][]).map(s => (
-                <TouchableOpacity key={s} style={[styles.statusChip, status === s && { backgroundColor: STATUS_COLORS[s], borderColor: STATUS_COLORS[s] }]} onPress={() => setStatus(s)}>
-                  <Text style={[styles.statusChipText, status === s && { color: Colors.textDark }]}>{s}</Text>
-                </TouchableOpacity>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {formFields.map(({ label, value, set, placeholder, keyboard }) => (
+                <View key={label}>
+                  <Text style={styles.modalLabel}>{label}</Text>
+                  <TextInput
+                    style={styles.modalInput} value={value} onChangeText={set}
+                    placeholder={placeholder} placeholderTextColor={Colors.textMuted}
+                    keyboardType={keyboard ?? 'default'}
+                  />
+                </View>
               ))}
-            </View>
 
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
-              </TouchableOpacity>
-            </View>
+              <Text style={styles.modalLabel}>{t('tripLog.statusLabel')}</Text>
+              <View style={styles.statusRow}>
+                {(['Completed', 'In Progress', 'Cancelled'] as Trip['status'][]).map(s => (
+                  <TouchableOpacity key={s} style={[styles.statusChip, status === s && { backgroundColor: STATUS_COLORS[s], borderColor: STATUS_COLORS[s] }]} onPress={() => setStatus(s)}>
+                    <Text style={[styles.statusChipText, status === s && { color: Colors.textDark }]}>{statusLabel(s)}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
+                  <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+                  {saving
+                    ? <ActivityIndicator size="small" color={Colors.textDark} />
+                    : <Text style={styles.saveText}>{editTarget ? t('tripLog.update') : t('tripLog.save')}</Text>}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>

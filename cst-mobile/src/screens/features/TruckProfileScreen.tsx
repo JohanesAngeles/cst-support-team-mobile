@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getTruckProfile, updateTruckProfile } from '../../api/features';
 
@@ -45,6 +46,7 @@ const isInsuranceExpired = (expiry: string) => {
 };
 
 export default function TruckProfileScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -98,7 +100,7 @@ export default function TruckProfileScreen() {
       const p: TruckProfile = { ...EMPTY, ...data };
       setProfile(p);
       setForm(p);
-    } catch { Alert.alert('Error', 'Could not load truck profile'); }
+    } catch { Alert.alert(t('common.error'), t('truckProfile.loadError')); }
     finally { setLoading(false); }
   }, []);
 
@@ -125,7 +127,7 @@ export default function TruckProfileScreen() {
       const p: TruckProfile = { ...EMPTY, ...data };
       setProfile(p); setForm(p);
       setEditing(false);
-    } catch (err: any) { Alert.alert('Error', err.message); }
+    } catch (err: any) { Alert.alert(t('common.error'), err.message); }
     finally { setSaving(false); }
   };
 
@@ -155,9 +157,9 @@ export default function TruckProfileScreen() {
           </View>
           <View style={styles.heroInfo}>
             <Text style={styles.rigName}>{rigName}</Text>
-            {profile.plate ? <Text style={styles.rigSub}>Plate: {profile.plate}</Text> : null}
+            {profile.plate ? <Text style={styles.rigSub}>{t('truckProfile.plateLabel', { plate: profile.plate })}</Text> : null}
             {profile.currentMileage > 0 && (
-              <Text style={styles.rigSub}>{profile.currentMileage.toLocaleString()} mi on the clock</Text>
+              <Text style={styles.rigSub}>{t('truckProfile.miOnClock', { mi: profile.currentMileage.toLocaleString() })}</Text>
             )}
           </View>
           {!editing && (
@@ -173,8 +175,8 @@ export default function TruckProfileScreen() {
             <Ionicons name="alert-circle" size={18} color={insuranceColor} />
             <Text style={[styles.alertText, { color: insuranceColor }]}>
               {isInsuranceExpired(profile.insuranceExpiry)
-                ? 'Insurance expired! Update your policy immediately.'
-                : 'Insurance expires within 30 days — renew soon.'}
+                ? t('truckProfile.insuranceExpiredAlert')
+                : t('truckProfile.insuranceExpiringSoon')}
             </Text>
           </View>
         )}
@@ -182,39 +184,39 @@ export default function TruckProfileScreen() {
         {editing ? (
           /* ─── EDIT MODE ─── */
           <>
-            <SectionHeader title="Rig Identity" icon="bus-outline" />
+            <SectionHeader title={t('truckProfile.rigIdentity')} icon="bus-outline" />
             <View style={styles.card}>
-              <Field label="Nickname" value={form.nickname} onChangeText={set('nickname')} placeholder="Big Red, Old Faithful..." />
+              <Field label={t('truckProfile.nickname')} value={form.nickname} onChangeText={set('nickname')} placeholder="Big Red, Old Faithful..." />
               <Row>
-                <Field label="Make" value={form.make} onChangeText={set('make')} placeholder="Kenworth" flex />
-                <Field label="Model" value={form.truckModel} onChangeText={set('truckModel')} placeholder="T680" flex />
+                <Field label={t('truckProfile.make')} value={form.make} onChangeText={set('make')} placeholder="Kenworth" flex />
+                <Field label={t('truckProfile.model')} value={form.truckModel} onChangeText={set('truckModel')} placeholder="T680" flex />
               </Row>
-              <Field label="Year" value={form.truckYear > 0 ? String(form.truckYear) : ''} onChangeText={v => set('truckYear')(v)} placeholder="2022" keyboard="number-pad" />
-              <Field label="VIN" value={form.vin} onChangeText={set('vin')} placeholder="17-character VIN" autoCapitalize="characters" />
-              <Field label="Plate Number" value={form.plate} onChangeText={set('plate')} placeholder="ABC-1234" autoCapitalize="characters" />
+              <Field label={t('truckProfile.year')} value={form.truckYear > 0 ? String(form.truckYear) : ''} onChangeText={v => set('truckYear')(v)} placeholder="2022" keyboard="number-pad" />
+              <Field label={t('truckProfile.vin')} value={form.vin} onChangeText={set('vin')} placeholder="17-character VIN" autoCapitalize="characters" />
+              <Field label={t('truckProfile.plateNumber')} value={form.plate} onChangeText={set('plate')} placeholder="ABC-1234" autoCapitalize="characters" />
             </View>
 
-            <SectionHeader title="Authority & Insurance" icon="shield-checkmark-outline" />
+            <SectionHeader title={t('truckProfile.authorityInsurance')} icon="shield-checkmark-outline" />
             <View style={styles.card}>
               <Row>
-                <Field label="MC Number" value={form.mcNumber} onChangeText={set('mcNumber')} placeholder="123456" keyboard="number-pad" flex />
-                <Field label="DOT Number" value={form.dotNumber} onChangeText={set('dotNumber')} placeholder="7654321" keyboard="number-pad" flex />
+                <Field label={t('truckProfile.mcNumber')} value={form.mcNumber} onChangeText={set('mcNumber')} placeholder="123456" keyboard="number-pad" flex />
+                <Field label={t('truckProfile.dotNumber')} value={form.dotNumber} onChangeText={set('dotNumber')} placeholder="7654321" keyboard="number-pad" flex />
               </Row>
-              <Field label="Insurance Expiry (YYYY-MM-DD)" value={form.insuranceExpiry} onChangeText={set('insuranceExpiry')} placeholder="2026-12-31" />
+              <Field label={t('truckProfile.insuranceExpiryLabel')} value={form.insuranceExpiry} onChangeText={set('insuranceExpiry')} placeholder="2026-12-31" />
             </View>
 
-            <SectionHeader title="Performance Stats" icon="speedometer-outline" />
+            <SectionHeader title={t('truckProfile.performanceStats')} icon="speedometer-outline" />
             <View style={styles.card}>
               <Row>
-                <Field label="Current Mileage" value={form.currentMileage > 0 ? String(form.currentMileage) : ''} onChangeText={set('currentMileage')} placeholder="500000" keyboard="number-pad" flex />
-                <Field label="MPG" value={form.mpg > 0 ? String(form.mpg) : ''} onChangeText={set('mpg')} placeholder="6.5" keyboard="decimal-pad" flex />
+                <Field label={t('truckProfile.currentMileage')} value={form.currentMileage > 0 ? String(form.currentMileage) : ''} onChangeText={set('currentMileage')} placeholder="500000" keyboard="number-pad" flex />
+                <Field label={t('truckProfile.mpg')} value={form.mpg > 0 ? String(form.mpg) : ''} onChangeText={set('mpg')} placeholder="6.5" keyboard="decimal-pad" flex />
               </Row>
               <Row>
-                <Field label="Cheapest Fuel ($/gal)" value={form.cheapestFuelPrice > 0 ? String(form.cheapestFuelPrice) : ''} onChangeText={set('cheapestFuelPrice')} placeholder="3.49" keyboard="decimal-pad" flex />
-                <Field label="Idle Hours" value={form.idleHours > 0 ? String(form.idleHours) : ''} onChangeText={set('idleHours')} placeholder="0" keyboard="decimal-pad" flex />
+                <Field label={t('truckProfile.cheapestFuel')} value={form.cheapestFuelPrice > 0 ? String(form.cheapestFuelPrice) : ''} onChangeText={set('cheapestFuelPrice')} placeholder="3.49" keyboard="decimal-pad" flex />
+                <Field label={t('truckProfile.idleHours')} value={form.idleHours > 0 ? String(form.idleHours) : ''} onChangeText={set('idleHours')} placeholder="0" keyboard="decimal-pad" flex />
               </Row>
               <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>Fuel Card Connected</Text>
+                <Text style={styles.switchLabel}>{t('truckProfile.fuelCardConnected')}</Text>
                 <Switch
                   value={form.fuelCardConnected} onValueChange={set('fuelCardConnected')}
                   trackColor={{ false: Colors.border, true: Colors.success }}
@@ -225,42 +227,42 @@ export default function TruckProfileScreen() {
 
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.cancelBtn} onPress={cancelEdit}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Save Changes</Text>}
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{t('truckProfile.saveChanges')}</Text>}
               </TouchableOpacity>
             </View>
           </>
         ) : (
           /* ─── VIEW MODE ─── */
           <>
-            <SectionHeader title="Rig Identity" icon="bus-outline" />
+            <SectionHeader title={t('truckProfile.rigIdentity')} icon="bus-outline" />
             <View style={styles.card}>
-              <InfoRow label="Make / Model" value={profile.make && profile.truckModel ? `${profile.make} ${profile.truckModel}` : '—'} />
-              <InfoRow label="Year" value={profile.truckYear > 0 ? String(profile.truckYear) : '—'} />
-              <InfoRow label="VIN" value={profile.vin || '—'} mono />
-              <InfoRow label="Plate" value={profile.plate || '—'} />
+              <InfoRow label={t('truckProfile.makeModel')} value={profile.make && profile.truckModel ? `${profile.make} ${profile.truckModel}` : '—'} />
+              <InfoRow label={t('truckProfile.year')} value={profile.truckYear > 0 ? String(profile.truckYear) : '—'} />
+              <InfoRow label={t('truckProfile.vin')} value={profile.vin || '—'} mono />
+              <InfoRow label={t('truckProfile.plate')} value={profile.plate || '—'} />
             </View>
 
-            <SectionHeader title="Authority & Insurance" icon="shield-checkmark-outline" />
+            <SectionHeader title={t('truckProfile.authorityInsurance')} icon="shield-checkmark-outline" />
             <View style={styles.card}>
-              <InfoRow label="MC Number" value={profile.mcNumber ? `MC-${profile.mcNumber}` : '—'} />
-              <InfoRow label="DOT Number" value={profile.dotNumber ? `DOT-${profile.dotNumber}` : '—'} />
+              <InfoRow label={t('truckProfile.mcNumber')} value={profile.mcNumber ? `MC-${profile.mcNumber}` : '—'} />
+              <InfoRow label={t('truckProfile.dotNumber')} value={profile.dotNumber ? `DOT-${profile.dotNumber}` : '—'} />
               <InfoRow
-                label="Insurance Expiry"
+                label={t('truckProfile.insuranceExpiry')}
                 value={profile.insuranceExpiry || '—'}
                 valueColor={profile.insuranceExpiry ? insuranceColor : undefined}
               />
             </View>
 
-            <SectionHeader title="Performance Stats" icon="speedometer-outline" />
+            <SectionHeader title={t('truckProfile.performanceStats')} icon="speedometer-outline" />
             <View style={styles.statsGrid}>
               {[
-                { label: 'Mileage', value: profile.currentMileage > 0 ? profile.currentMileage.toLocaleString() : '—', unit: 'mi', icon: 'speedometer-outline', color: '#3498DB' },
-                { label: 'MPG', value: profile.mpg > 0 ? String(profile.mpg) : '—', unit: 'mpg', icon: 'leaf-outline', color: Colors.success },
-                { label: 'Best Fuel', value: profile.cheapestFuelPrice > 0 ? `$${profile.cheapestFuelPrice.toFixed(3)}` : '—', unit: '/gal', icon: 'water-outline', color: '#1ABC9C' },
-                { label: 'Idle Hours', value: profile.idleHours > 0 ? String(profile.idleHours) : '—', unit: 'hrs', icon: 'time-outline', color: '#E67E22' },
+                { label: t('truckProfile.mileage'), value: profile.currentMileage > 0 ? profile.currentMileage.toLocaleString() : '—', unit: 'mi', icon: 'speedometer-outline', color: '#3498DB' },
+                { label: t('truckProfile.mpg'), value: profile.mpg > 0 ? String(profile.mpg) : '—', unit: 'mpg', icon: 'leaf-outline', color: Colors.success },
+                { label: t('truckProfile.bestFuel'), value: profile.cheapestFuelPrice > 0 ? `$${profile.cheapestFuelPrice.toFixed(3)}` : '—', unit: '/gal', icon: 'water-outline', color: '#1ABC9C' },
+                { label: t('truckProfile.idleHours'), value: profile.idleHours > 0 ? String(profile.idleHours) : '—', unit: 'hrs', icon: 'time-outline', color: '#E67E22' },
               ].map(({ label, value, unit, icon, color }) => (
                 <View key={label} style={styles.statCard}>
                   <Ionicons name={icon as any} size={20} color={color} />

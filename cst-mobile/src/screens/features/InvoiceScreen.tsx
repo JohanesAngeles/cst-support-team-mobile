@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getInvoices, addInvoice, updateInvoiceStatus, emailInvoice, deleteInvoice } from '../../api/features';
 
@@ -28,6 +29,7 @@ const dueDateStr = () => { const d = new Date(); d.setDate(d.getDate() + 30); re
 const nextInvNum = () => `INV-${Date.now().toString().slice(-6)}`;
 
 export default function InvoiceScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -90,7 +92,7 @@ export default function InvoiceScreen() {
       const data = await getInvoices();
       setInvoices(data.invoices ?? []);
     } catch {
-      Alert.alert('Error', 'Could not load invoices');
+      Alert.alert(t('common.error'), t('invoice.loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -115,8 +117,8 @@ export default function InvoiceScreen() {
   };
 
   const handleSave = async () => {
-    if (!billToName.trim()) { Alert.alert('Error', 'Bill-to name is required'); return; }
-    if (services.some(s => !s.description || !s.rate)) { Alert.alert('Error', 'All service lines need a description and rate'); return; }
+    if (!billToName.trim()) { Alert.alert(t('common.error'), t('invoice.billToRequired')); return; }
+    if (services.some(s => !s.description || !s.rate)) { Alert.alert(t('common.error'), t('invoice.servicesRequired')); return; }
     setSaving(true);
     try {
       const { subtotal, taxAmount, total } = calcTotals();
@@ -136,7 +138,7 @@ export default function InvoiceScreen() {
       setModal(false);
       load();
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('common.error'), err.message);
     } finally {
       setSaving(false);
     }
@@ -145,19 +147,19 @@ export default function InvoiceScreen() {
   const handleEmail = async (inv: Invoice) => {
     const to = inv.billTo.email;
     if (!to) {
-      Alert.alert('No Email', 'This invoice has no email address. Edit the invoice to add one.');
+      Alert.alert(t('invoice.noEmailTitle'), t('invoice.noEmailMsg'));
       return;
     }
-    Alert.alert('Send Invoice', `Email ${inv.invoiceNumber} to ${to}?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('invoice.sendTitle'), t('invoice.sendMsg', { num: inv.invoiceNumber, email: to }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Send', onPress: async () => {
+        text: t('invoice.send'), onPress: async () => {
           try {
             await emailInvoice(inv._id);
-            Alert.alert('Sent', `Invoice emailed to ${to}`);
+            Alert.alert(t('invoice.sentTitle'), t('invoice.sentMsg', { email: to }));
             load();
           } catch (err: any) {
-            Alert.alert('Error', err?.response?.data?.message ?? 'Failed to send email');
+            Alert.alert(t('common.error'), err?.response?.data?.message ?? t('invoice.sendError'));
           }
         },
       },
@@ -190,7 +192,7 @@ export default function InvoiceScreen() {
       const { uri } = await Print.printToFileAsync({ html });
       await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('common.error'), err.message);
     } finally {
       setPrinting(null);
     }
@@ -201,13 +203,13 @@ export default function InvoiceScreen() {
     try {
       await updateInvoiceStatus(inv._id, next);
       load();
-    } catch { Alert.alert('Error', 'Could not update status'); }
+    } catch { Alert.alert(t('common.error'), t('invoice.statusError')); }
   };
 
   const handleDelete = (inv: Invoice) => {
-    Alert.alert('Delete Invoice', `Remove ${inv.invoiceNumber}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteInvoice(inv._id); load(); } },
+    Alert.alert(t('invoice.deleteTitle'), t('invoice.deleteMsg', { num: inv.invoiceNumber }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => { await deleteInvoice(inv._id); load(); } },
     ]);
   };
 
@@ -225,13 +227,13 @@ export default function InvoiceScreen() {
       >
         <TouchableOpacity style={styles.addBtn} onPress={() => setModal(true)}>
           <Ionicons name="add-circle-outline" size={20} color={Colors.textDark} />
-          <Text style={styles.addBtnText}>New Invoice</Text>
+          <Text style={styles.addBtnText}>{t('invoice.newInvoice')}</Text>
         </TouchableOpacity>
 
         {invoices.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="receipt-outline" size={40} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No invoices yet</Text>
+            <Text style={styles.emptyText}>{t('invoice.noInvoices')}</Text>
           </View>
         ) : (
           invoices.map(inv => (
@@ -243,31 +245,31 @@ export default function InvoiceScreen() {
                   onPress={() => handleStatusCycle(inv)}
                 >
                   <Text style={[styles.statusText, { color: isOverdue(inv) ? STATUS_COLOR.overdue : STATUS_COLOR[inv.status] }]}>
-                    {isOverdue(inv) ? 'OVERDUE' : inv.status.toUpperCase()}
+                    {isOverdue(inv) ? t('paymentTracker.overdue') : inv.status.toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               </View>
               <Text style={styles.invBillTo}>{inv.billTo.name}</Text>
               <Text style={[styles.invDate, isOverdue(inv) && { color: STATUS_COLOR.overdue }]}>
-                Due: {inv.dueDate}{inv.paidAt ? `  ·  Paid: ${inv.paidAt}` : ''}
+                {t('invoice.dueLabel')} {inv.dueDate}{inv.paidAt ? `  ·  ${t('invoice.paidLabel')} ${inv.paidAt}` : ''}
               </Text>
               <Text style={styles.invTotal}>{fmtMoney(inv.total)}</Text>
               <View style={styles.invActions}>
                 <TouchableOpacity style={styles.actionBtn} onPress={() => handlePrint(inv)} disabled={printing === inv._id}>
                   {printing === inv._id
                     ? <ActivityIndicator size="small" color={Colors.secondary} />
-                    : <><Ionicons name="share-outline" size={15} color={Colors.secondary} /><Text style={styles.actionText}>Export PDF</Text></>
+                    : <><Ionicons name="share-outline" size={15} color={Colors.secondary} /><Text style={styles.actionText}>{t('invoice.exportPDF')}</Text></>
                   }
                 </TouchableOpacity>
                 {inv.billTo.email ? (
                   <TouchableOpacity style={styles.actionBtn} onPress={() => handleEmail(inv)}>
                     <Ionicons name="mail-outline" size={15} color={Colors.secondary} />
-                    <Text style={styles.actionText}>Email</Text>
+                    <Text style={styles.actionText}>{t('invoice.email')}</Text>
                   </TouchableOpacity>
                 ) : null}
                 <TouchableOpacity style={[styles.actionBtn, { borderColor: Colors.danger + '44' }]} onPress={() => handleDelete(inv)}>
                   <Ionicons name="trash-outline" size={15} color={Colors.danger} />
-                  <Text style={[styles.actionText, { color: Colors.danger }]}>Delete</Text>
+                  <Text style={[styles.actionText, { color: Colors.danger }]}>{t('invoice.delete')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -279,29 +281,29 @@ export default function InvoiceScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Invoice</Text>
+              <Text style={styles.modalTitle}>{t('invoice.newInvoice')}</Text>
               <TouchableOpacity onPress={() => setModal(false)}>
                 <Ionicons name="close" size={24} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 540 }}>
-              <Text style={styles.sectionTitle}>Bill To</Text>
+              <Text style={styles.sectionTitle}>{t('invoice.billToTitle')}</Text>
               <TextInput style={styles.modalInput} value={billToName} onChangeText={setBillToName} placeholder="Company / broker name *" placeholderTextColor={Colors.textMuted} />
               <TextInput style={styles.modalInput} value={billToAddress} onChangeText={setBillToAddress} placeholder="Address (optional)" placeholderTextColor={Colors.textMuted} />
               <TextInput style={styles.modalInput} value={billToEmail} onChangeText={setBillToEmail} placeholder="Email (optional)" placeholderTextColor={Colors.textMuted} keyboardType="email-address" />
 
               <View style={styles.rowInputs}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Invoice Date</Text>
+                  <Text style={styles.modalLabel}>{t('invoice.invoiceDateLabel')}</Text>
                   <TextInput style={styles.modalInput} value={invoiceDate} onChangeText={setInvoiceDate} placeholder="YYYY-MM-DD" placeholderTextColor={Colors.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.modalLabel}>Due Date</Text>
+                  <Text style={styles.modalLabel}>{t('invoice.dueDateLabel')}</Text>
                   <TextInput style={styles.modalInput} value={dueDate} onChangeText={setDueDate} placeholder="YYYY-MM-DD" placeholderTextColor={Colors.textMuted} />
                 </View>
               </View>
 
-              <Text style={styles.sectionTitle}>Services</Text>
+              <Text style={styles.sectionTitle}>{t('invoice.servicesTitle')}</Text>
               {services.map((s, i) => (
                 <View key={i} style={styles.serviceRow}>
                   <TextInput style={[styles.modalInput, { flex: 2 }]} value={s.description} onChangeText={v => updateService(i, 'description', v)} placeholder="Description" placeholderTextColor={Colors.textMuted} />
@@ -316,30 +318,30 @@ export default function InvoiceScreen() {
               ))}
               <TouchableOpacity style={styles.addLineBtn} onPress={addServiceLine}>
                 <Ionicons name="add" size={16} color={Colors.secondary} />
-                <Text style={styles.addLineText}>Add Line</Text>
+                <Text style={styles.addLineText}>{t('invoice.addLine')}</Text>
               </TouchableOpacity>
 
-              <Text style={styles.modalLabel}>Tax Rate (%)</Text>
+              <Text style={styles.modalLabel}>{t('invoice.taxRateLabel')}</Text>
               <TextInput style={styles.modalInput} value={taxRate} onChangeText={setTaxRate} keyboardType="decimal-pad" placeholder="0" placeholderTextColor={Colors.textMuted} />
 
-              <Text style={styles.modalLabel}>Load Reference (optional)</Text>
+              <Text style={styles.modalLabel}>{t('invoice.loadRefLabel')}</Text>
               <TextInput style={styles.modalInput} value={loadRef} onChangeText={setLoadRef} placeholder="Load # or BOL" placeholderTextColor={Colors.textMuted} />
 
-              <Text style={styles.modalLabel}>Notes (optional)</Text>
+              <Text style={styles.modalLabel}>{t('invoice.notesLabel')}</Text>
               <TextInput style={[styles.modalInput, { height: 60 }]} value={notes} onChangeText={setNotes} multiline placeholder="Payment terms, thank you message..." placeholderTextColor={Colors.textMuted} />
 
               <View style={styles.totalsBox}>
-                <Text style={styles.totalLine}>Subtotal: {fmtMoney(subtotal)}</Text>
-                {parseFloat(taxRate) > 0 && <Text style={styles.totalLine}>Tax ({taxRate}%): {fmtMoney(taxAmount)}</Text>}
-                <Text style={styles.totalBig}>Total: {fmtMoney(total)}</Text>
+                <Text style={styles.totalLine}>{t('invoice.subtotalLabel')} {fmtMoney(subtotal)}</Text>
+                {parseFloat(taxRate) > 0 && <Text style={styles.totalLine}>{t('invoice.taxLineLabel', { rate: taxRate })} {fmtMoney(taxAmount)}</Text>}
+                <Text style={styles.totalBig}>{t('invoice.totalLabel')} {fmtMoney(total)}</Text>
               </View>
 
               <View style={styles.modalBtns}>
                 <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Create Invoice</Text>}
+                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{t('invoice.createInvoice')}</Text>}
                 </TouchableOpacity>
               </View>
             </ScrollView>

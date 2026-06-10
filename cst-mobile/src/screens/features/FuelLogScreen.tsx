@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView,
@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import { getFuelStops, addFuelStop, updateFuelStop, deleteFuelStop, uploadReceipt } from '../../api/features';
@@ -26,6 +27,7 @@ const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-
 
 export default function FuelLogScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
@@ -93,15 +95,15 @@ export default function FuelLogScreen() {
       setTotalGallons(data.totalGallons ?? 0);
       setTotalSpent(data.totalSpent ?? 0);
       setAvgPrice(data.avgPrice ?? 0);
-    } catch { Alert.alert('Error', 'Could not load fuel log'); }
+    } catch { Alert.alert(t('common.error'), t('fuelLog.loadError')); }
     finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const pickReceipt = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access to attach receipts'); return; }
+    if (status !== 'granted') { Alert.alert(t('fuelLog.permissionNeeded'), t('fuelLog.photoPermission')); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (!result.canceled && result.assets?.length) setReceiptUri(result.assets[0].uri);
   };
@@ -124,7 +126,7 @@ export default function FuelLogScreen() {
 
   const handleSave = async () => {
     if (!location.trim() || !state.trim() || !gallons || !price) {
-      Alert.alert('Error', 'Location, state, gallons, and price are required'); return;
+      Alert.alert(t('common.error'), t('fuelLog.requiredFields')); return;
     }
     let receiptUrl: string | undefined;
     if (receiptUri) {
@@ -149,19 +151,41 @@ export default function FuelLogScreen() {
       }
       setModal(false);
       load();
-    } catch (err: any) { Alert.alert('Error', err.message); }
+    } catch (err: any) { Alert.alert(t('common.error'), err.message); }
     finally { setSaving(false); }
   };
 
   const handleDelete = (stop: FuelStop) => {
-    Alert.alert('Delete Entry', `Remove stop at ${stop.location}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteFuelStop(stop._id); load(); } },
+    Alert.alert(t('fuelLog.deleteTitle'), `Remove stop at ${stop.location}?`, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await deleteFuelStop(stop._id);
+          load();
+        } catch (e: any) {
+          Alert.alert(t('common.error'), e.message ?? t('fuelLog.deleteError'));
+        }
+      }},
     ]);
   };
 
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
 
+  const summaryCards = [
+    { label: t('fuelLog.totalGallons'), value: totalGallons.toFixed(1),                                   icon: 'water-outline',         color: '#3498DB'        },
+    { label: t('fuelLog.totalSpent'),   value: totalSpent > 0 ? `$${totalSpent.toFixed(2)}` : '—',        icon: 'cash-outline',          color: Colors.danger    },
+    { label: t('fuelLog.avgPrice'),     value: avgPrice   > 0 ? `$${avgPrice.toFixed(3)}`   : '—',        icon: 'trending-down-outline', color: Colors.secondary },
+  ];
+
+  const formFields = [
+    { label: t('fuelLog.date'),        value: date,     set: setDate,     placeholder: 'YYYY-MM-DD', caps: 'none'       as const },
+    { label: t('fuelLog.location'),    value: location, set: setLocation, placeholder: 'Pilot, TA, Loves...', caps: 'none' as const },
+    { label: t('fuelLog.state'),       value: state,    set: setState,    placeholder: 'TX', caps: 'characters' as const },
+    { label: t('fuelLog.gallons'),     value: gallons,  set: setGallons,  placeholder: '0.000', keyboard: 'decimal-pad' as const, caps: 'none' as const },
+    { label: t('fuelLog.pricePerGal'), value: price,    set: setPrice,    placeholder: '0.000', keyboard: 'decimal-pad' as const, caps: 'none' as const },
+    { label: t('fuelLog.odometer'),    value: odometer, set: setOdometer, placeholder: '0', keyboard: 'decimal-pad' as const, caps: 'none' as const },
+    { label: t('fuelLog.notes'),       value: notes,    set: setNotes,    placeholder: 'Optional', caps: 'none' as const },
+  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -176,7 +200,7 @@ export default function FuelLogScreen() {
           <View style={styles.header}>
             {/* Page header */}
             <View style={{ marginBottom: 16 }}>
-              <Text style={{ color: Colors.text, fontSize: 24, fontWeight: '900' }}>Fuel Log</Text>
+              <Text style={{ color: Colors.text, fontSize: 24, fontWeight: '900' }}>{t('fuelLog.title')}</Text>
               <Text style={{ color: Colors.textMuted, fontSize: 13, marginTop: 3 }}>
                 Track every stop — gallons, price & mileage
               </Text>
@@ -184,11 +208,7 @@ export default function FuelLogScreen() {
 
             {/* Stats row */}
             <View style={styles.summaryRow}>
-              {[
-                { label: 'Total Gallons', value: totalGallons.toFixed(1), icon: 'water-outline',      color: '#3498DB'     },
-                { label: 'Total Spent',   value: totalSpent > 0 ? `$${totalSpent.toFixed(2)}` : '—', icon: 'cash-outline', color: Colors.danger },
-                { label: 'Avg Price',     value: avgPrice   > 0 ? `$${avgPrice.toFixed(3)}`   : '—', icon: 'trending-down-outline', color: Colors.secondary },
-              ].map(({ label, value, icon, color }) => (
+              {summaryCards.map(({ label, value, icon, color }) => (
                 <View key={label} style={styles.summaryCard}>
                   <Ionicons name={icon as any} size={18} color={color} />
                   <Text style={[styles.summaryValue, { color }]}>{value}</Text>
@@ -313,24 +333,16 @@ export default function FuelLogScreen() {
         <View style={styles.modalOverlay}>
           <ScrollView>
             <View style={styles.modalBox}>
-              <Text style={styles.modalTitle}>{editTarget ? 'Edit Fuel Stop' : 'Log Fuel Stop'}</Text>
+              <Text style={styles.modalTitle}>{editTarget ? t('fuelLog.editFillUp') : t('fuelLog.logFillUp')}</Text>
 
-              {[
-                { label: 'Date', value: date, set: setDate, placeholder: 'YYYY-MM-DD' },
-                { label: 'Location (Truck Stop / City) *', value: location, set: setLocation, placeholder: 'Pilot, TA, Loves...' },
-                { label: 'State (2-letter) *', value: state, set: setState, placeholder: 'TX' },
-                { label: 'Gallons *', value: gallons, set: setGallons, placeholder: '0.000', keyboard: 'decimal-pad' as const },
-                { label: 'Price per Gallon ($) *', value: price, set: setPrice, placeholder: '0.000', keyboard: 'decimal-pad' as const },
-                { label: 'Odometer (optional)', value: odometer, set: setOdometer, placeholder: '0', keyboard: 'decimal-pad' as const },
-                { label: 'Notes', value: notes, set: setNotes, placeholder: 'Optional' },
-              ].map(({ label, value, set, placeholder, keyboard }) => (
+              {formFields.map(({ label, value, set, placeholder, keyboard, caps }) => (
                 <View key={label}>
                   <Text style={styles.modalLabel}>{label}</Text>
                   <TextInput
                     style={styles.modalInput} value={value} onChangeText={set}
                     placeholder={placeholder} placeholderTextColor={Colors.textMuted}
                     keyboardType={keyboard ?? 'default'}
-                    autoCapitalize={label.includes('State') ? 'characters' : 'none'}
+                    autoCapitalize={caps}
                   />
                 </View>
               ))}
@@ -338,7 +350,7 @@ export default function FuelLogScreen() {
               {gallons && price && (
                 <View style={styles.previewBox}>
                   <Text style={styles.previewText}>
-                    Total: ${(parseFloat(gallons) * parseFloat(price)).toFixed(2)}
+                    {t('fuelLog.totalPreview', { amount: (parseFloat(gallons) * parseFloat(price)).toFixed(2) })}
                   </Text>
                 </View>
               )}
@@ -349,16 +361,18 @@ export default function FuelLogScreen() {
               >
                 <Ionicons name={receiptUri ? 'checkmark-circle' : 'camera-outline'} size={20} color={receiptUri ? Colors.success : Colors.secondary} />
                 <Text style={{ color: receiptUri ? Colors.success : Colors.secondary, fontSize: 13, fontWeight: '700' }}>
-                  {receiptUri ? 'Receipt photo selected' : 'Attach Pump Receipt Photo'}
+                  {receiptUri ? t('fuelLog.receiptAttached') : t('fuelLog.attachReceipt')}
                 </Text>
               </TouchableOpacity>
 
               <View style={styles.modalBtns}>
                 <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, (saving || uploadingReceipt) && { opacity: 0.6 }]} onPress={handleSave} disabled={saving || uploadingReceipt}>
-                  {(saving || uploadingReceipt) ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
+                  {(saving || uploadingReceipt)
+                    ? <ActivityIndicator size="small" color={Colors.textDark} />
+                    : <Text style={styles.saveText}>{editTarget ? t('tripLog.update') : t('common.save')}</Text>}
                 </TouchableOpacity>
               </View>
             </View>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getHOSEntries, logHOSEntry, deleteHOSEntry } from '../../api/features';
 
@@ -34,6 +35,7 @@ const statusColor = (driving: number, onDuty: number) => {
 
 export default function HOSTrackerScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
@@ -136,12 +138,12 @@ export default function HOSTrackerScreen() {
       const data = await getHOSEntries();
       setEntries(data.entries ?? []);
     } catch {
-      Alert.alert('Error', 'Could not load HOS entries');
+      Alert.alert(t('common.error'), t('hos.loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -177,10 +179,10 @@ export default function HOSTrackerScreen() {
   const handleSave = async () => {
     const d = parseFloat(drivingHours);
     const o = parseFloat(onDutyHours);
-    if (isNaN(d) || isNaN(o)) { Alert.alert('Error', 'Enter valid hours'); return; }
-    if (d > 11) { Alert.alert('Error', 'Driving hours cannot exceed 11'); return; }
-    if (o > 14) { Alert.alert('Error', 'On-duty hours cannot exceed 14'); return; }
-    if (d > o)  { Alert.alert('Error', 'Driving hours cannot exceed on-duty hours'); return; }
+    if (isNaN(d) || isNaN(o)) { Alert.alert(t('common.error'), t('hos.validHoursError')); return; }
+    if (d > 11) { Alert.alert(t('common.error'), t('hos.drivingExceedsError')); return; }
+    if (o > 14) { Alert.alert(t('common.error'), t('hos.onDutyExceedsError')); return; }
+    if (d > o)  { Alert.alert(t('common.error'), t('hos.drivingExceedsOnDuty')); return; }
 
     // 34-hr restart enforcement: block if cycle is already exhausted
     const existingToday = editEntry ? entries.filter(e => e._id !== editEntry._id) : entries;
@@ -188,9 +190,9 @@ export default function HOSTrackerScreen() {
     const projectedCycle = otherDays.reduce((sum, e) => sum + e.onDutyHours, 0) + o;
     if (projectedCycle > cycleLimit) {
       Alert.alert(
-        '34-Hour Restart Required',
+        t('hos.restartRequiredTitle'),
         `Adding ${o} on-duty hours would put your ${cycle}-hour cycle at ${projectedCycle.toFixed(1)} hrs — over the limit.\n\nYou must take a 34-consecutive-hour restart before logging more on-duty time.`,
-        [{ text: 'OK' }]
+        [{ text: t('common.ok') }]
       );
       return;
     }
@@ -198,9 +200,9 @@ export default function HOSTrackerScreen() {
     if (projectedCycle > cycleLimit - 10 && projectedCycle <= cycleLimit) {
       await new Promise<void>(resolve =>
         Alert.alert(
-          'Low Cycle Hours',
+          t('hos.lowCycleTitle'),
           `You will have only ${(cycleLimit - projectedCycle).toFixed(1)} hrs remaining in your ${cycle}-hr cycle after this entry.`,
-          [{ text: 'Continue', onPress: () => resolve() }, { text: 'Cancel', style: 'cancel', onPress: () => { setSaving(false); } }]
+          [{ text: t('common.continue'), onPress: () => resolve() }, { text: t('common.cancel'), style: 'cancel', onPress: () => { setSaving(false); } }]
         )
       );
     }
@@ -211,19 +213,23 @@ export default function HOSTrackerScreen() {
       setModal(false);
       load();
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('common.error'), err.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (entry: HOSEntry) => {
-    Alert.alert('Delete Entry', `Remove ${fmtDate(entry.date)}?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('hos.deleteEntryTitle'), `Remove ${fmtDate(entry.date)}?`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
-          await deleteHOSEntry(entry._id);
-          load();
+          try {
+            await deleteHOSEntry(entry._id);
+            load();
+          } catch (e: any) {
+            Alert.alert(t('common.error'), e.message ?? t('hos.deleteError'));
+          }
         },
       },
     ]);
@@ -235,6 +241,13 @@ export default function HOSTrackerScreen() {
     </View>
   );
 
+  const hosRules = [
+    { icon: 'car-outline',     label: t('hos.rule11Label'), value: t('hos.rule11Desc') },
+    { icon: 'time-outline',    label: t('hos.rule14Label'), value: t('hos.rule14Desc') },
+    { icon: 'bed-outline',     label: t('hos.rule10Label'), value: t('hos.rule10Desc') },
+    { icon: 'cafe-outline',    label: t('hos.rule30Label'), value: t('hos.rule30Desc') },
+    { icon: 'refresh-outline', label: t('hos.rule34Label'), value: t('hos.rule34Desc') },
+  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -252,7 +265,7 @@ export default function HOSTrackerScreen() {
               onPress={() => setCycle(c)}
             >
               <Text style={[styles.cycleBtnText, cycle === c && styles.cycleBtnTextActive]}>
-                {c === '70' ? '70 hr / 8-Day' : '60 hr / 7-Day'}
+                {c === '70' ? t('hos.cycle70') : t('hos.cycle60')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -262,13 +275,13 @@ export default function HOSTrackerScreen() {
         <View style={styles.summaryCard}>
           <View style={styles.summaryTop}>
             <View>
-              <Text style={styles.summaryLabel}>Hours Remaining</Text>
+              <Text style={styles.summaryLabel}>{t('hos.hoursRemaining')}</Text>
               <Text style={[styles.summaryValue, { color: cycleRemaining < 10 ? Colors.danger : Colors.secondary }]}>
                 {cycleRemaining.toFixed(1)} hrs
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
-              <Text style={styles.summaryLabel}>Used ({cycleDays}-Day)</Text>
+              <Text style={styles.summaryLabel}>{t('hos.usedLabel', { days: cycleDays })}</Text>
               <Text style={styles.summaryUsed}>{cycleTotal.toFixed(1)} / {cycleLimit} hrs</Text>
             </View>
           </View>
@@ -282,7 +295,9 @@ export default function HOSTrackerScreen() {
             <View style={styles.warningBadge}>
               <Ionicons name="warning-outline" size={14} color={Colors.danger} />
               <Text style={styles.warningText}>
-                {cycleRemaining <= 0 ? 'Cycle limit reached — 34-hr restart required' : `Only ${cycleRemaining.toFixed(1)} hrs left in cycle`}
+                {cycleRemaining <= 0
+                  ? t('hos.cycleLimitReached')
+                  : t('hos.hrsLeftInCycle', { hrs: cycleRemaining.toFixed(1) })}
               </Text>
             </View>
           )}
@@ -291,47 +306,41 @@ export default function HOSTrackerScreen() {
         {/* Today's status */}
         <View style={styles.todayCard}>
           <View style={styles.todayHeader}>
-            <Text style={styles.todayTitle}>Today</Text>
+            <Text style={styles.todayTitle}>{t('hos.today')}</Text>
             <TouchableOpacity style={styles.logBtn} onPress={openModal}>
               <Ionicons name={todayEntry ? 'pencil-outline' : 'add'} size={16} color={Colors.textDark} />
-              <Text style={styles.logBtnText}>{todayEntry ? 'Edit' : 'Log Hours'}</Text>
+              <Text style={styles.logBtnText}>{todayEntry ? t('hos.edit') : t('hos.logHours')}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.todayStats}>
             <View style={styles.todayStat}>
-              <Text style={styles.todayStatLabel}>Driving</Text>
+              <Text style={styles.todayStatLabel}>{t('hos.driving')}</Text>
               <Text style={[styles.todayStatValue, { color: statusColor(todayEntry?.drivingHours ?? 0, todayEntry?.onDutyHours ?? 0) }]}>
                 {todayEntry ? `${todayEntry.drivingHours}` : '—'} / 11
               </Text>
-              <Text style={styles.todayStatUnit}>hours</Text>
+              <Text style={styles.todayStatUnit}>{t('hos.hours')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.todayStat}>
-              <Text style={styles.todayStatLabel}>On-Duty Window</Text>
+              <Text style={styles.todayStatLabel}>{t('hos.onDutyWindow')}</Text>
               <Text style={[styles.todayStatValue, { color: statusColor(todayEntry?.drivingHours ?? 0, todayEntry?.onDutyHours ?? 0) }]}>
                 {todayEntry ? `${todayEntry.onDutyHours}` : '—'} / 14
               </Text>
-              <Text style={styles.todayStatUnit}>hours</Text>
+              <Text style={styles.todayStatUnit}>{t('hos.hours')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.todayStat}>
-              <Text style={styles.todayStatLabel}>Off-Duty Req.</Text>
+              <Text style={styles.todayStatLabel}>{t('hos.offDutyReq')}</Text>
               <Text style={styles.todayStatValue}>10</Text>
-              <Text style={styles.todayStatUnit}>hours min</Text>
+              <Text style={styles.todayStatUnit}>{t('hos.hoursMin')}</Text>
             </View>
           </View>
         </View>
 
         {/* HOS rules reminder */}
         <View style={styles.rulesCard}>
-          <Text style={styles.rulesTitle}>Federal HOS Rules (Property)</Text>
-          {[
-            { icon: 'car-outline',     label: '11-Hour Driving Limit',    value: 'Max 11 hrs driving after 10 off' },
-            { icon: 'time-outline',    label: '14-Hour On-Duty Window',   value: 'Must stop within 14 hrs of coming on duty' },
-            { icon: 'bed-outline',     label: '10-Hour Off-Duty',         value: 'Must have 10 consecutive hrs off' },
-            { icon: 'cafe-outline',    label: '30-Min Break',             value: 'Required after 8 hrs driving' },
-            { icon: 'refresh-outline', label: '34-Hour Restart',          value: 'Resets 60/70-hr cycle after 34 consecutive off-duty hrs' },
-          ].map(({ icon, label, value }) => (
+          <Text style={styles.rulesTitle}>{t('hos.federalRules')}</Text>
+          {hosRules.map(({ icon, label, value }) => (
             <View key={label} style={styles.ruleRow}>
               <Ionicons name={icon as any} size={18} color={Colors.secondary} />
               <View style={{ flex: 1 }}>
@@ -345,7 +354,7 @@ export default function HOSTrackerScreen() {
         {/* Log history */}
         {entries.length > 0 && (
           <View style={styles.historyCard}>
-            <Text style={styles.historyTitle}>Recent Log ({cycleDays}-Day Window)</Text>
+            <Text style={styles.historyTitle}>{t('hos.recentLog', { days: cycleDays })}</Text>
             {entries.slice(0, cycleDays).map((entry) => (
               <TouchableOpacity key={entry._id} style={styles.historyRow} onPress={() => openEditModal(entry)} onLongPress={() => handleDelete(entry)}>
                 <View style={styles.historyLeft}>
@@ -362,7 +371,7 @@ export default function HOSTrackerScreen() {
                 </View>
               </TouchableOpacity>
             ))}
-            <Text style={styles.longPressHint}>Tap to edit · Long-press to delete</Text>
+            <Text style={styles.longPressHint}>{t('hos.tapToEdit')}</Text>
           </View>
         )}
       </ScrollView>
@@ -371,22 +380,22 @@ export default function HOSTrackerScreen() {
       <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{editEntry ? 'Edit Hours' : 'Log Today\'s Hours'}</Text>
+            <Text style={styles.modalTitle}>{editEntry ? t('hos.editHoursTitle') : t('hos.logTodayTitle')}</Text>
             <Text style={styles.modalDate}>{editEntry ? fmtDate(editEntry.date) : fmtDate(todayStr())}</Text>
 
-            <Text style={styles.modalLabel}>Driving Hours (max 11)</Text>
+            <Text style={styles.modalLabel}>{t('hos.drivingHoursLabel')}</Text>
             <TextInput
               style={styles.modalInput} value={drivingHours} onChangeText={setDrivingHours}
               keyboardType="decimal-pad" placeholder="0–11" placeholderTextColor={Colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>On-Duty Hours (max 14)</Text>
+            <Text style={styles.modalLabel}>{t('hos.onDutyHoursLabel')}</Text>
             <TextInput
               style={styles.modalInput} value={onDutyHours} onChangeText={setOnDutyHours}
               keyboardType="decimal-pad" placeholder="0–14" placeholderTextColor={Colors.textMuted}
             />
 
-            <Text style={styles.modalLabel}>Notes (optional)</Text>
+            <Text style={styles.modalLabel}>{t('hos.notesOptional')}</Text>
             <TextInput
               style={styles.modalInput} value={notes} onChangeText={setNotes}
               placeholder="Rest area, weather, etc." placeholderTextColor={Colors.textMuted}
@@ -394,10 +403,12 @@ export default function HOSTrackerScreen() {
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editEntry ? 'Update' : 'Save'}</Text>}
+                {saving
+                  ? <ActivityIndicator size="small" color={Colors.textDark} />
+                  : <Text style={styles.saveText}>{editEntry ? t('tripLog.update') : t('common.save')}</Text>}
               </TouchableOpacity>
             </View>
           </View>

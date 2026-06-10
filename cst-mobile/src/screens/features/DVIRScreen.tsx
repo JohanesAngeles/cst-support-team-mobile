@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import { getDVIREntries, addDVIREntry, deleteDVIREntry, uploadReceipt } from '../../api/features';
@@ -30,6 +31,7 @@ const todayStr = () => new Date().toISOString().split('T')[0];
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function DVIRScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -102,7 +104,7 @@ export default function DVIRScreen() {
       const data = await getDVIREntries();
       setEntries(data.entries ?? []);
     } catch {
-      Alert.alert('Error', 'Could not load DVIR entries');
+      Alert.alert(t('common.error'), t('dvir.loadError'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -126,7 +128,7 @@ export default function DVIRScreen() {
 
   const pickDefectPhoto = async (idx: number) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow camera to document defects'); return; }
+    if (status !== 'granted') { Alert.alert(t('dvir.cameraPermTitle'), t('dvir.cameraPermMsg')); return; }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.7 });
     if (!result.canceled && result.assets?.length) {
       const uri = result.assets[0].uri;
@@ -135,7 +137,7 @@ export default function DVIRScreen() {
   };
 
   const handleSave = async () => {
-    if (!signature.trim()) { Alert.alert('Error', 'Driver signature is required'); return; }
+    if (!signature.trim()) { Alert.alert(t('common.error'), t('dvir.signatureRequired')); return; }
     setSaving(true);
     try {
       // Upload any defect photos before saving
@@ -160,16 +162,16 @@ export default function DVIRScreen() {
       setModal(false);
       load();
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert(t('common.error'), err.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (entry: DVIREntry) => {
-    Alert.alert('Delete DVIR', 'Remove this inspection report?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteDVIREntry(entry._id); load(); } },
+    Alert.alert(t('dvir.deleteTitle'), t('dvir.deleteMsg'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => { await deleteDVIREntry(entry._id); load(); } },
     ]);
   };
 
@@ -187,18 +189,18 @@ export default function DVIRScreen() {
       >
         <View style={styles.infoCard}>
           <Ionicons name="information-circle-outline" size={18} color={Colors.secondary} />
-          <Text style={styles.infoText}>FMCSA requires a DVIR before and after each trip. Defects must be repaired before operating.</Text>
+          <Text style={styles.infoText}>{t('dvir.fmcsaInfo')}</Text>
         </View>
 
         <TouchableOpacity style={styles.addBtn} onPress={openModal}>
           <Ionicons name="add-circle-outline" size={20} color={Colors.textDark} />
-          <Text style={styles.addBtnText}>New Inspection Report</Text>
+          <Text style={styles.addBtnText}>{t('dvir.newReport')}</Text>
         </TouchableOpacity>
 
         {entries.length === 0 ? (
           <View style={styles.emptyCard}>
             <Ionicons name="clipboard-outline" size={40} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No DVIR reports yet</Text>
+            <Text style={styles.emptyText}>{t('dvir.noReports')}</Text>
           </View>
         ) : (
           entries.map(entry => (
@@ -206,7 +208,7 @@ export default function DVIRScreen() {
               <View style={styles.entryHeader}>
                 <View style={[styles.typeBadge, { backgroundColor: entry.type === 'pre-trip' ? '#2ECC71' + '22' : '#3498DB' + '22' }]}>
                   <Text style={[styles.typeBadgeText, { color: entry.type === 'pre-trip' ? '#2ECC71' : '#3498DB' }]}>
-                    {entry.type === 'pre-trip' ? 'Pre-Trip' : 'Post-Trip'}
+                    {entry.type === 'pre-trip' ? t('dvir.preTrip') : t('dvir.postTrip')}
                   </Text>
                 </View>
                 <Text style={styles.entryDate}>{fmtDate(entry.createdAt)}</Text>
@@ -215,13 +217,13 @@ export default function DVIRScreen() {
                 <View style={[styles.defectBadge, { backgroundColor: entry.defectsFound ? Colors.danger + '22' : Colors.success + '22' }]}>
                   <Ionicons name={entry.defectsFound ? 'warning-outline' : 'checkmark-circle-outline'} size={14} color={entry.defectsFound ? Colors.danger : Colors.success} />
                   <Text style={[styles.defectText, { color: entry.defectsFound ? Colors.danger : Colors.success }]}>
-                    {entry.defectsFound ? 'Defects Found' : 'No Defects'}
+                    {entry.defectsFound ? t('dvir.defectsFound') : t('dvir.noDefects')}
                   </Text>
                 </View>
                 {entry.odometer ? <Text style={styles.entryMuted}>{entry.odometer.toLocaleString()} mi</Text> : null}
               </View>
-              <Text style={styles.signatureText}>Signed: {entry.driverSignature}</Text>
-              <Text style={styles.longPressHint}>Long-press to delete</Text>
+              <Text style={styles.signatureText}>{t('dvir.signed', { name: entry.driverSignature })}</Text>
+              <Text style={styles.longPressHint}>{t('dvir.longPressHint')}</Text>
             </TouchableOpacity>
           ))
         )}
@@ -231,7 +233,7 @@ export default function DVIRScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Inspection Report</Text>
+              <Text style={styles.modalTitle}>{t('dvir.modalTitle')}</Text>
               <TouchableOpacity onPress={() => setModal(false)}>
                 <Ionicons name="close" size={24} color={Colors.textMuted} />
               </TouchableOpacity>
@@ -240,19 +242,19 @@ export default function DVIRScreen() {
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 520 }}>
               {/* Type toggle */}
               <View style={styles.typeRow}>
-                {(['pre-trip', 'post-trip'] as const).map(t => (
-                  <TouchableOpacity key={t} style={[styles.typeBtn, tripType === t && styles.typeBtnActive]} onPress={() => setTripType(t)}>
-                    <Text style={[styles.typeBtnText, tripType === t && styles.typeBtnTextActive]}>
-                      {t === 'pre-trip' ? 'Pre-Trip' : 'Post-Trip'}
+                {(['pre-trip', 'post-trip'] as const).map(tt => (
+                  <TouchableOpacity key={tt} style={[styles.typeBtn, tripType === tt && styles.typeBtnActive]} onPress={() => setTripType(tt)}>
+                    <Text style={[styles.typeBtnText, tripType === tt && styles.typeBtnTextActive]}>
+                      {tt === 'pre-trip' ? t('dvir.preTrip') : t('dvir.postTrip')}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.modalLabel}>Odometer (optional)</Text>
+              <Text style={styles.modalLabel}>{t('dvir.odometerLabel')}</Text>
               <TextInput style={styles.modalInput} value={odometer} onChangeText={setOdometer} keyboardType="numeric" placeholder="Miles" placeholderTextColor={Colors.textMuted} />
 
-              <Text style={styles.modalSectionTitle}>Inspection Checklist ({defectCount} defect{defectCount !== 1 ? 's' : ''})</Text>
+              <Text style={styles.modalSectionTitle}>{t('dvir.checklistTitle', { n: defectCount, s: defectCount !== 1 ? 's' : '' })}</Text>
               {items.map((item, idx) => (
                 <View key={item.label} style={styles.checkRow}>
                   <Switch
@@ -274,21 +276,21 @@ export default function DVIRScreen() {
                 </View>
               ))}
 
-              <Text style={styles.modalLabel}>Remarks (optional)</Text>
+              <Text style={styles.modalLabel}>{t('dvir.remarksLabel')}</Text>
               <TextInput
                 style={[styles.modalInput, { height: 60 }]} value={remarks} onChangeText={setRemarks}
                 multiline placeholder="Any additional notes..." placeholderTextColor={Colors.textMuted}
               />
 
-              <Text style={styles.modalLabel}>Driver Signature (type full name) *</Text>
+              <Text style={styles.modalLabel}>{t('dvir.signatureLabel')}</Text>
               <TextInput style={styles.modalInput} value={signature} onChangeText={setSignature} placeholder="Full name" placeholderTextColor={Colors.textMuted} />
 
               <View style={styles.modalBtns}>
                 <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>Submit Report</Text>}
+                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{t('dvir.submitReport')}</Text>}
                 </TouchableOpacity>
               </View>
             </ScrollView>

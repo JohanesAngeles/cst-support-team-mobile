@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../api/auth';
 import { registerPushToken, unregisterPushToken } from '../utils/notifications';
+import { setLogoutHandler } from '../api/client';
 
 export interface User {
   _id: string;
@@ -119,6 +120,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setOnboarded(null);
   };
+
+  useEffect(() => {
+    setLogoutHandler(logout);
+  }, []);
 
   const markVerified = () => {
     setUser(prev => prev ? { ...prev, isVerified: true } : prev);

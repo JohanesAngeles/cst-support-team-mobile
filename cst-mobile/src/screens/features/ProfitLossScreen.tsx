@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getRevenue, getLiveRevenue, updateRevenue } from '../../api/features';
 
@@ -27,6 +28,7 @@ const fmtFull = (n: number) => `$${n.toLocaleString()}`;
 const EMPTY: RevenueData = { period: 'Month', grossRevenue: 0, netProfit: 0, totalMiles: 0, fuelCost: 0, expenses: [], trend: [] };
 
 export default function ProfitLossScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -109,7 +111,7 @@ export default function ProfitLossScreen() {
       if (manual.status === 'fulfilled') setData({ ...EMPTY, ...manual.value, period: p });
       if (live.status === 'fulfilled') setLiveData({ ...EMPTY, ...live.value, period: p });
     } catch {
-      Alert.alert('Error', 'Failed to load revenue data');
+      Alert.alert(t('common.error'), t('profitLoss.loadError'));
     } finally {
       setLoading(false);
     }
@@ -142,7 +144,7 @@ export default function ProfitLossScreen() {
       setData({ ...EMPTY, ...updated, period });
       setEditModal(false);
     } catch {
-      Alert.alert('Error', 'Failed to save');
+      Alert.alert(t('common.error'), t('profitLoss.saveError'));
     } finally {
       setSaving(false);
     }
@@ -169,7 +171,7 @@ export default function ProfitLossScreen() {
               style={[styles.periodBtn, period === p && styles.periodBtnActive]}
               onPress={() => setPeriod(p)}
             >
-              <Text style={[styles.periodText, period === p && styles.periodTextActive]}>{p}</Text>
+              <Text style={[styles.periodText, period === p && styles.periodTextActive]}>{t(`profitLoss.period${p}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -181,14 +183,14 @@ export default function ProfitLossScreen() {
               onPress={() => setShowLive(true)}
             >
               <Ionicons name="flash-outline" size={13} color={showLive ? Colors.textDark : Colors.textMuted} />
-              <Text style={[styles.toggleText, showLive && styles.toggleTextActive]}>Live</Text>
+              <Text style={[styles.toggleText, showLive && styles.toggleTextActive]}>{t('profitLoss.toggleLive')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, !showLive && styles.toggleBtnActive]}
               onPress={() => setShowLive(false)}
             >
               <Ionicons name="pencil-outline" size={13} color={!showLive ? Colors.textDark : Colors.textMuted} />
-              <Text style={[styles.toggleText, !showLive && styles.toggleTextActive]}>Manual</Text>
+              <Text style={[styles.toggleText, !showLive && styles.toggleTextActive]}>{t('profitLoss.toggleManual')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -198,15 +200,13 @@ export default function ProfitLossScreen() {
         ) : !hasData ? (
           <View style={styles.empty}>
             <Ionicons name="bar-chart-outline" size={52} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No data for this period</Text>
+            <Text style={styles.emptyText}>{t('profitLoss.noData')}</Text>
             <Text style={styles.emptySubText}>
-              {showLive
-                ? 'Add trips in Trip Log and costs in Expenses to see auto-calculated P&L'
-                : 'Tap the button below to enter your revenue and expense numbers'}
+              {showLive ? t('profitLoss.noDataLiveSub') : t('profitLoss.noDataManualSub')}
             </Text>
             {!showLive && (
               <TouchableOpacity style={styles.emptyBtn} onPress={openEdit}>
-                <Text style={styles.emptyBtnText}>Enter {period} Data</Text>
+                <Text style={styles.emptyBtnText}>{t('profitLoss.enterPeriodData', { period: t(`profitLoss.period${period}`) })}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -214,21 +214,21 @@ export default function ProfitLossScreen() {
           <>
             <View style={styles.heroRow}>
               <View style={styles.heroCard}>
-                <Text style={styles.heroLabel}>Gross Revenue</Text>
+                <Text style={styles.heroLabel}>{t('profitLoss.grossRevenue')}</Text>
                 <Text style={styles.heroValue}>{fmtFull(d.grossRevenue)}</Text>
               </View>
               <View style={[styles.heroCard, styles.heroCardProfit]}>
-                <Text style={styles.heroLabel}>Net Profit</Text>
+                <Text style={styles.heroLabel}>{t('profitLoss.netProfit')}</Text>
                 <Text style={[styles.heroValue, { color: Colors.success }]}>{fmtFull(d.netProfit)}</Text>
               </View>
             </View>
 
             <View style={styles.kpiRow}>
               {[
-                { label: 'Profit Margin', value: `${margin}%`, icon: 'trending-up-outline', color: Colors.success },
-                { label: 'Cost/Mile',     value: `$${cpm}`,    icon: 'speedometer-outline', color: '#E67E22' },
-                { label: 'Total Miles',   value: d.totalMiles > 0 ? d.totalMiles.toLocaleString() : '—', icon: 'map-outline', color: '#3498DB' },
-                { label: 'Fuel %',        value: `${fuelPct}%`, icon: 'water-outline', color: '#9B59B6' },
+                { label: t('profitLoss.profitMargin'), value: `${margin}%`, icon: 'trending-up-outline', color: Colors.success },
+                { label: t('profitLoss.costPerMile'),  value: `$${cpm}`,    icon: 'speedometer-outline', color: '#E67E22' },
+                { label: t('profitLoss.totalMiles'),   value: d.totalMiles > 0 ? d.totalMiles.toLocaleString() : '—', icon: 'map-outline', color: '#3498DB' },
+                { label: t('profitLoss.fuelPct'),      value: `${fuelPct}%`, icon: 'water-outline', color: '#9B59B6' },
               ].map(({ label, value, icon, color }) => (
                 <View key={label} style={styles.kpiCard}>
                   <Ionicons name={icon as any} size={18} color={color} />
@@ -240,7 +240,7 @@ export default function ProfitLossScreen() {
 
             {d.trend.length > 1 && (
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Revenue Trend (Last {d.trend.length} Periods)</Text>
+                <Text style={styles.cardTitle}>{t('profitLoss.trendTitle', { n: d.trend.length })}</Text>
                 <View style={styles.chartRow}>
                   {d.trend.map((val, i) => {
                     const barHeight = Math.round((val / maxTrend) * 80);
@@ -261,8 +261,8 @@ export default function ProfitLossScreen() {
 
             {d.expenses.length > 0 && totalExpenses > 0 && (
               <View style={styles.card}>
-                <Text style={styles.cardTitle}>Expense Breakdown</Text>
-                <Text style={styles.totalExpenses}>Total: {fmtFull(totalExpenses)}</Text>
+                <Text style={styles.cardTitle}>{t('profitLoss.expenseBreakdown')}</Text>
+                <Text style={styles.totalExpenses}>{t('profitLoss.expenseTotal', { amount: fmtFull(totalExpenses) })}</Text>
                 <View style={styles.stackBar}>
                   {d.expenses.map((exp) => (
                     <View key={exp.label} style={[styles.stackSegment, { flex: exp.amount / totalExpenses, backgroundColor: exp.color }]} />
@@ -288,13 +288,13 @@ export default function ProfitLossScreen() {
             <View style={[styles.card, styles.summaryCard]}>
               <Ionicons name="trophy-outline" size={24} color={Colors.secondary} />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={styles.summaryTitle}>Performance Summary</Text>
+                <Text style={styles.summaryTitle}>{t('profitLoss.performanceSummary')}</Text>
                 <Text style={styles.summaryText}>
                   {parseFloat(margin) >= 30
-                    ? `Excellent! ${margin}% margin is above target.`
+                    ? t('profitLoss.perfExcellent', { margin })
                     : parseFloat(margin) >= 20
-                    ? `Good. ${margin}% margin — aim for 30%+.`
-                    : `Margin at ${margin}% — review fuel and repair costs.`}
+                    ? t('profitLoss.perfGood', { margin })
+                    : t('profitLoss.perfLow', { margin })}
                 </Text>
               </View>
             </View>
@@ -302,12 +302,12 @@ export default function ProfitLossScreen() {
             {showLive ? (
               <TouchableOpacity style={styles.updateBtn} onPress={() => { setShowLive(false); openEdit(); }}>
                 <Ionicons name="pencil-outline" size={18} color={Colors.textDark} />
-                <Text style={styles.updateBtnText}>Override with Manual Numbers</Text>
+                <Text style={styles.updateBtnText}>{t('profitLoss.overrideBtn')}</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={styles.updateBtn} onPress={openEdit}>
                 <Ionicons name="pencil-outline" size={18} color={Colors.textDark} />
-                <Text style={styles.updateBtnText}>Update {period} Numbers</Text>
+                <Text style={styles.updateBtnText}>{t('profitLoss.updateBtn', { period: t(`profitLoss.period${period}`) })}</Text>
               </TouchableOpacity>
             )}
           </>
@@ -317,12 +317,12 @@ export default function ProfitLossScreen() {
       <Modal visible={editModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Enter {period} Revenue</Text>
+            <Text style={styles.modalTitle}>{t('profitLoss.modalTitle', { period: t(`profitLoss.period${period}`) })}</Text>
             {[
-              { label: 'Gross Revenue ($)', val: grossRev, set: setGrossRev, ph: '0' },
-              { label: 'Net Profit ($)', val: netPr, set: setNetPr, ph: '0' },
-              { label: 'Total Miles', val: totalMi, set: setTotalMi, ph: '0' },
-              { label: 'Fuel Cost ($)', val: fuelC, set: setFuelC, ph: '0' },
+              { label: t('profitLoss.grossRevLabel'), val: grossRev, set: setGrossRev, ph: '0' },
+              { label: t('profitLoss.netProfitLabel'), val: netPr, set: setNetPr, ph: '0' },
+              { label: t('profitLoss.totalMilesLabel'), val: totalMi, set: setTotalMi, ph: '0' },
+              { label: t('profitLoss.fuelCostLabel'), val: fuelC, set: setFuelC, ph: '0' },
             ].map(({ label, val, set, ph }) => (
               <View key={label}>
                 <Text style={styles.modalLabel}>{label}</Text>
@@ -330,9 +330,9 @@ export default function ProfitLossScreen() {
               </View>
             ))}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModal(false)}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModal(false)}><Text style={styles.cancelText}>{t('common.cancel')}</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.confirmBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.confirmText}>Save</Text>}
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.confirmText}>{t('common.save')}</Text>}
               </TouchableOpacity>
             </View>
           </View>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView, Share,
@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import * as ImagePicker from 'expo-image-picker';
 import { getExpenses, addExpense, updateExpense, deleteExpense, getTrips, uploadReceipt } from '../../api/features';
@@ -44,6 +45,7 @@ const fmtDate = (d: string) =>
 
 export default function ExpensesScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
@@ -106,23 +108,23 @@ export default function ExpensesScreen() {
     try {
       const [expData, tripData] = await Promise.all([getExpenses(), getTrips()]);
       setExpenses(Array.isArray(expData) ? expData : []);
-      const t = tripData?.trips ?? tripData;
-      setTrips(Array.isArray(t) ? t.slice(0, 30) : []);
-    } catch { Alert.alert('Error', 'Could not load expenses'); }
+      const tripArr = tripData?.trips ?? tripData;
+      setTrips(Array.isArray(tripArr) ? tripArr.slice(0, 30) : []);
+    } catch { Alert.alert(t('common.error'), t('expenses.loadError')); }
     finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const exportCSV = useCallback(() => {
-    if (expenses.length === 0) { Alert.alert('Nothing to export', 'Log some expenses first.'); return; }
+    if (expenses.length === 0) { Alert.alert(t('expenses.nothingToExport'), t('expenses.noExpensesFirst')); return; }
     const q = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
     const header = 'Date,Category,Amount ($),Description';
     const rows = expenses.map(e =>
       [new Date(e.createdAt).toLocaleDateString('en-US'), e.category, e.amount.toFixed(2), q(e.description)].join(',')
     );
     Share.share({ message: [header, ...rows].join('\n'), title: 'Expenses.csv' });
-  }, [expenses]);
+  }, [expenses, t]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -136,7 +138,7 @@ export default function ExpensesScreen() {
 
   const pickReceipt = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Permission needed', 'Allow photo access to attach receipts'); return; }
+    if (status !== 'granted') { Alert.alert(t('expenses.permissionNeeded'), t('expenses.photoPermission')); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
     if (!result.canceled && result.assets?.length) setReceiptUri(result.assets[0].uri);
   };
@@ -156,7 +158,7 @@ export default function ExpensesScreen() {
 
   const handleSave = async () => {
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0) { Alert.alert('Error', 'Enter a valid amount'); return; }
+    if (!amt || amt <= 0) { Alert.alert(t('common.error'), t('expenses.invalidAmount')); return; }
     setSaving(true);
     try {
       let receiptUrl: string | undefined;
@@ -175,14 +177,23 @@ export default function ExpensesScreen() {
       }
       setModal(false);
       load();
-    } catch (err: any) { Alert.alert('Error', err.message); }
+    } catch (err: any) { Alert.alert(t('common.error'), err.message); }
     finally { setSaving(false); }
   };
 
   const handleDelete = (e: Expense) => {
-    Alert.alert('Delete Expense', `Remove $${e.amount.toFixed(2)} ${e.category}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteExpense(e._id); load(); } },
+    Alert.alert(t('expenses.deleteTitle'), `Remove $${e.amount.toFixed(2)} ${e.category}?`, [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await deleteExpense(e._id);
+            load();
+          } catch (err: any) {
+            Alert.alert(t('common.error'), err.message ?? t('expenses.deleteError'));
+          }
+        },
+      },
     ]);
   };
 
@@ -211,7 +222,7 @@ export default function ExpensesScreen() {
           <>
             {/* Total banner */}
             <View style={styles.totalBanner}>
-              <Text style={styles.totalLabel}>Total Expenses</Text>
+              <Text style={styles.totalLabel}>{t('expenses.totalExpenses')}</Text>
               <Text style={styles.totalValue}>${totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
             </View>
 
@@ -222,7 +233,7 @@ export default function ExpensesScreen() {
                   style={[styles.catChip, !filterCat && styles.catChipActive]}
                   onPress={() => setFilterCat(null)}
                 >
-                  <Text style={[styles.catChipText, !filterCat && styles.catChipTextActive]}>All</Text>
+                  <Text style={[styles.catChipText, !filterCat && styles.catChipTextActive]}>{t('expenses.all')}</Text>
                 </TouchableOpacity>
                 {byCategory.map(c => (
                   <TouchableOpacity
@@ -242,8 +253,10 @@ export default function ExpensesScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="receipt-outline" size={48} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>{filterCat ? `No ${filterCat} expenses` : 'No expenses yet'}</Text>
-            <Text style={styles.emptySub}>Tap + to log an expense</Text>
+            <Text style={styles.emptyText}>
+              {filterCat ? t('expenses.noExpensesInCat', { cat: filterCat }) : t('expenses.noExpenses')}
+            </Text>
+            <Text style={styles.emptySub}>{t('expenses.tapToAdd')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -265,10 +278,10 @@ export default function ExpensesScreen() {
                   <Text style={styles.cardDate}>{fmtDate(item.createdAt)}</Text>
                 </View>
                 {item.tripId ? (() => {
-                  const t = trips.find(tr => tr._id === item.tripId);
-                  return t ? (
+                  const tr = trips.find(x => x._id === item.tripId);
+                  return tr ? (
                     <Text style={{ color: Colors.secondary, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
-                      Trip: {t.origin} → {t.destination}{t.loadNum ? ` #${t.loadNum}` : ''}
+                      Trip: {tr.origin} → {tr.destination}{tr.loadNum ? ` #${tr.loadNum}` : ''}
                     </Text>
                   ) : null;
                 })() : null}
@@ -285,9 +298,9 @@ export default function ExpensesScreen() {
       <Modal visible={modal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{editTarget ? 'Edit Expense' : 'Log Expense'}</Text>
+            <Text style={styles.modalTitle}>{editTarget ? t('expenses.editExpense') : t('expenses.addExpense')}</Text>
 
-            <Text style={styles.modalLabel}>Category</Text>
+            <Text style={styles.modalLabel}>{t('expenses.categoryLabel')}</Text>
             <View style={styles.catGrid}>
               {CATEGORIES.map(c => (
                 <TouchableOpacity
@@ -301,14 +314,14 @@ export default function ExpensesScreen() {
               ))}
             </View>
 
-            <Text style={styles.modalLabel}>Amount ($) *</Text>
+            <Text style={styles.modalLabel}>{t('expenses.amountLabel')}</Text>
             <TextInput
               style={styles.modalInput} value={amount} onChangeText={setAmount}
               placeholder="0.00" placeholderTextColor={Colors.textMuted}
               keyboardType="decimal-pad"
             />
 
-            <Text style={styles.modalLabel}>Description (optional)</Text>
+            <Text style={styles.modalLabel}>{t('expenses.descriptionLabel')}</Text>
             <TextInput
               style={styles.modalInput} value={description} onChangeText={setDescription}
               placeholder="What was it for?" placeholderTextColor={Colors.textMuted}
@@ -316,7 +329,7 @@ export default function ExpensesScreen() {
 
             {trips.length > 0 && (
               <>
-                <Text style={styles.modalLabel}>Link to Trip (optional)</Text>
+                <Text style={styles.modalLabel}>{t('expenses.tripLabel')}</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity
@@ -325,14 +338,14 @@ export default function ExpensesScreen() {
                     >
                       <Text style={[styles.catOptionText, !tripId && { color: Colors.secondary }]}>None</Text>
                     </TouchableOpacity>
-                    {trips.map(t => (
+                    {trips.map(tr => (
                       <TouchableOpacity
-                        key={t._id}
-                        style={[styles.catOption, tripId === t._id && { backgroundColor: Colors.secondary + '33', borderColor: Colors.secondary }]}
-                        onPress={() => setTripId(t._id)}
+                        key={tr._id}
+                        style={[styles.catOption, tripId === tr._id && { backgroundColor: Colors.secondary + '33', borderColor: Colors.secondary }]}
+                        onPress={() => setTripId(tr._id)}
                       >
-                        <Text style={[styles.catOptionText, tripId === t._id && { color: Colors.secondary }]} numberOfLines={1}>
-                          {t.origin} → {t.destination}{t.loadNum ? ` #${t.loadNum}` : ''}
+                        <Text style={[styles.catOptionText, tripId === tr._id && { color: Colors.secondary }]} numberOfLines={1}>
+                          {tr.origin} → {tr.destination}{tr.loadNum ? ` #${tr.loadNum}` : ''}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -347,16 +360,18 @@ export default function ExpensesScreen() {
             >
               <Ionicons name={receiptUri ? 'checkmark-circle' : 'camera-outline'} size={20} color={receiptUri ? Colors.success : Colors.secondary} />
               <Text style={{ color: receiptUri ? Colors.success : Colors.secondary, fontSize: 13, fontWeight: '700' }}>
-                {receiptUri ? 'Receipt photo selected' : 'Attach Receipt Photo'}
+                {receiptUri ? t('expenses.receiptAttached') : t('expenses.attachReceipt')}
               </Text>
             </TouchableOpacity>
 
             <View style={styles.modalBtns}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.saveBtn, (saving || uploadingReceipt) && { opacity: 0.6 }]} onPress={handleSave} disabled={saving || uploadingReceipt}>
-                {(saving || uploadingReceipt) ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
+                {(saving || uploadingReceipt)
+                  ? <ActivityIndicator size="small" color={Colors.textDark} />
+                  : <Text style={styles.saveText}>{editTarget ? t('tripLog.update') : t('common.save')}</Text>}
               </TouchableOpacity>
             </View>
           </View>

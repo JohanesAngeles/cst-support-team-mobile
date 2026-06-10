@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getLoads, addLoad, updateLoad, updateLoadStatus, deleteLoad } from '../../api/features';
 
@@ -27,21 +28,12 @@ interface Load {
 }
 
 const STATUS_ORDER: LoadStatus[] = ['booked', 'in_transit', 'delivered', 'invoiced', 'paid'];
-const STATUS_LABELS: Record<LoadStatus, string> = {
-  booked: 'Booked', in_transit: 'In Transit', delivered: 'Delivered', invoiced: 'Invoiced', paid: 'Paid',
-};
+// STATUS_LABELS built inside component with t()
 const STATUS_COLORS: Record<LoadStatus, string> = {
   booked: '#3498DB', in_transit: '#E67E22', delivered: '#2ECC71', invoiced: '#9B59B6', paid: '#27AE60',
 };
 
-const FILTERS: Array<{ label: string; value: string }> = [
-  { label: 'All', value: '' },
-  { label: 'Booked', value: 'booked' },
-  { label: 'In Transit', value: 'in_transit' },
-  { label: 'Delivered', value: 'delivered' },
-  { label: 'Invoiced', value: 'invoiced' },
-  { label: 'Paid', value: 'paid' },
-];
+// FILTERS built inside component with t()
 
 const blank = () => ({
   loadNumber: '', brokerName: '', brokerMc: '', brokerPhone: '', brokerEmail: '',
@@ -51,7 +43,20 @@ const blank = () => ({
 });
 
 export default function LoadBoardScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
+  const STATUS_LABELS: Record<LoadStatus, string> = {
+    booked: t('loadBoard.filterBooked'), in_transit: t('loadBoard.filterInTransit'),
+    delivered: t('loadBoard.filterDelivered'), invoiced: t('loadBoard.filterInvoiced'), paid: t('loadBoard.filterPaid'),
+  };
+  const FILTERS: Array<{ label: string; value: string }> = [
+    { label: t('loadBoard.filterAll'), value: '' },
+    { label: t('loadBoard.filterBooked'), value: 'booked' },
+    { label: t('loadBoard.filterInTransit'), value: 'in_transit' },
+    { label: t('loadBoard.filterDelivered'), value: 'delivered' },
+    { label: t('loadBoard.filterInvoiced'), value: 'invoiced' },
+    { label: t('loadBoard.filterPaid'), value: 'paid' },
+  ];
   const s = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background },
@@ -116,7 +121,7 @@ export default function LoadBoardScreen() {
     try {
       const data = await getLoads(filter || undefined);
       setLoads(data.loads ?? []);
-    } catch { Alert.alert('Error', 'Could not load loads'); }
+    } catch { Alert.alert(t('common.error'), t('loadBoard.loadError')); }
     finally { setLoading(false); setRefreshing(false); }
   }, [filter]);
 
@@ -149,7 +154,7 @@ export default function LoadBoardScreen() {
   const handleSave = async () => {
     if (!form.brokerName.trim() || !form.shipperName.trim() || !form.shipperCity.trim() || !form.shipperState.trim() ||
         !form.consigneeName.trim() || !form.consigneeCity.trim() || !form.consigneeState.trim() || !form.rate) {
-      Alert.alert('Error', 'Broker name, shipper, consignee, and rate are required'); return;
+      Alert.alert(t('common.error'), t('loadBoard.requiredFields')); return;
     }
     const payload = {
       loadNumber: form.loadNumber.trim() || undefined,
@@ -168,14 +173,14 @@ export default function LoadBoardScreen() {
       else { await addLoad(payload); }
       setModal(false);
       load();
-    } catch (err: any) { Alert.alert('Error', err.message); }
+    } catch (err: any) { Alert.alert(t('common.error'), err.message); }
     finally { setSaving(false); }
   };
 
   const handleDelete = (l: Load) => {
-    Alert.alert('Delete Load', `Remove load #${l.loadNumber || l._id.slice(-6)}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => { await deleteLoad(l._id); setDetailLoad(null); load(); } },
+    Alert.alert(t('loadBoard.deleteTitle'), t('loadBoard.deleteMsg', { num: l.loadNumber || l._id.slice(-6) }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => { await deleteLoad(l._id); setDetailLoad(null); load(); } },
     ]);
   };
 
@@ -187,7 +192,7 @@ export default function LoadBoardScreen() {
       await updateLoadStatus(l._id, next);
       load();
       if (detailLoad?._id === l._id) setDetailLoad({ ...detailLoad, status: next });
-    } catch (err: any) { Alert.alert('Error', err.message); }
+    } catch (err: any) { Alert.alert(t('common.error'), err.message); }
   };
 
   if (loading) return <View style={s.center}><ActivityIndicator size="large" color={Colors.secondary} /></View>;
@@ -214,8 +219,8 @@ export default function LoadBoardScreen() {
         ListEmptyComponent={
           <View style={s.empty}>
             <Ionicons name="cube-outline" size={48} color={Colors.textMuted} />
-            <Text style={s.emptyText}>No loads yet</Text>
-            <Text style={s.emptySub}>Tap + to add your first load</Text>
+            <Text style={s.emptyText}>{t('loadBoard.noLoads')}</Text>
+            <Text style={s.emptySub}>{t('loadBoard.noLoadsSub')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -271,26 +276,26 @@ export default function LoadBoardScreen() {
                       <Text style={[s.statusText, { color }]}>{STATUS_LABELS[detailLoad.status]}</Text>
                     </View>
 
-                    {detailLoad.loadNumber ? <Text style={s.detailLabel}>Load # <Text style={s.detailValue}>{detailLoad.loadNumber}</Text></Text> : null}
+                    {detailLoad.loadNumber ? <Text style={s.detailLabel}>{t('loadBoard.loadNumber')} <Text style={s.detailValue}>{detailLoad.loadNumber}</Text></Text> : null}
 
-                    <Text style={s.sectionHead}>Shipper</Text>
+                    <Text style={s.sectionHead}>{t('loadBoard.shipper')}</Text>
                     <Text style={s.detailValue}>{detailLoad.shipper.name}</Text>
                     <Text style={s.detailSub}>{detailLoad.shipper.city}, {detailLoad.shipper.state}</Text>
                     {detailLoad.shipper.date ? <Text style={s.detailSub}>{detailLoad.shipper.date}{detailLoad.shipper.time ? ` @ ${detailLoad.shipper.time}` : ''}</Text> : null}
 
-                    <Text style={s.sectionHead}>Consignee</Text>
+                    <Text style={s.sectionHead}>{t('loadBoard.consignee')}</Text>
                     <Text style={s.detailValue}>{detailLoad.consignee.name}</Text>
                     <Text style={s.detailSub}>{detailLoad.consignee.city}, {detailLoad.consignee.state}</Text>
                     {detailLoad.consignee.date ? <Text style={s.detailSub}>{detailLoad.consignee.date}{detailLoad.consignee.time ? ` @ ${detailLoad.consignee.time}` : ''}</Text> : null}
 
-                    <Text style={s.sectionHead}>Rate & Load</Text>
+                    <Text style={s.sectionHead}>{t('loadBoard.rateAndLoad')}</Text>
                     <Text style={s.cardRate}>${detailLoad.rate.toLocaleString()}</Text>
                     {detailLoad.miles ? <Text style={s.detailSub}>{detailLoad.miles} miles</Text> : null}
                     {detailLoad.commodity ? <Text style={s.detailSub}>{detailLoad.commodity}{detailLoad.weight ? ` · ${detailLoad.weight.toLocaleString()} lbs` : ''}</Text> : null}
 
                     {detailLoad.broker.phone || detailLoad.broker.email ? (
                       <>
-                        <Text style={s.sectionHead}>Broker Contact</Text>
+                        <Text style={s.sectionHead}>{t('loadBoard.brokerContact')}</Text>
                         {detailLoad.broker.phone ? <Text style={s.detailSub}>{detailLoad.broker.phone}</Text> : null}
                         {detailLoad.broker.email ? <Text style={s.detailSub}>{detailLoad.broker.email}</Text> : null}
                         {detailLoad.broker.mc ? <Text style={s.detailSub}>MC# {detailLoad.broker.mc}</Text> : null}
@@ -299,7 +304,7 @@ export default function LoadBoardScreen() {
 
                     {detailLoad.notes ? (
                       <>
-                        <Text style={s.sectionHead}>Notes</Text>
+                        <Text style={s.sectionHead}>{t('loadBoard.notesSection')}</Text>
                         <Text style={s.detailSub}>{detailLoad.notes}</Text>
                       </>
                     ) : null}
@@ -307,7 +312,7 @@ export default function LoadBoardScreen() {
                     <View style={s.modalBtns}>
                       <TouchableOpacity style={s.editBtn} onPress={() => openEdit(detailLoad)}>
                         <Ionicons name="pencil-outline" size={16} color={Colors.white} />
-                        <Text style={s.editBtnText}>Edit</Text>
+                        <Text style={s.editBtnText}>{t('cdl.edit')}</Text>
                       </TouchableOpacity>
                       {detailLoad.status !== 'paid' && (
                         <TouchableOpacity style={[s.nextBtn, { backgroundColor: color }]} onPress={() => cycleStatus(detailLoad)}>
@@ -334,14 +339,14 @@ export default function LoadBoardScreen() {
         <View style={s.overlay}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={s.modalBox}>
-              <Text style={s.modalTitle}>{editTarget ? 'Edit Load' : 'Add Load'}</Text>
+              <Text style={s.modalTitle}>{editTarget ? t('loadBoard.editLoad') : t('loadBoard.addLoad')}</Text>
 
-              <Text style={s.groupLabel}>BROKER</Text>
+              <Text style={s.groupLabel}>{t('loadBoard.brokerGroup')}</Text>
               {[
-                { label: 'Broker Name *', key: 'brokerName' as const, ph: 'XPO, Echo, Coyote...' },
-                { label: 'MC Number', key: 'brokerMc' as const, ph: 'MC123456' },
-                { label: 'Phone', key: 'brokerPhone' as const, ph: '555-000-0000', kbd: 'phone-pad' as const },
-                { label: 'Email', key: 'brokerEmail' as const, ph: 'broker@company.com', kbd: 'email-address' as const },
+                { label: t('loadBoard.brokerName'), key: 'brokerName' as const, ph: 'XPO, Echo, Coyote...' },
+                { label: t('loadBoard.mcNumber'), key: 'brokerMc' as const, ph: 'MC123456' },
+                { label: t('loadBoard.phone'), key: 'brokerPhone' as const, ph: '555-000-0000', kbd: 'phone-pad' as const },
+                { label: t('loadBoard.emailLabel'), key: 'brokerEmail' as const, ph: 'broker@company.com', kbd: 'email-address' as const },
               ].map(({ label, key, ph, kbd }) => (
                 <View key={key}>
                   <Text style={s.inputLabel}>{label}</Text>
@@ -349,13 +354,13 @@ export default function LoadBoardScreen() {
                 </View>
               ))}
 
-              <Text style={s.groupLabel}>SHIPPER (PICKUP)</Text>
+              <Text style={s.groupLabel}>{t('loadBoard.shipperGroup')}</Text>
               {[
-                { label: 'Company Name *', key: 'shipperName' as const, ph: 'Shipper Corp' },
-                { label: 'City *', key: 'shipperCity' as const, ph: 'Houston' },
-                { label: 'State *', key: 'shipperState' as const, ph: 'TX', upper: true },
-                { label: 'Date', key: 'shipperDate' as const, ph: 'YYYY-MM-DD' },
-                { label: 'Time', key: 'shipperTime' as const, ph: '08:00 AM' },
+                { label: t('loadBoard.companyName'), key: 'shipperName' as const, ph: 'Shipper Corp' },
+                { label: t('loadBoard.city'), key: 'shipperCity' as const, ph: 'Houston' },
+                { label: t('loadBoard.state'), key: 'shipperState' as const, ph: 'TX', upper: true },
+                { label: t('loadBoard.date'), key: 'shipperDate' as const, ph: 'YYYY-MM-DD' },
+                { label: t('loadBoard.time'), key: 'shipperTime' as const, ph: '08:00 AM' },
               ].map(({ label, key, ph, upper }) => (
                 <View key={key}>
                   <Text style={s.inputLabel}>{label}</Text>
@@ -363,13 +368,13 @@ export default function LoadBoardScreen() {
                 </View>
               ))}
 
-              <Text style={s.groupLabel}>CONSIGNEE (DELIVERY)</Text>
+              <Text style={s.groupLabel}>{t('loadBoard.consigneeGroup')}</Text>
               {[
-                { label: 'Company Name *', key: 'consigneeName' as const, ph: 'Receiver Inc' },
-                { label: 'City *', key: 'consigneeCity' as const, ph: 'Dallas' },
-                { label: 'State *', key: 'consigneeState' as const, ph: 'TX', upper: true },
-                { label: 'Date', key: 'consigneeDate' as const, ph: 'YYYY-MM-DD' },
-                { label: 'Time', key: 'consigneeTime' as const, ph: '05:00 PM' },
+                { label: t('loadBoard.companyName'), key: 'consigneeName' as const, ph: 'Receiver Inc' },
+                { label: t('loadBoard.city'), key: 'consigneeCity' as const, ph: 'Dallas' },
+                { label: t('loadBoard.state'), key: 'consigneeState' as const, ph: 'TX', upper: true },
+                { label: t('loadBoard.date'), key: 'consigneeDate' as const, ph: 'YYYY-MM-DD' },
+                { label: t('loadBoard.time'), key: 'consigneeTime' as const, ph: '05:00 PM' },
               ].map(({ label, key, ph, upper }) => (
                 <View key={key}>
                   <Text style={s.inputLabel}>{label}</Text>
@@ -377,14 +382,14 @@ export default function LoadBoardScreen() {
                 </View>
               ))}
 
-              <Text style={s.groupLabel}>LOAD DETAILS</Text>
+              <Text style={s.groupLabel}>{t('loadBoard.loadDetailsGroup')}</Text>
               {[
-                { label: 'Load Number', key: 'loadNumber' as const, ph: 'LD-0001' },
-                { label: 'Commodity', key: 'commodity' as const, ph: 'Dry Van, Refrigerated...' },
-                { label: 'Weight (lbs)', key: 'weight' as const, ph: '45000', kbd: 'decimal-pad' as const },
-                { label: 'Miles', key: 'miles' as const, ph: '500', kbd: 'decimal-pad' as const },
-                { label: 'Rate ($) *', key: 'rate' as const, ph: '2500.00', kbd: 'decimal-pad' as const },
-                { label: 'Notes', key: 'notes' as const, ph: 'Any special instructions...' },
+                { label: t('loadBoard.loadNumber'), key: 'loadNumber' as const, ph: 'LD-0001' },
+                { label: t('loadBoard.commodity'), key: 'commodity' as const, ph: 'Dry Van, Refrigerated...' },
+                { label: t('loadBoard.weightLbs'), key: 'weight' as const, ph: '45000', kbd: 'decimal-pad' as const },
+                { label: t('loadBoard.miles'), key: 'miles' as const, ph: '500', kbd: 'decimal-pad' as const },
+                { label: t('loadBoard.rate'), key: 'rate' as const, ph: '2500.00', kbd: 'decimal-pad' as const },
+                { label: t('loadBoard.notes'), key: 'notes' as const, ph: 'Any special instructions...' },
               ].map(({ label, key, ph, kbd }) => (
                 <View key={key}>
                   <Text style={s.inputLabel}>{label}</Text>
@@ -402,10 +407,10 @@ export default function LoadBoardScreen() {
 
               <View style={s.modalBtns}>
                 <TouchableOpacity style={s.cancelBtn} onPress={() => setModal(false)}>
-                  <Text style={s.cancelText}>Cancel</Text>
+                  <Text style={s.cancelText}>{t('common.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={s.saveText}>{editTarget ? 'Update' : 'Save'}</Text>}
+                  {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={s.saveText}>{editTarget ? t('tripLog.update') : t('common.save')}</Text>}
                 </TouchableOpacity>
               </View>
             </View>

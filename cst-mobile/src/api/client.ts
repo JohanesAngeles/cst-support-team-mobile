@@ -9,6 +9,9 @@ const client = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+let _logoutHandler: (() => void) | null = null;
+export const setLogoutHandler = (fn: () => void) => { _logoutHandler = fn; };
+
 client.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -18,6 +21,9 @@ client.interceptors.request.use(async (config) => {
 client.interceptors.response.use(
   (res) => res,
   (err) => {
+    if (err.response?.status === 401 && _logoutHandler) {
+      _logoutHandler();
+    }
     const message = err.response?.data?.message || 'Something went wrong';
     const apiError = new Error(message) as Error & { status?: number; code?: string };
     apiError.status = err.response?.status;

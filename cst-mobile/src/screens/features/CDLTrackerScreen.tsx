@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 
@@ -40,6 +41,7 @@ const statusFor = (days: number) => {
 const EMPTY_FORM = { docType: DOC_TYPES[0], licenseNumber: '', issuingState: '', issueDate: '', expirationDate: '', notes: '' };
 
 export default function CDLTrackerScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const s = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -129,7 +131,7 @@ export default function CDLTrackerScreen() {
   };
 
   const save = async () => {
-    if (!form.expirationDate) { Alert.alert('Required', 'Expiration date is required'); return; }
+    if (!form.expirationDate) { Alert.alert(t('cdl.requiredTitle'), t('cdl.expirationRequired')); return; }
     setSaving(true);
     try {
       if (editing) {
@@ -140,16 +142,20 @@ export default function CDLTrackerScreen() {
         setDocs(d => [...d, r.data.doc].sort((a, b) => new Date(a.expirationDate).getTime() - new Date(b.expirationDate).getTime()));
       }
       setModalVisible(false);
-    } catch (e: any) { Alert.alert('Error', e.message); }
+    } catch (e: any) { Alert.alert(t('common.error'), e.message); }
     finally { setSaving(false); }
   };
 
   const remove = (doc: CDLDoc) => {
-    Alert.alert('Delete', `Remove ${doc.docType}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await client.delete(`/cdl-docs/${doc._id}`);
-        setDocs(d => d.filter(x => x._id !== doc._id));
+    Alert.alert(t('cdl.deleteTitle'), t('cdl.deleteMsg', { docType: doc.docType }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('cdl.delete'), style: 'destructive', onPress: async () => {
+        try {
+          await client.delete(`/cdl-docs/${doc._id}`);
+          setDocs(d => d.filter(x => x._id !== doc._id));
+        } catch (e: any) {
+          Alert.alert(t('common.error'), e.message ?? t('cdl.deleteError'));
+        }
       }},
     ]);
   };
@@ -177,10 +183,10 @@ export default function CDLTrackerScreen() {
         {/* Summary bar */}
         <View style={s.summaryRow}>
           {[
-            { label: 'Expired',  count: expired,  color: '#E74C3C' },
-            { label: 'Critical', count: critical, color: '#F39C12' },
-            { label: 'Expiring', count: expiring, color: '#F1C40F' },
-            { label: 'Valid',    count: docs.length - expired - critical - expiring, color: '#2ECC71' },
+            { label: t('cdl.expired'),  count: expired,  color: '#E74C3C' },
+            { label: t('cdl.critical'), count: critical, color: '#F39C12' },
+            { label: t('cdl.expiring'), count: expiring, color: '#F1C40F' },
+            { label: t('cdl.valid'),    count: docs.length - expired - critical - expiring, color: '#2ECC71' },
           ].map(item => (
             <View key={item.label} style={[s.summaryCard, { borderColor: item.color + '44' }]}>
               <Text style={[s.summaryCount, { color: item.color }]}>{item.count}</Text>
@@ -191,7 +197,7 @@ export default function CDLTrackerScreen() {
 
         <TouchableOpacity style={s.addBtn} onPress={openAdd}>
           <Ionicons name="add-circle-outline" size={20} color={Colors.textDark} />
-          <Text style={s.addBtnText}>Add Document</Text>
+          <Text style={s.addBtnText}>{t('cdl.addDocument')}</Text>
         </TouchableOpacity>
 
         {loading
@@ -200,8 +206,8 @@ export default function CDLTrackerScreen() {
           ? (
             <View style={s.empty}>
               <Ionicons name="id-card-outline" size={56} color={Colors.border} />
-              <Text style={s.emptyText}>No documents yet</Text>
-              <Text style={s.emptySub}>Add your CDL, medical cert, and endorsements to track expiration dates</Text>
+              <Text style={s.emptyText}>{t('cdl.noDocsYet')}</Text>
+              <Text style={s.emptySub}>{t('cdl.noDocsSub')}</Text>
             </View>
           )
           : docs.map(doc => {
@@ -215,17 +221,17 @@ export default function CDLTrackerScreen() {
                       {doc.licenseNumber ? <Text style={s.docSub}>#{doc.licenseNumber}{doc.issuingState ? ` · ${doc.issuingState}` : ''}</Text> : null}
                     </View>
                     <View style={[s.statusBadge, { backgroundColor: st.color + '22', borderColor: st.color }]}>
-                      <Text style={[s.statusText, { color: st.color }]}>{st.label}</Text>
+                      <Text style={[s.statusText, { color: st.color }]}>{t(`cdl.${st.label.toLowerCase()}`)}</Text>
                     </View>
                   </View>
 
                   <View style={s.docMeta}>
                     <Ionicons name="calendar-outline" size={14} color={Colors.textMuted} />
                     <Text style={s.docMetaText}>
-                      Expires {new Date(doc.expirationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      {t('cdl.expiresOn', { date: new Date(doc.expirationDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) })}
                       {'  '}
                       <Text style={{ color: st.color, fontWeight: '700' }}>
-                        {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d remaining`}
+                        {days < 0 ? t('cdl.daysOverdue', { n: Math.abs(days) }) : t('cdl.daysRemaining', { n: days })}
                       </Text>
                     </Text>
                   </View>
@@ -235,11 +241,11 @@ export default function CDLTrackerScreen() {
                   <View style={s.docActions}>
                     <TouchableOpacity style={s.editBtn} onPress={() => openEdit(doc)}>
                       <Ionicons name="pencil-outline" size={14} color={Colors.secondary} />
-                      <Text style={s.editBtnText}>Edit</Text>
+                      <Text style={s.editBtnText}>{t('cdl.edit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={s.deleteBtn} onPress={() => remove(doc)}>
                       <Ionicons name="trash-outline" size={14} color={Colors.danger} />
-                      <Text style={s.deleteBtnText}>Delete</Text>
+                      <Text style={s.deleteBtnText}>{t('cdl.delete')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -252,7 +258,7 @@ export default function CDLTrackerScreen() {
       <Modal visible={modalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setModalVisible(false)}>
         <View style={s.modal}>
           <View style={s.modalHeader}>
-            <Text style={s.modalTitle}>{editing ? 'Edit Document' : 'Add Document'}</Text>
+            <Text style={s.modalTitle}>{editing ? t('cdl.editDocument') : t('cdl.addDocument')}</Text>
             <TouchableOpacity onPress={() => setModalVisible(false)}>
               <Ionicons name="close" size={24} color={Colors.white} />
             </TouchableOpacity>
@@ -260,7 +266,7 @@ export default function CDLTrackerScreen() {
 
           <ScrollView contentContainerStyle={s.modalBody}>
             {/* Doc type picker */}
-            <Text style={s.fieldLabel}>Document Type *</Text>
+            <Text style={s.fieldLabel}>{t('cdl.docTypeLabel')}</Text>
             <TouchableOpacity style={s.pickerBtn} onPress={() => setTypePickerOpen(o => !o)}>
               <Text style={s.pickerBtnText}>{form.docType}</Text>
               <Ionicons name={typePickerOpen ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
@@ -275,14 +281,14 @@ export default function CDLTrackerScreen() {
               </View>
             )}
 
-            {field('License / Doc Number', form.licenseNumber, v => setForm(f => ({ ...f, licenseNumber: v })), 'e.g. D12345678')}
-            {field('Issuing State', form.issuingState, v => setForm(f => ({ ...f, issuingState: v })), 'e.g. TX')}
-            {field('Issue Date', form.issueDate, v => setForm(f => ({ ...f, issueDate: v })), 'YYYY-MM-DD')}
-            {field('Expiration Date *', form.expirationDate, v => setForm(f => ({ ...f, expirationDate: v })), 'YYYY-MM-DD')}
-            {field('Notes', form.notes, v => setForm(f => ({ ...f, notes: v })), 'Optional notes', true)}
+            {field(t('cdl.licenseNumLabel'), form.licenseNumber, v => setForm(f => ({ ...f, licenseNumber: v })), 'e.g. D12345678')}
+            {field(t('cdl.issuingStateLabel'), form.issuingState, v => setForm(f => ({ ...f, issuingState: v })), 'e.g. TX')}
+            {field(t('cdl.issueDateLabel'), form.issueDate, v => setForm(f => ({ ...f, issueDate: v })), 'YYYY-MM-DD')}
+            {field(t('cdl.expirationDateLabel'), form.expirationDate, v => setForm(f => ({ ...f, expirationDate: v })), 'YYYY-MM-DD')}
+            {field(t('cdl.notesLabel'), form.notes, v => setForm(f => ({ ...f, notes: v })), t('common.optional'), true)}
 
             <TouchableOpacity style={[s.saveBtn, saving && { opacity: 0.6 }]} onPress={save} disabled={saving}>
-              {saving ? <ActivityIndicator color={Colors.textDark} /> : <Text style={s.saveBtnText}>{editing ? 'Save Changes' : 'Add Document'}</Text>}
+              {saving ? <ActivityIndicator color={Colors.textDark} /> : <Text style={s.saveBtnText}>{editing ? t('cdl.saveChanges') : t('cdl.addDocument')}</Text>}
             </TouchableOpacity>
           </ScrollView>
         </View>

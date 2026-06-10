@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getInvoices, updateInvoiceStatus } from '../../api/features';
 
@@ -40,6 +41,7 @@ function classifyInvoice(inv: Invoice): 'overdue' | 'due_soon' | 'upcoming' | 'p
 }
 
 export default function PaymentTrackerScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -95,20 +97,20 @@ export default function PaymentTrackerScreen() {
     try {
       const data = await getInvoices();
       setInvoices(data.invoices ?? []);
-    } catch { Alert.alert('Error', 'Could not load invoices'); }
+    } catch { Alert.alert(t('common.error'), t('paymentTracker.loadError')); }
     finally { setLoading(false); }
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const markPaid = (inv: Invoice) => {
-    Alert.alert('Mark as Paid', `Mark ${inv.invoiceNumber} ($${inv.total.toFixed(2)}) as paid?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Mark Paid', onPress: async () => {
+    Alert.alert(t('paymentTracker.markPaidTitle'), t('paymentTracker.markPaidMsg', { num: inv.invoiceNumber, amount: inv.total.toFixed(2) }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('paymentTracker.markPaid'), onPress: async () => {
         try {
           await updateInvoiceStatus(inv._id, 'paid');
           setInvoices(prev => prev.map(i => i._id === inv._id ? { ...i, status: 'paid' } : i));
-        } catch { Alert.alert('Error', 'Could not update invoice'); }
+        } catch { Alert.alert(t('common.error'), t('paymentTracker.updateError')); }
       }},
     ]);
   };
@@ -145,11 +147,11 @@ export default function PaymentTrackerScreen() {
       Colors.border;
 
     const daysLabel =
-      cls === 'paid'     ? 'PAID' :
-      cls === 'draft'    ? 'DRAFT' :
-      cls === 'overdue'  ? `${Math.abs(days)}d OVERDUE` :
-      cls === 'due_soon' ? `${days}d LEFT` :
-      `Due in ${days}d`;
+      cls === 'paid'     ? t('paymentTracker.paid') :
+      cls === 'draft'    ? t('paymentTracker.draft') :
+      cls === 'overdue'  ? t('paymentTracker.daysOverdue', { n: Math.abs(days) }) :
+      cls === 'due_soon' ? t('paymentTracker.daysLeft', { n: days }) :
+      t('paymentTracker.dueIn', { n: days });
 
     const daysColor =
       cls === 'overdue'  ? Colors.danger :
@@ -163,7 +165,7 @@ export default function PaymentTrackerScreen() {
           <View style={{ flex: 1 }}>
             <Text style={styles.invNum}>{item.invoiceNumber}</Text>
             <Text style={styles.broker}>{item.billTo?.name ?? 'Unknown'}</Text>
-            {item.loadRef ? <Text style={styles.broker}>Load: {item.loadRef}</Text> : null}
+            {item.loadRef ? <Text style={styles.broker}>{t('paymentTracker.loadRef', { ref: item.loadRef })}</Text> : null}
           </View>
           <View style={{ alignItems: 'flex-end', gap: 6 }}>
             <Text style={[styles.total, { color: leftColor }]}>{fmtMoney(item.total)}</Text>
@@ -176,11 +178,11 @@ export default function PaymentTrackerScreen() {
         <View style={styles.metaRow}>
           <View style={styles.metaItem}>
             <Ionicons name="calendar-outline" size={12} color={Colors.textMuted} />
-            <Text style={styles.metaText}>Issued {new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+            <Text style={styles.metaText}>{t('paymentTracker.issued', { date: new Date(item.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) })}</Text>
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="time-outline" size={12} color={Colors.textMuted} />
-            <Text style={styles.metaText}>Due {new Date(item.dueDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+            <Text style={styles.metaText}>{t('paymentTracker.due', { date: new Date(item.dueDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) })}</Text>
           </View>
         </View>
 
@@ -191,15 +193,15 @@ export default function PaymentTrackerScreen() {
               onPress={() => markPaid(item)}
             >
               <Ionicons name="checkmark-circle-outline" size={14} color="#27AE60" />
-              <Text style={[styles.actionText, { color: '#27AE60' }]}>Mark Paid</Text>
+              <Text style={[styles.actionText, { color: '#27AE60' }]}>{t('paymentTracker.markPaid')}</Text>
             </TouchableOpacity>
             {cls === 'overdue' && (
               <TouchableOpacity
                 style={[styles.actionBtn, { borderColor: Colors.danger + '55' }]}
-                onPress={() => Alert.alert('Follow Up', `Call or email ${item.billTo?.name ?? 'the broker'} about invoice ${item.invoiceNumber} — ${Math.abs(days)} days overdue.`)}
+                onPress={() => Alert.alert(t('paymentTracker.followUpTitle'), t('paymentTracker.followUpMsg', { broker: item.billTo?.name ?? 'the broker', num: item.invoiceNumber, days: Math.abs(days) }))}
               >
                 <Ionicons name="call-outline" size={14} color={Colors.danger} />
-                <Text style={[styles.actionText, { color: Colors.danger }]}>Follow Up</Text>
+                <Text style={[styles.actionText, { color: Colors.danger }]}>{t('paymentTracker.followUp')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -216,32 +218,32 @@ export default function PaymentTrackerScreen() {
       <View style={styles.summaryRow}>
         <View style={[styles.sumCard, { borderColor: Colors.danger + '55' }]}>
           <Text style={[styles.sumValue, { color: Colors.danger }]}>{fmtMoney(totalOverdue)}</Text>
-          <Text style={styles.sumLabel}>OVERDUE</Text>
+          <Text style={styles.sumLabel}>{t('paymentTracker.overdue')}</Text>
         </View>
         <View style={[styles.sumCard, { borderColor: Colors.secondary + '55' }]}>
           <Text style={[styles.sumValue, { color: Colors.secondary }]}>{fmtMoney(totalOwed)}</Text>
-          <Text style={styles.sumLabel}>TOTAL OWED</Text>
+          <Text style={styles.sumLabel}>{t('paymentTracker.totalOwed')}</Text>
         </View>
         <View style={[styles.sumCard, { borderColor: '#27AE60' + '55' }]}>
           <Text style={[styles.sumValue, { color: '#27AE60' }]}>{fmtMoney(totalPaid)}</Text>
-          <Text style={styles.sumLabel}>COLLECTED</Text>
+          <Text style={styles.sumLabel}>{t('paymentTracker.collected')}</Text>
         </View>
       </View>
 
       {/* Filter tabs */}
       <View style={styles.tabs}>
         {([
-          { key: 'all',      label: `All (${invoices.length})` },
-          { key: 'overdue',  label: `Overdue (${overdue.length})` },
-          { key: 'due_soon', label: `Due Soon (${dueSoon.length})` },
-          { key: 'paid',     label: `Paid (${paid.length})` },
-        ] as { key: Filter; label: string }[]).map(t => (
+          { key: 'all',      label: t('paymentTracker.tabAll', { n: invoices.length }) },
+          { key: 'overdue',  label: t('paymentTracker.tabOverdue', { n: overdue.length }) },
+          { key: 'due_soon', label: t('paymentTracker.tabDueSoon', { n: dueSoon.length }) },
+          { key: 'paid',     label: t('paymentTracker.tabPaid', { n: paid.length }) },
+        ] as { key: Filter; label: string }[]).map(tab => (
           <TouchableOpacity
-            key={t.key}
-            style={[styles.tab, filter === t.key && styles.tabActive]}
-            onPress={() => setFilter(t.key)}
+            key={tab.key}
+            style={[styles.tab, filter === tab.key && styles.tabActive]}
+            onPress={() => setFilter(tab.key)}
           >
-            <Text style={[styles.tabText, filter === t.key && styles.tabTextActive]}>{t.label}</Text>
+            <Text style={[styles.tabText, filter === tab.key && styles.tabTextActive]}>{tab.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -255,7 +257,7 @@ export default function PaymentTrackerScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="receipt-outline" size={44} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>No invoices in this category</Text>
+            <Text style={styles.emptyText}>{t('paymentTracker.noInvoices')}</Text>
           </View>
         }
       />

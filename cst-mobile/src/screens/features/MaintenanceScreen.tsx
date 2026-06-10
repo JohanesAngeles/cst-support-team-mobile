@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getMaintenance, addMaintenanceRecord, completeMaintenance, deleteMaintenanceRecord } from '../../api/features';
 
@@ -40,6 +41,7 @@ const computeStatus = (record: MaintenanceRecord, currentMileage: number): Statu
 };
 
 export default function MaintenanceScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -99,7 +101,7 @@ export default function MaintenanceScreen() {
       setRecords(data.records);
       setCurrentMileage(data.currentMileage);
     } catch {
-      Alert.alert('Error', 'Failed to load maintenance records');
+      Alert.alert(t('common.error'), t('maintenance.loadError'));
     } finally {
       setLoading(false);
     }
@@ -108,7 +110,7 @@ export default function MaintenanceScreen() {
   useEffect(() => { load(); }, [load]);
 
   const handleAdd = async () => {
-    if (!newName || !newNextDate) { Alert.alert('Error', 'Name and next date are required'); return; }
+    if (!newName || !newNextDate) { Alert.alert(t('common.error'), t('maintenance.nameAndDateRequired')); return; }
     setSaving(true);
     try {
       await addMaintenanceRecord({
@@ -120,7 +122,7 @@ export default function MaintenanceScreen() {
       setModalVisible(false);
       await load();
     } catch {
-      Alert.alert('Error', 'Failed to add record');
+      Alert.alert(t('common.error'), t('maintenance.addError'));
     } finally {
       setSaving(false);
     }
@@ -131,15 +133,15 @@ export default function MaintenanceScreen() {
       await completeMaintenance(id);
       await load();
     } catch {
-      Alert.alert('Error', 'Failed to update record');
+      Alert.alert(t('common.error'), t('maintenance.updateError'));
     }
   };
 
   const handleDelete = (id: string, name: string) => {
-    Alert.alert('Delete Record', `Remove "${name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try { await deleteMaintenanceRecord(id); await load(); } catch { Alert.alert('Error', 'Failed to delete'); }
+    Alert.alert(t('maintenance.deleteTitle'), t('maintenance.deleteMsg', { name }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
+        try { await deleteMaintenanceRecord(id); await load(); } catch { Alert.alert(t('common.error'), t('maintenance.deleteError')); }
       }},
     ]);
   };
@@ -163,25 +165,25 @@ export default function MaintenanceScreen() {
             <Text style={styles.itemName}>{item.name}</Text>
             <View style={[styles.statusBadge, { backgroundColor: cfg.color + '22', borderColor: cfg.color }]}>
               <Ionicons name={cfg.icon as any} size={12} color={cfg.color} />
-              <Text style={[styles.statusText, { color: cfg.color }]}>{cfg.label}</Text>
+              <Text style={[styles.statusText, { color: cfg.color }]}>{status === 'ok' ? t('maintenance.ok') : status === 'due_soon' ? t('maintenance.dueSoon') : t('maintenance.overdue')}</Text>
             </View>
           </View>
-          <Text style={styles.nextDate}>Next: {item.nextDate}</Text>
+          <Text style={styles.nextDate}>{t('maintenance.nextLabel', { date: item.nextDate })}</Text>
           <View style={styles.metricsRow}>
             <Text style={styles.metric}>
               <Text style={{ color: days < 0 ? Colors.danger : Colors.textMuted }}>
-                {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
+                {days < 0 ? t('maintenance.daysOverdue', { n: Math.abs(days) }) : `${days}d`}
               </Text>
               {' · '}
               <Text style={{ color: miles < 500 ? Colors.danger : Colors.textMuted }}>
-                {miles.toLocaleString()} mi left
+                {t('maintenance.miLeft', { n: miles.toLocaleString() })}
               </Text>
             </Text>
           </View>
           {status !== 'ok' && (
             <TouchableOpacity style={styles.doneBtn} onPress={() => handleComplete(item._id)}>
               <Ionicons name="checkmark" size={14} color={Colors.textDark} />
-              <Text style={styles.doneBtnText}>Mark Complete</Text>
+              <Text style={styles.doneBtnText}>{t('maintenance.markComplete')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -203,8 +205,8 @@ export default function MaintenanceScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Maintenance Tracker</Text>
-          <Text style={styles.subtitle}>{currentMileage > 0 ? `Current: ${currentMileage.toLocaleString()} mi` : 'Set mileage in Fuel screen'}</Text>
+          <Text style={styles.title}>{t('maintenance.title')}</Text>
+          <Text style={styles.subtitle}>{currentMileage > 0 ? t('maintenance.currentMi', { mi: currentMileage.toLocaleString() }) : t('maintenance.setMileage')}</Text>
         </View>
         <TouchableOpacity style={styles.addBtn} onPress={() => setModalVisible(true)}>
           <Ionicons name="add" size={22} color={Colors.textDark} />
@@ -215,7 +217,7 @@ export default function MaintenanceScreen() {
         {([['ok', Colors.success], ['due_soon', '#E67E22'], ['overdue', Colors.danger]] as const).map(([key, color]) => (
           <View key={key} style={[styles.chip, { borderColor: color }]}>
             <Text style={[styles.chipCount, { color }]}>{counts[key]}</Text>
-            <Text style={styles.chipLabel}>{key === 'ok' ? 'OK' : key === 'due_soon' ? 'Due Soon' : 'Overdue'}</Text>
+            <Text style={styles.chipLabel}>{key === 'ok' ? t('maintenance.ok') : key === 'due_soon' ? t('maintenance.dueSoon') : t('maintenance.overdue')}</Text>
           </View>
         ))}
       </View>
@@ -223,10 +225,10 @@ export default function MaintenanceScreen() {
       {records.length === 0 ? (
         <View style={styles.empty}>
           <Ionicons name="construct-outline" size={52} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No maintenance records</Text>
-          <Text style={styles.emptySubText}>Track oil changes, tire rotations, DOT inspections, and more</Text>
+          <Text style={styles.emptyText}>{t('maintenance.noRecords')}</Text>
+          <Text style={styles.emptySubText}>{t('maintenance.noRecordsSub')}</Text>
           <TouchableOpacity style={styles.emptyBtn} onPress={() => setModalVisible(true)}>
-            <Text style={styles.emptyBtnText}>Add First Record</Text>
+            <Text style={styles.emptyBtnText}>{t('maintenance.addFirst')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -236,18 +238,18 @@ export default function MaintenanceScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
-          ListFooterComponent={<Text style={styles.hint}>Long-press to delete a record</Text>}
+          ListFooterComponent={<Text style={styles.hint}>{t('maintenance.longPressHint')}</Text>}
         />
       )}
 
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.overlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Add Maintenance Item</Text>
+            <Text style={styles.modalTitle}>{t('maintenance.addTitle')}</Text>
             {[
-              { label: 'Item Name *', val: newName, set: setNewName, ph: 'e.g. Transmission Service' },
-              { label: 'Next Due Date * (YYYY-MM-DD)', val: newNextDate, set: setNewNextDate, ph: '2026-11-01' },
-              { label: 'Service Interval (miles)', val: newIntervalMiles, set: setNewIntervalMiles, ph: '10000', keyboard: 'numeric' as const },
+              { label: t('maintenance.itemNameLabel'), val: newName, set: setNewName, ph: 'e.g. Transmission Service' },
+              { label: t('maintenance.nextDateLabel'), val: newNextDate, set: setNewNextDate, ph: '2026-11-01' },
+              { label: t('maintenance.intervalLabel'), val: newIntervalMiles, set: setNewIntervalMiles, ph: '10000', keyboard: 'numeric' as const },
             ].map(({ label, val, set, ph, keyboard }) => (
               <View key={label}>
                 <Text style={styles.modalLabel}>{label}</Text>
@@ -255,9 +257,9 @@ export default function MaintenanceScreen() {
               </View>
             ))}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}><Text style={styles.cancelText}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}><Text style={styles.cancelText}>{t('common.cancel')}</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.confirmBtn, saving && { opacity: 0.6 }]} onPress={handleAdd} disabled={saving}>
-                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.confirmText}>Add</Text>}
+                {saving ? <ActivityIndicator size="small" color={Colors.textDark} /> : <Text style={styles.confirmText}>{t('maintenance.add')}</Text>}
               </TouchableOpacity>
             </View>
           </View>

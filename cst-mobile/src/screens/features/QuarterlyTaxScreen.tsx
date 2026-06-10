@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { getRevenue, getExpenses, getTaxReport } from '../../api/features';
 
@@ -37,6 +38,7 @@ const currentQuarter = () => {
 };
 
 export default function QuarterlyTaxScreen() {
+  const { t } = useTranslation();
   const Colors = useColors();
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
@@ -199,10 +201,10 @@ export default function QuarterlyTaxScreen() {
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: `Q${selectedQ} Tax Estimate` });
       } else {
-        Alert.alert('Saved', `PDF saved to: ${uri}`);
+        Alert.alert(t('quarterlyTax.savedTitle'), `PDF saved to: ${uri}`);
       }
     } catch (e: any) {
-      Alert.alert('Export Failed', e.message);
+      Alert.alert(t('quarterlyTax.exportError'), e.message);
     } finally {
       setExporting(false);
     }
@@ -230,33 +232,33 @@ export default function QuarterlyTaxScreen() {
 
         {/* Big payment card */}
         <View style={styles.bigCard}>
-          <Text style={styles.bigLabel}>Estimated Quarterly Payment</Text>
+          <Text style={styles.bigLabel}>{t('quarterlyTax.estimatedPayment')}</Text>
           <Text style={styles.bigValue}>{fmtMoney(quarterlyPayment)}</Text>
-          <Text style={styles.bigSub}>Due {qInfo.due} · IRS Form 1040-ES</Text>
+          <Text style={styles.bigSub}>{t('quarterlyTax.dueLabel', { date: qInfo.due })}</Text>
         </View>
 
         {/* Due date reminder */}
         <View style={styles.dueDateCard}>
           <Ionicons name="calendar-outline" size={22} color={Colors.secondary} />
           <Text style={styles.dueDateText}>
-            {qInfo.label} ({qInfo.months}) payment is due {qInfo.due}. Pay at IRS.gov or through EFTPS.
+            {t('quarterlyTax.dueDateMsg', { label: qInfo.label, months: qInfo.months, due: qInfo.due })}
           </Text>
         </View>
 
         {/* Breakdown */}
         <View style={styles.breakdownCard}>
-          <Text style={styles.breakdownTitle}>Calculation Breakdown ({qInfo.months})</Text>
+          <Text style={styles.breakdownTitle}>{t('quarterlyTax.breakdownTitle', { months: qInfo.months })}</Text>
 
           {[
-            { label: 'Gross Revenue',             value: fmtMoney(qRevenue),           color: Colors.text },
-            { label: 'Business Expenses',          value: `−${fmtMoney(qExpenses)}`,    color: Colors.danger },
-            { label: `Per Diem (~${perDiemDays}d)`, value: `−${fmtMoney(perDiemDeduction)}`, color: Colors.danger },
-            { label: 'Home Office (est.)',         value: `−${fmtMoney(homeOffice)}`,   color: Colors.danger },
-            { label: 'Net Self-Employ. Income',   value: fmtMoney(netSelfEmploy),       color: Colors.text },
-            { label: 'SE Tax (15.3%)',             value: fmtMoney(seTax),              color: Colors.danger },
-            { label: 'SE Deduction (50%)',         value: `−${fmtMoney(seDeduction)}`,  color: '#27AE60' },
-            { label: 'Taxable Income',            value: fmtMoney(taxableIncome),       color: Colors.text },
-            { label: 'Income Tax (22%)',          value: fmtMoney(estimatedIncomeTax),  color: Colors.danger },
+            { label: t('quarterlyTax.grossRevenue'),             value: fmtMoney(qRevenue),           color: Colors.text },
+            { label: t('quarterlyTax.businessExpenses'),         value: `−${fmtMoney(qExpenses)}`,    color: Colors.danger },
+            { label: t('quarterlyTax.perDiem', { days: perDiemDays }), value: `−${fmtMoney(perDiemDeduction)}`, color: Colors.danger },
+            { label: t('quarterlyTax.homeOffice'),               value: `−${fmtMoney(homeOffice)}`,   color: Colors.danger },
+            { label: t('quarterlyTax.netSEIncome'),              value: fmtMoney(netSelfEmploy),       color: Colors.text },
+            { label: t('quarterlyTax.seTax'),                    value: fmtMoney(seTax),              color: Colors.danger },
+            { label: t('quarterlyTax.seDeduction'),              value: `−${fmtMoney(seDeduction)}`,  color: '#27AE60' },
+            { label: t('quarterlyTax.taxableIncome'),            value: fmtMoney(taxableIncome),       color: Colors.text },
+            { label: t('quarterlyTax.incomeTax'),                value: fmtMoney(estimatedIncomeTax),  color: Colors.danger },
           ].map(r => (
             <View key={r.label} style={styles.row}>
               <Text style={styles.rowLabel}>{r.label}</Text>
@@ -265,7 +267,7 @@ export default function QuarterlyTaxScreen() {
           ))}
 
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Quarterly Payment</Text>
+            <Text style={styles.totalLabel}>{t('quarterlyTax.quarterlyPayment')}</Text>
             <Text style={styles.totalValue}>{fmtMoney(quarterlyPayment)}</Text>
           </View>
         </View>
@@ -274,12 +276,12 @@ export default function QuarterlyTaxScreen() {
         <TouchableOpacity style={[styles.exportBtn, exporting && { opacity: 0.6 }]} onPress={exportPDF} disabled={exporting}>
           {exporting
             ? <ActivityIndicator size="small" color={Colors.textDark} />
-            : <><Ionicons name="document-text-outline" size={18} color={Colors.textDark} /><Text style={styles.exportBtnText}>Export for Accountant (PDF)</Text></>
+            : <><Ionicons name="document-text-outline" size={18} color={Colors.textDark} /><Text style={styles.exportBtnText}>{t('quarterlyTax.exportBtn')}</Text></>
           }
         </TouchableOpacity>
 
         <Text style={styles.disclaimer}>
-          Estimated using your logged revenue and expenses. Tax rates: 15.3% SE tax + 22% income tax bracket. Per diem based on IRS rate of $69/day for transportation workers. Consult a CPA for accurate filing.
+          {t('quarterlyTax.disclaimer')}
         </Text>
       </ScrollView>
     </SafeAreaView>

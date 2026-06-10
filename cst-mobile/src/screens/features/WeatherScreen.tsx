@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 
 interface WeatherPoint {
@@ -34,27 +35,29 @@ function wmoEmoji(code: number): string {
   return '⛈️';
 }
 
-function wmoDesc(code: number): string {
-  if (code === 0) return 'Clear sky';
-  if (code === 1) return 'Mostly clear';
-  if (code === 2) return 'Partly cloudy';
-  if (code === 3) return 'Overcast';
-  if (code <= 48) return 'Foggy';
-  if (code <= 55) return 'Drizzle';
-  if (code <= 65) return 'Rain';
-  if (code <= 75) return 'Snow';
-  if (code <= 82) return 'Rain showers';
-  if (code <= 84) return 'Snow showers';
-  if (code <= 94) return 'Thunderstorm';
-  return 'Severe thunderstorm';
+type TFunc = (key: string) => string;
+
+function wmoDesc(code: number, t: TFunc): string {
+  if (code === 0) return t('weather.cond.clear');
+  if (code === 1) return t('weather.cond.mostlyClear');
+  if (code === 2) return t('weather.cond.partlyCloudy');
+  if (code === 3) return t('weather.cond.overcast');
+  if (code <= 48) return t('weather.cond.foggy');
+  if (code <= 55) return t('weather.cond.drizzle');
+  if (code <= 65) return t('weather.cond.rain');
+  if (code <= 75) return t('weather.cond.snow');
+  if (code <= 82) return t('weather.cond.rainShowers');
+  if (code <= 84) return t('weather.cond.snowShowers');
+  if (code <= 94) return t('weather.cond.thunderstorm');
+  return t('weather.cond.severeThunderstorm');
 }
 
-function roadAlert(code: number, wind: number, precip: number): string | null {
-  if (code >= 71 && code <= 77) return '⚠️ Snow on road — use chains, reduce speed';
-  if (code >= 95) return '🚨 Severe thunderstorm — consider delaying';
-  if (code >= 45 && code <= 48) return '⚠️ Dense fog — reduce speed, use lights';
-  if (wind >= 40) return '⚠️ High winds — watch for trailer sway';
-  if (code >= 61 && precip >= 0.5) return '⚠️ Heavy rain — reduce speed';
+function roadAlert(code: number, wind: number, precip: number, t: TFunc): string | null {
+  if (code >= 71 && code <= 77) return t('weather.alert.snow');
+  if (code >= 95) return t('weather.alert.severeThunderstorm');
+  if (code >= 45 && code <= 48) return t('weather.alert.fog');
+  if (wind >= 40) return t('weather.alert.wind');
+  if (code >= 61 && precip >= 0.5) return t('weather.alert.heavyRain');
   return null;
 }
 
@@ -77,6 +80,7 @@ const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-
 
 export default function WeatherScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const s = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     scroll: { padding: 20, paddingBottom: 40 },
@@ -116,25 +120,28 @@ export default function WeatherScreen() {
   const [dest, setDest] = useState('');
   const [loading, setLoading] = useState(false);
   const [points, setPoints] = useState<WeatherPoint[]>([]);
+  const searching = React.useRef(false);
 
   const useMyLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permission denied', 'Location access is needed'); return; }
+      if (status !== 'granted') { Alert.alert(t('weather.permissionDenied'), t('weather.locationNeeded')); return; }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
       const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`, { headers: { 'User-Agent': 'CSTDriverApp/1.0' } });
       const data = await r.json();
       const city = data.address?.city || data.address?.town || data.address?.state || 'My Location';
       setOrigin(city);
-    } catch { Alert.alert('Error', 'Could not get your location'); }
+    } catch { Alert.alert(t('common.error'), t('weather.locationError')); }
   };
 
   const handleSearch = async () => {
-    if (!origin.trim()) { Alert.alert('Error', 'Enter at least an origin location'); return; }
+    if (!origin.trim()) { Alert.alert(t('common.error'), t('weather.enterOrigin')); return; }
+    if (searching.current) return;
+    searching.current = true;
     setLoading(true);
     try {
-      const locations = [{ label: 'Origin', query: origin }];
-      if (dest.trim()) locations.push({ label: 'Destination', query: dest });
+      const locations = [{ label: t('tripLog.origin'), query: origin }];
+      if (dest.trim()) locations.push({ label: t('tripLog.destination'), query: dest });
 
       const results: WeatherPoint[] = [];
       for (const loc of locations) {
@@ -160,9 +167,10 @@ export default function WeatherScreen() {
       }
       setPoints(results);
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Could not load weather');
+      Alert.alert(t('common.error'), err.message ?? t('weather.loadError'));
     } finally {
       setLoading(false);
+      searching.current = false;
     }
   };
 
@@ -170,29 +178,29 @@ export default function WeatherScreen() {
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={s.heading}>Route Weather</Text>
-        <Text style={s.subheading}>Check conditions before you roll out</Text>
+        <Text style={s.heading}>{t('weather.title')}</Text>
+        <Text style={s.subheading}>{t('weather.subtitle')}</Text>
 
         <View style={s.inputRow}>
-          <TextInput style={[s.input, { flex: 1 }]} value={origin} onChangeText={setOrigin} placeholder="Origin (city, state or zip)" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+          <TextInput style={[s.input, { flex: 1 }]} value={origin} onChangeText={setOrigin} placeholder={t('weather.originPlaceholder')} placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
           <TouchableOpacity style={s.locationBtn} onPress={useMyLocation}>
             <Ionicons name="locate-outline" size={20} color={Colors.secondary} />
           </TouchableOpacity>
         </View>
 
-        <TextInput style={s.input} value={dest} onChangeText={setDest} placeholder="Destination (optional)" placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
+        <TextInput style={s.input} value={dest} onChangeText={setDest} placeholder={t('weather.destPlaceholder')} placeholderTextColor={Colors.textMuted} autoCapitalize="words" />
 
         <TouchableOpacity style={[s.searchBtn, loading && { opacity: 0.6 }]} onPress={handleSearch} disabled={loading}>
           {loading ? <ActivityIndicator size="small" color={Colors.textDark} /> : (
             <>
               <Ionicons name="cloud-outline" size={18} color={Colors.textDark} />
-              <Text style={s.searchText}>Check Weather</Text>
+              <Text style={s.searchText}>{t('weather.checkBtn')}</Text>
             </>
           )}
         </TouchableOpacity>
 
         {points.map((pt) => {
-          const alert = roadAlert(pt.code, pt.windSpeed, pt.precipitation);
+          const alert = roadAlert(pt.code, pt.windSpeed, pt.precipitation, t);
           const emoji = wmoEmoji(pt.code);
           return (
             <View key={pt.label} style={s.weatherCard}>
@@ -207,7 +215,7 @@ export default function WeatherScreen() {
               <View style={s.currentRow}>
                 <Text style={s.tempBig}>{pt.temp}°F</Text>
                 <View style={s.currentMeta}>
-                  <Text style={s.condText}>{wmoDesc(pt.code)}</Text>
+                  <Text style={s.condText}>{wmoDesc(pt.code, t)}</Text>
                   <Text style={s.metaText}>H: {pt.tempMax}° · L: {pt.tempMin}°</Text>
                   <Text style={s.metaText}>💨 {pt.windSpeed} mph</Text>
                   {pt.precipitation > 0 ? <Text style={s.metaText}>💧 {pt.precipitation.toFixed(2)}"</Text> : null}
@@ -220,11 +228,11 @@ export default function WeatherScreen() {
                 </View>
               ) : (
                 <View style={s.clearBox}>
-                  <Text style={s.clearText}>✅ Road conditions look good</Text>
+                  <Text style={s.clearText}>{t('weather.roadClear')}</Text>
                 </View>
               )}
 
-              <Text style={s.forecastLabel}>3-Day Forecast</Text>
+              <Text style={s.forecastLabel}>{t('weather.forecast')}</Text>
               <View style={s.forecastRow}>
                 {pt.forecast.map(f => (
                   <View key={f.date} style={s.forecastDay}>
@@ -242,7 +250,7 @@ export default function WeatherScreen() {
         {points.length === 0 && !loading && (
           <View style={s.placeholder}>
             <Text style={s.placeholderEmoji}>🌤️</Text>
-            <Text style={s.placeholderText}>Enter a location above to see current weather and road conditions along your route</Text>
+            <Text style={s.placeholderText}>{t('weather.placeholder')}</Text>
           </View>
         )}
       </ScrollView>
