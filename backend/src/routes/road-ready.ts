@@ -190,7 +190,7 @@ router.patch('/sync', async (req: AuthRequest, res: Response) => {
 
   // 40 pts: no overdue deadlines (each overdue deadline costs 10 pts)
   const now = new Date();
-  const overdue = deadlines.filter(d => new Date(d.dueDate) < now).length;
+  const overdue = deadlines.filter(d => new Date(d.date) < now).length;
   const deadlinePts = Math.max(0, 40 - overdue * 10);
 
   profile.complianceScore = Math.min(200, hosCompliancePts + dvirPts + deadlinePts);
@@ -198,8 +198,8 @@ router.patch('/sync', async (req: AuthRequest, res: Response) => {
   // ── Business Score (0–150) ────────────────────────────────────────────────
   // From real TripLog data: loads completed + revenue per mile + net profit
   const tripCount = trips.length;
-  const totalMiles = trips.reduce((s, t) => s + (t.miles ?? t.distance ?? 0), 0);
-  const totalRevenue = trips.reduce((s, t) => s + (t.totalPay ?? t.revenue ?? 0), 0);
+  const totalMiles = trips.reduce((s, t) => s + (t.miles ?? 0), 0);
+  const totalRevenue = trips.reduce((s, t) => s + (t.rate ?? 0), 0);
   const rpm = totalMiles > 0 ? totalRevenue / totalMiles : 0;
 
   const tripPts   = Math.min(60, tripCount * 3);        // 3 pts per trip, max 60
