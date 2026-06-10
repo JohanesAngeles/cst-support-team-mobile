@@ -1,79 +1,104 @@
-﻿import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Dimensions, NativeSyntheticEvent, NativeScrollEvent, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTheme } from '../../context/ThemeContext';
-import BlobBackground from '../../components/BlobBackground';
 
 const { width } = Dimensions.get('window');
+const GAP = 8;
+
+interface TileConfig {
+  icon: string;
+  colors: [string, string];
+}
 
 interface Slide {
   key: string;
-  icon: string;
-  color: string;
+  hero: TileConfig;
+  tiles: [TileConfig, TileConfig, TileConfig, TileConfig];
   title: string;
   subtitle: string;
   body: string;
-  features: { icon: string; text: string }[];
 }
 
 const SLIDES: Slide[] = [
   {
     key: 'welcome',
-    icon: 'bus-outline',
-    color: '#2C6EBD',
+    hero: { icon: 'bus-outline', colors: ['#F97316', '#EF4444'] },
+    tiles: [
+      { icon: 'map-outline',              colors: ['#6366F1', '#8B5CF6'] },
+      { icon: 'document-text-outline',    colors: ['#0EA5E9', '#6366F1'] },
+      { icon: 'calendar-outline',         colors: ['#14B8A6', '#0EA5E9'] },
+      { icon: 'shield-checkmark-outline', colors: ['#10B981', '#14B8A6'] },
+    ],
     title: 'Welcome to CST',
     subtitle: 'Built for Commercial Drivers',
-    body: 'Everything you need — trip tracking, IFTA, legal help, and 60+ purpose-built tools — in one platform designed for the road.',
-    features: [
-      { icon: 'map-outline',             text: 'Trip & Fuel Logging' },
-      { icon: 'document-text-outline',   text: 'Document Vault' },
-      { icon: 'shield-checkmark-outline',text: 'Legal Protection' },
-      { icon: 'calendar-outline',        text: 'Deadline Alerts' },
-    ],
+    body: '60+ purpose-built tools — trip tracking, IFTA, legal help, and more — in one platform designed for the road.',
   },
   {
     key: 'financial',
-    icon: 'bar-chart-outline',
-    color: '#3498DB',
+    hero: { icon: 'bar-chart-outline', colors: ['#10B981', '#0EA5E9'] },
+    tiles: [
+      { icon: 'cash-outline',       colors: ['#F97316', '#F59E0B'] },
+      { icon: 'receipt-outline',    colors: ['#6366F1', '#8B5CF6'] },
+      { icon: 'calculator-outline', colors: ['#0EA5E9', '#6366F1'] },
+      { icon: 'globe-outline',      colors: ['#8B5CF6', '#EC4899'] },
+    ],
     title: 'Know Your Numbers',
     subtitle: 'Live P&L, always up to date',
-    body: 'Log trips and expenses once. Your Profit & Loss, cost per mile, and fuel percentage update automatically — no spreadsheets.',
-    features: [
-      { icon: 'cash-outline',       text: 'Auto P&L calculation' },
-      { icon: 'globe-outline',      text: 'IFTA quarterly reports' },
-      { icon: 'receipt-outline',    text: 'Expense tracker' },
-      { icon: 'calculator-outline', text: 'Per diem & tax tools' },
-    ],
+    body: 'Log trips and expenses once. Your Profit & Loss, cost per mile, and IFTA reports update automatically.',
   },
   {
     key: 'protected',
-    icon: 'shield-checkmark-outline',
-    color: '#2ECC71',
+    hero: { icon: 'shield-checkmark-outline', colors: ['#6366F1', '#4F46E5'] },
+    tiles: [
+      { icon: 'alert-circle-outline', colors: ['#EF4444', '#F97316'] },
+      { icon: 'hammer-outline',       colors: ['#F97316', '#F59E0B'] },
+      { icon: 'people-outline',       colors: ['#14B8A6', '#10B981'] },
+      { icon: 'business-outline',     colors: ['#0EA5E9', '#6366F1'] },
+    ],
     title: 'Protected Every Run',
     subtitle: 'From the cab to the courtroom',
-    body: 'AI legal assistant, ticket dispute letters, emergency SOS with GPS, driver protection guides, and state law for all 50 states.',
-    features: [
-      { icon: 'alert-circle-outline', text: 'Emergency SOS + GPS' },
-      { icon: 'hammer-outline',       text: 'Ticket dispute generator' },
-      { icon: 'people-outline',       text: 'Coercion protection' },
-      { icon: 'business-outline',     text: 'LLC & EIN filing help' },
-    ],
+    body: 'AI legal assistant, ticket dispute letters, emergency SOS with GPS, and state law for all 50 states.',
   },
 ];
+
+function MosaicTile({ icon, colors, style, isHero = false }: {
+  icon: string;
+  colors: [string, string];
+  style?: object;
+  isHero?: boolean;
+}) {
+  return (
+    <LinearGradient
+      colors={colors}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[s.tile, style]}
+    >
+      {isHero ? (
+        <View style={s.heroGlow}>
+          <Ionicons name={icon as any} size={52} color="#FFFFFF" />
+        </View>
+      ) : (
+        <Ionicons name={icon as any} size={28} color="rgba(255,255,255,0.92)" />
+      )}
+    </LinearGradient>
+  );
+}
 
 interface Props {
   onComplete: () => void;
 }
 
 export default function OnboardingScreen({ onComplete }: Props) {
-  const { theme, isDark } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const listRef = useRef<FlatList>(null);
+  const [containerH, setContainerH] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -82,7 +107,7 @@ export default function OnboardingScreen({ onComplete }: Props) {
 
   const goNext = () => {
     if (currentIndex < SLIDES.length - 1) {
-      listRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
+      scrollRef.current?.scrollTo({ x: (currentIndex + 1) * width, animated: true });
     }
   };
 
@@ -92,53 +117,13 @@ export default function OnboardingScreen({ onComplete }: Props) {
   };
 
   const isLast = currentIndex === SLIDES.length - 1;
-  const activeSlide = SLIDES[currentIndex];
-
-  const renderSlide = ({ item }: { item: Slide }) => (
-    <View style={[s.slide, { width }]}>
-
-      {/* Icon circle */}
-      <View style={[s.iconCircle, {
-        backgroundColor: item.color + (isDark ? '1A' : '14'),
-        borderColor:     item.color + (isDark ? '40' : '30'),
-      }]}>
-        <Ionicons name={item.icon as any} size={68} color={item.color} />
-      </View>
-
-      {/* Text */}
-      <Text style={[s.slideTitle, { color: item.color }]}>{item.title}</Text>
-      <Text style={[s.slideSubtitle, { color: theme.textMuted }]}>{item.subtitle}</Text>
-      <Text style={[s.slideBody, { color: isDark ? '#C8D8E4' : '#444F5A' }]}>{item.body}</Text>
-
-      {/* Feature list */}
-      <View style={s.featureList}>
-        {item.features.map((f: { icon: string; text: string }) => (
-          <View
-            key={f.text}
-            style={[s.featureRow, {
-              backgroundColor: isDark ? theme.surface : 'rgba(255,255,255,0.82)',
-              borderColor: isDark ? theme.border : 'rgba(255,255,255,0.9)',
-              borderLeftColor: item.color,
-            }]}
-          >
-            <View style={[s.featureIconWrap, { backgroundColor: item.color + '1A' }]}>
-              <Ionicons name={f.icon as any} size={15} color={item.color} />
-            </View>
-            <Text style={[s.featureText, { color: theme.text }]}>{f.text}</Text>
-          </View>
-        ))}
-      </View>
-
-    </View>
-  );
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
 
-      {/* Logo at top */}
-      <View style={[s.logoBar, { borderBottomColor: isDark ? theme.border : 'rgba(0,0,0,0.08)' }]}>
-        <View style={[s.logoPill, { backgroundColor: '#021B3A' }]}>
+      {/* ── Logo bar ── */}
+      <View style={s.logoBar}>
+        <View style={s.logoPill}>
           <Image
             source={require('../../../assets/logo/cst_logo_white.png')}
             style={s.logoImg}
@@ -147,115 +132,205 @@ export default function OnboardingScreen({ onComplete }: Props) {
         </View>
       </View>
 
-      {/* Slides */}
-      <FlatList
-        ref={listRef}
-        data={SLIDES}
-        keyExtractor={s => s.key}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        renderItem={renderSlide}
-        style={s.flatlist}
-      />
+      {/* ── Slide area ── */}
+      <View style={{ flex: 1 }} onLayout={e => setContainerH(e.nativeEvent.layout.height)}>
+        {containerH > 0 && (
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            {SLIDES.map((item) => (
+              <View key={item.key} style={{ width, height: containerH }}>
 
-      {/* Dots */}
-      <View style={s.dotsRow}>
-        {SLIDES.map((slide, i) => (
-          <View
-            key={slide.key}
-            style={[
-              s.dot,
-              { backgroundColor: theme.border },
-              i === currentIndex && { backgroundColor: activeSlide.color, width: 22 },
-            ]}
-          />
-        ))}
+                {/* Mosaic — fills remaining space above text */}
+                <View style={s.mosaicWrapper}>
+                  {/* Left: hero tile */}
+                  <MosaicTile
+                    icon={item.hero.icon}
+                    colors={item.hero.colors}
+                    isHero
+                    style={s.heroTile}
+                  />
+
+                  {/* Right: 2×2 grid */}
+                  <View style={s.tileGrid}>
+                    <View style={s.tileRow}>
+                      <MosaicTile icon={item.tiles[0].icon} colors={item.tiles[0].colors} style={s.gridTile} />
+                      <MosaicTile icon={item.tiles[1].icon} colors={item.tiles[1].colors} style={s.gridTile} />
+                    </View>
+                    <View style={s.tileRow}>
+                      <MosaicTile icon={item.tiles[2].icon} colors={item.tiles[2].colors} style={s.gridTile} />
+                      <MosaicTile icon={item.tiles[3].icon} colors={item.tiles[3].colors} style={s.gridTile} />
+                    </View>
+                  </View>
+                </View>
+
+                {/* Text content */}
+                <View style={s.textBlock}>
+                  <Text style={s.title}>{item.title}</Text>
+                  <Text style={s.subtitle}>{item.subtitle}</Text>
+                  <Text style={s.body}>{item.body}</Text>
+                </View>
+
+              </View>
+            ))}
+          </ScrollView>
+        )}
       </View>
 
-      {/* Buttons */}
-      <View style={[s.btnBar, { borderTopColor: isDark ? theme.border : 'rgba(0,0,0,0.08)' }]}>
-        {!isLast && (
-          <TouchableOpacity
-            style={[s.skipBtn, { backgroundColor: isDark ? theme.surfaceLight : 'rgba(255,255,255,0.82)', borderColor: isDark ? theme.border : 'rgba(255,255,255,0.9)' }]}
-            onPress={handleDone}
-          >
-            <Text style={[s.skipText, { color: theme.textMuted }]}>Skip</Text>
+      {/* ── Bottom bar ── */}
+      <View style={s.bottomBar}>
+
+        {/* Dots */}
+        <View style={s.dotsRow}>
+          {SLIDES.map((slide, i) => (
+            <View
+              key={slide.key}
+              style={[s.dot, i === currentIndex && s.dotActive]}
+            />
+          ))}
+        </View>
+
+        {/* Buttons */}
+        <View style={s.btnRow}>
+          {!isLast && (
+            <TouchableOpacity style={s.skipBtn} onPress={handleDone} activeOpacity={0.7}>
+              <Text style={s.skipTxt}>Skip</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={{ flex: 1 }} onPress={isLast ? handleDone : goNext} activeOpacity={0.88}>
+            <LinearGradient
+              colors={['#F97316', '#6366F1']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={s.nextBtn}
+            >
+              <Text style={s.nextTxt}>{isLast ? 'Get Started' : 'Next'}</Text>
+              <Ionicons
+                name={isLast ? 'checkmark' : 'arrow-forward'}
+                size={18}
+                color="#FFFFFF"
+              />
+            </LinearGradient>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[s.nextBtn, { backgroundColor: activeSlide.color, flex: isLast ? 1 : 0 }]}
-          onPress={isLast ? handleDone : goNext}
-          activeOpacity={0.85}
-        >
-          <Text style={[s.nextText, { color: '#021B3A' }]}>
-            {isLast ? 'Get Started' : 'Next'}
-          </Text>
-          <Ionicons
-            name={isLast ? 'checkmark' : 'arrow-forward'}
-            size={18}
-            color="#021B3A"
-          />
-        </TouchableOpacity>
+        </View>
+
       </View>
 
     </SafeAreaView>
-    </BlobBackground>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'transparent' },
+  root: { flex: 1, backgroundColor: '#FAFBFF' },
 
-  // Top logo bar
-  logoBar: { alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
-  logoPill: { borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
-  logoImg: { width: 130, height: 44 },
+  // Logo
+  logoBar:  { alignItems: 'center', paddingVertical: 14 },
+  logoPill: { backgroundColor: '#021B3A', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 9 },
+  logoImg:  { width: 110, height: 36 },
 
-  // Slide
-  flatlist: { flex: 1 },
-  slide: { paddingHorizontal: 28, paddingTop: 28, alignItems: 'center', gap: 14 },
-  iconCircle: {
-    width: 130, height: 130, borderRadius: 65,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, marginBottom: 4,
+  // Mosaic
+  mosaicWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: GAP,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: GAP,
   },
-  slideTitle:    { fontSize: 26, fontWeight: '900', textAlign: 'center' },
-  slideSubtitle: { fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: -6 },
-  slideBody:     { fontSize: 14, textAlign: 'center', lineHeight: 21, maxWidth: 300 },
-
-  // Features
-  featureList: { width: '100%', gap: 8 },
-  featureRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: 12, padding: 12,
-    borderWidth: 1, borderLeftWidth: 3,
+  heroTile: {
+    flex: 4,
+    borderRadius: 24,
   },
-  featureIconWrap: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  featureText: { fontSize: 14, fontWeight: '600' },
+  tileGrid: {
+    flex: 6,
+    gap: GAP,
+  },
+  tileRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: GAP,
+  },
+  gridTile: {
+    flex: 1,
+    borderRadius: 18,
+  },
+  tile: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  heroGlow: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-  // Dots
-  dotsRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingVertical: 16 },
-  dot: { height: 8, width: 8, borderRadius: 4 },
+  // Text
+  textBlock: {
+    paddingHorizontal: 28,
+    paddingTop: 20,
+    paddingBottom: 4,
+    gap: 5,
+  },
+  title:    { fontSize: 28, fontWeight: '900', color: '#0D1B3E', letterSpacing: -0.3 },
+  subtitle: { fontSize: 13, fontWeight: '700', color: '#6366F1' },
+  body:     { fontSize: 13, color: '#6B7280', lineHeight: 20, marginTop: 2 },
 
-  // Buttons
-  btnBar: {
-    flexDirection: 'row', paddingHorizontal: 24, paddingBottom: 20,
-    paddingTop: 12, gap: 12, borderTopWidth: 1,
+  // Bottom
+  bottomBar: {
+    paddingHorizontal: 24,
+    paddingBottom: 12,
+    paddingTop: 12,
+    gap: 14,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dot: {
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#D1D5DB',
+  },
+  dotActive: {
+    width: 24,
+    backgroundColor: '#F97316',
+  },
+  btnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
   },
   skipBtn: {
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderRadius: 14, borderWidth: 1, justifyContent: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  skipText: { fontWeight: '700', fontSize: 14 },
+  skipTxt: { color: '#6B7280', fontWeight: '700', fontSize: 14 },
   nextBtn: {
-    flex: 1, flexDirection: 'row', borderRadius: 14,
-    paddingVertical: 14, justifyContent: 'center', alignItems: 'center', gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 16,
+    paddingVertical: 16,
+    shadowColor: '#F97316',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
-  nextText: { fontWeight: '900', fontSize: 16 },
+  nextTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });
-
-
-
