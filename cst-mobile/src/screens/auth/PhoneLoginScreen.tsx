@@ -10,7 +10,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import BlobBackground from '../../components/BlobBackground';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'PhoneLogin'> };
 
@@ -95,7 +94,7 @@ export default function PhoneLoginScreen({ navigation }: Props) {
   };
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
           <View style={s.inner}>
@@ -199,7 +198,7 @@ export default function PhoneLoginScreen({ navigation }: Props) {
           />
         </SafeAreaView>
       </Modal>
-    </BlobBackground>
+    </View>
   );
 }
 

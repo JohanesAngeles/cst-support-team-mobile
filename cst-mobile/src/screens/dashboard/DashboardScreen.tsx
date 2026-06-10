@@ -11,7 +11,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
-import BlobBackground from '../../components/BlobBackground';
 import { MainStackParamList } from '../../navigation/MainStack';
 import {
   getLiveRevenue, getRevenue, getHOSEntries, getDeadlines,
@@ -160,7 +159,7 @@ export default function DashboardScreen() {
   const chartData = weekTrend.length === 7 ? weekTrend : Array(7).fill(0);
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
 
       {/* ── Header (fixed) ───────────────────────────────────────────────── */}
       <SafeAreaView style={{ backgroundColor: 'rgba(250,251,255,0.95)' }} edges={['top']}>
@@ -525,6 +524,6 @@ export default function DashboardScreen() {
 
 
       </ScrollView>
-    </BlobBackground>
+    </View>
   );
 }

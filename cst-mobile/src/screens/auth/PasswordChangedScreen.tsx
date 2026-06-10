@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import BlobBackground from '../../components/BlobBackground';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'PasswordChanged'> };
 
@@ -47,7 +46,7 @@ const cc = StyleSheet.create({
 export default function PasswordChangedScreen({ navigation }: Props) {
   const { t } = useTranslation();
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
         <View style={s.inner}>
           <View style={s.content}>
@@ -60,7 +59,7 @@ export default function PasswordChangedScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-    </BlobBackground>
+    </View>
   );
 }
 

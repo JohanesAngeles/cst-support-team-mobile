@@ -9,7 +9,6 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import BlobBackground from '../../components/BlobBackground';
 
 export const PREFERENCES_KEY = '@cst_preferences';
 
@@ -58,7 +57,7 @@ export default function PostSignupPreferencesScreen({ navigation }: Props) {
   };
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -96,7 +95,7 @@ export default function PostSignupPreferencesScreen({ navigation }: Props) {
 
         </ScrollView>
       </SafeAreaView>
-    </BlobBackground>
+    </View>
   );
 }
 

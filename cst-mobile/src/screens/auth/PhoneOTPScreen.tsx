@@ -11,7 +11,6 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import BlobBackground from '../../components/BlobBackground';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'PhoneOTP'>;
@@ -137,7 +136,7 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
     : phone;
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
           <View style={s.inner}>
@@ -195,7 +194,7 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </BlobBackground>
+    </View>
   );
 }
 

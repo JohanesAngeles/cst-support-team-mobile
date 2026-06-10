@@ -12,7 +12,6 @@ import { SUPPORTED_LANGUAGES, changeLanguage, LanguageCode } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import BlobBackground from '../../components/BlobBackground';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'LanguageSelection'> };
 
@@ -48,7 +47,7 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
   };
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
         {/* Header */}
@@ -125,7 +124,7 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
         </View>
 
       </SafeAreaView>
-    </BlobBackground>
+    </View>
   );
 }
 

@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
-import BlobBackground from '../../components/BlobBackground';
 
 function SparkleCluster() {
   return (
@@ -82,7 +81,7 @@ export default function VerifyEmailScreen() {
   };
 
   return (
-    <BlobBackground style={{ flex: 1 }}>
+    <View style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
           <View style={s.inner}>
@@ -120,7 +119,7 @@ export default function VerifyEmailScreen() {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </BlobBackground>
+    </View>
   );
 }
 

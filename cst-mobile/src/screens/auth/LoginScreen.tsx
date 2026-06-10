@@ -17,7 +17,6 @@ import { googleAuth, appleAuth } from '../../api/socialAuth';
 import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID } from '../../constants/googleAuth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import SparkleCluster from '../../components/auth/SparkleCluster';
-import BlobBackground from '../../components/BlobBackground';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -96,7 +95,7 @@ export default function LoginScreen({ navigation }: Props) {
   ];
 
   return (
-    <BlobBackground style={s.root}>
+    <View style={s.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} bounces={false}>
@@ -181,7 +180,7 @@ export default function LoginScreen({ navigation }: Props) {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </BlobBackground>
+    </View>
   );
 }
 
