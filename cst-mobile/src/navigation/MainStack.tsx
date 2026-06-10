@@ -169,23 +169,26 @@ const Stack = createNativeStackNavigator<MainStackParamList>();
 
 export default function MainStack() {
   const Colors = useColors();
+  const headerBg = Colors.dark
+    ? 'rgba(8,12,24,0.88)'
+    : 'rgba(245,247,255,0.88)';
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: Colors.background },
-        headerShadowVisible: true,
+        headerStyle: { backgroundColor: headerBg },
+        headerShadowVisible: false,
         headerTintColor: Colors.text,
         headerTitleStyle: { fontWeight: '800', fontSize: 17, color: Colors.text },
         headerBackTitle: 'Back',
-        contentStyle: { backgroundColor: Colors.background },
+        contentStyle: { backgroundColor: 'transparent' },
       }}
     >
       <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
       <Stack.Screen name="TaxCalculator" component={TaxCalculatorScreen} options={{ title: 'Tax Calculator' }} />
       <Stack.Screen name="AILegal" component={AILegalScreen} options={{ title: 'AI Legal Assistant' }} />
       <Stack.Screen name="Calendar" component={CalendarScreen} options={{ title: 'Driver Calendar' }} />
-      <Stack.Screen name="EmergencySOS" component={EmergencySOSScreen} options={{ title: 'Emergency Response', headerStyle: { backgroundColor: Colors.danger } }} />
+      <Stack.Screen name="EmergencySOS" component={EmergencySOSScreen} options={{ title: 'Emergency Response', headerStyle: { backgroundColor: Colors.danger }, contentStyle: { backgroundColor: Colors.danger } }} />
       <Stack.Screen name="Maintenance" component={MaintenanceScreen} options={{ title: 'Maintenance Tracker' }} />
       <Stack.Screen name="ProfitLoss" component={ProfitLossScreen} options={{ title: 'Profit & Loss' }} />
       <Stack.Screen name="StateLaw" component={StateLawScreen} options={{ title: 'State Law Reference' }} />
@@ -205,7 +208,7 @@ export default function MainStack() {
       <Stack.Screen name="Expenses" component={ExpensesScreen} options={{ title: 'Expenses Tracker' }} />
       <Stack.Screen name="IFTATracker" component={IFTATrackerScreen} options={{ title: 'IFTA Tracker' }} />
       <Stack.Screen name="TruckProfile" component={TruckProfileScreen} options={{ title: 'My Truck' }} />
-      <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.danger } }} />
+      <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.danger }, contentStyle: { backgroundColor: Colors.danger } }} />
       <Stack.Screen name="FindHelp" component={FindHelpScreen} options={{ title: 'Find Help Near Me' }} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'CST Subscription' }} />
       <Stack.Screen name="TruckerMap" component={TruckerMapScreen} options={{ headerShown: false }} />

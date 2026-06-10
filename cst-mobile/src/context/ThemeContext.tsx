@@ -9,7 +9,8 @@ const STORAGE_KEY = '@cst_theme';
 
 export const LightTheme = {
   dark: false,
-  background:   '#FAFBFF',
+  background:   'transparent',
+  backgroundSolid: '#FAFBFF',
   surface:      '#F5F7FA',
   surfaceLight: '#EBEEF2',
   primary:      '#021B3A',
@@ -32,7 +33,8 @@ export const LightTheme = {
 
 export const DarkTheme = {
   dark: true,
-  background:   '#021B3A',
+  background:   'transparent',
+  backgroundSolid: '#021B3A',
   surface:      '#0A2447',
   surfaceLight: '#0F2D57',
   primary:      '#021B3A',

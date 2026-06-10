@@ -53,7 +53,7 @@ interface Props {
 //   Indigo — bottom right
 export default function BlobBackground({ children, style }: Props) {
   return (
-    <View style={[{ flex: 1, backgroundColor: '#FAFBFF' }, style]}>
+    <View style={[{ flex: 1 }, style]}>
       {/* Blob layer — rendered first so it sits behind all children */}
       <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
         <Blob color="#F97316" width={360} height={320} style={{ top: 80,  left: -80 }} />

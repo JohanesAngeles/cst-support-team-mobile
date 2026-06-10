@@ -23,6 +23,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import SplashScreen from './src/screens/SplashScreen';
 import OfflineBanner from './src/components/OfflineBanner';
 import BiometricLock from './src/components/BiometricLock';
+import AnimatedGradientBackground from './src/components/AnimatedGradientBackground';
 import { addNotification } from './src/utils/notificationHistory';
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
@@ -60,12 +61,14 @@ function Root() {
   }, []);
 
   return (
-    <BiometricLock>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
-      <OfflineBanner />
-      <AppNavigator />
-      {!splashDone && <SplashScreen onFinish={() => setSplashDone(true)} />}
-    </BiometricLock>
+    <AnimatedGradientBackground>
+      <BiometricLock>
+        <StatusBar style={isDark ? 'light' : 'dark'} translucent backgroundColor="transparent" />
+        <OfflineBanner />
+        <AppNavigator />
+        {!splashDone && <SplashScreen onFinish={() => setSplashDone(true)} />}
+      </BiometricLock>
+    </AnimatedGradientBackground>
   );
 }
 

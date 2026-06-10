@@ -137,9 +137,10 @@ export default function MainTabs() {
   return (
     <Tab.Navigator
       tabBar={props => <GlassTabBar {...props} />}
+      sceneContainerStyle={{ backgroundColor: 'transparent' }}
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { display: 'none' }, // hide default bar — GlassTabBar replaces it
+        tabBarStyle: { display: 'none' },
       }}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
