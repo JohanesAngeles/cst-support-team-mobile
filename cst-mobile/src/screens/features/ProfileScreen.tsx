@@ -379,7 +379,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: bg }]} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 48 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
 
         {/* ── Header banner ──────────────────────────────────────────────── */}
         <LinearGradient
@@ -459,7 +459,7 @@ export default function ProfileScreen() {
         </LinearGradient>
 
         {/* ── Appearance ─────────────────────────────────────────────────── */}
-        <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+        <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder, marginTop: 16 }]}>
           <View style={s.groupHeader}>
             <Ionicons name="color-palette-outline" size={15} color={muted} />
             <Text style={[s.groupTitle, { color: muted }]}>{t('profile.appearance')}</Text>
@@ -524,35 +524,29 @@ export default function ProfileScreen() {
         {renderMenuGroup('Legal & About', 'information-circle-outline', LEGAL_ITEMS)}
 
         {/* ── Sign Out ────────────────────────────────────────────────────── */}
+        <TouchableOpacity style={s.signOutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          <Ionicons name="log-out-outline" size={18} color="#DC2626" />
+          <Text style={s.signOutText}>{t('profile.signOut')}</Text>
+        </TouchableOpacity>
+
+        {/* ── Delete Account ──────────────────────────────────────────────── */}
         <TouchableOpacity
-          style={[s.signOutRow, { backgroundColor: cardBg, borderColor: cardBorder }]}
-          onPress={handleLogout}
-          activeOpacity={0.7}
+          style={s.deleteBtn}
+          onPress={() => { setDeletePw(''); setDeleteModal(true); }}
+          activeOpacity={0.8}
         >
-          <View style={[s.menuIconBox, { backgroundColor: 'rgba(220,38,38,0.10)' }]}>
-            <Ionicons name="log-out-outline" size={17} color="#DC2626" />
-          </View>
-          <Text style={[s.menuLabel, { color: '#DC2626', fontWeight: '700' }]}>{t('profile.signOut')}</Text>
+          <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+          <Text style={s.deleteBtnText}>{t('profile.deleteAccount')}</Text>
         </TouchableOpacity>
 
         {/* ── Footer ──────────────────────────────────────────────────────── */}
-        <View style={[s.footer, { borderTopColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
-          <View>
-            <Text style={[s.versionText, { color: muted }]}>
-              {t('profile.version')} {APP_VERSION} ({BUILD_NUMBER})
-            </Text>
-            <Text style={[s.copyrightText, { color: muted }]}>
-              © CST Driver · Commercial Support Tech
-            </Text>
-          </View>
-          <TouchableOpacity
-            style={[s.deleteAcctLink]}
-            onPress={() => { setDeletePw(''); setDeleteModal(true); }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="trash-outline" size={13} color="#CC0000" />
-            <Text style={s.deleteAcctText}>{t('profile.deleteAccount')}</Text>
-          </TouchableOpacity>
+        <View style={s.footer}>
+          <Text style={[s.versionText, { color: muted }]}>
+            {t('profile.version')} {APP_VERSION} ({BUILD_NUMBER})
+          </Text>
+          <Text style={[s.copyrightText, { color: muted }]}>
+            © CST Driver · Commercial Support Tech
+          </Text>
         </View>
 
       </ScrollView>
@@ -751,22 +745,31 @@ const s = StyleSheet.create({
   proBadge:     { backgroundColor: '#F97316', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   proBadgeText: { color: '#FFFFFF', fontSize: 10, fontWeight: '800' },
 
-  // ── Sign Out row ─────────────────────────────────────────────────────────────
-  signOutRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 13,
-    marginHorizontal: 16, marginBottom: 10, borderRadius: 18,
-    borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14,
+  // ── Sign Out ─────────────────────────────────────────────────────────────────
+  signOutBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    marginHorizontal: 16, marginBottom: 10, borderRadius: 14,
+    paddingVertical: 15,
+    backgroundColor: 'rgba(220,38,38,0.08)',
+    borderWidth: 1.5, borderColor: '#DC2626',
   },
+  signOutText: { color: '#DC2626', fontSize: 15, fontWeight: '700' },
+
+  // ── Delete Account ────────────────────────────────────────────────────────────
+  deleteBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    marginHorizontal: 16, marginBottom: 20, borderRadius: 14,
+    paddingVertical: 15,
+    backgroundColor: '#CC0000',
+  },
+  deleteBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 
   // ── Footer ──────────────────────────────────────────────────────────────────
   footer: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
-    marginHorizontal: 16, marginTop: 8, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center', marginTop: 4, marginBottom: 8, gap: 2,
   },
-  versionText:    { fontSize: 12, marginBottom: 2 },
-  copyrightText:  { fontSize: 11 },
-  deleteAcctLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  deleteAcctText: { color: '#CC0000', fontSize: 12, fontWeight: '600' },
+  versionText:    { fontSize: 12, textAlign: 'center' },
+  copyrightText:  { fontSize: 11, textAlign: 'center' },
 
   // ── Delete warning ───────────────────────────────────────────────────────────
   deleteWarningHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
