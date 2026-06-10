@@ -6,7 +6,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
+import BlobBackground from './BlobBackground';
 
 const BIOMETRIC_KEY   = '@cst_biometric_enabled';
 const BG_TIME_KEY     = '@cst_bg_time';
@@ -88,56 +90,65 @@ export default function BiometricLock({ children }: Props) {
   if (!locked) return <>{children}</>;
 
   return (
-    <View style={s.overlay}>
-      <View style={s.logoPill}>
-        <Image
-          source={require('../../assets/logo/cst_logo_white.png')}
-          style={s.logo}
-          resizeMode="contain"
-        />
+    <BlobBackground style={{ ...StyleSheet.absoluteFillObject, zIndex: 9999, backgroundColor: '#0A0F1E' }}>
+      <View style={s.overlay}>
+        <View style={s.logoPill}>
+          <Image
+            source={require('../../assets/logo/cst_logo_white.png')}
+            style={s.logo}
+            resizeMode="contain"
+          />
+        </View>
+
+        <Text style={s.heading}>App Locked</Text>
+        <Text style={s.sub}>Authenticate to continue</Text>
+
+        {error ? <Text style={s.error}>{error}</Text> : null}
+
+        <TouchableOpacity style={s.btnWrap} onPress={authenticate} disabled={checking} activeOpacity={0.85}>
+          <LinearGradient
+            colors={['#F97316', '#6366F1']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={s.btn}
+          >
+            {checking
+              ? <ActivityIndicator color="#FFFFFF" />
+              : <>
+                  <Ionicons name="finger-print-outline" size={24} color="#FFFFFF" />
+                  <Text style={s.btnTxt}>Unlock with Biometrics</Text>
+                </>
+            }
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
-
-      <Text style={s.heading}>App Locked</Text>
-      <Text style={s.sub}>Authenticate to continue</Text>
-
-      {error ? <Text style={s.error}>{error}</Text> : null}
-
-      <TouchableOpacity style={s.btn} onPress={authenticate} disabled={checking} activeOpacity={0.85}>
-        {checking
-          ? <ActivityIndicator color="#021B3A" />
-          : <>
-              <Ionicons name="finger-print-outline" size={24} color="#021B3A" />
-              <Text style={s.btnTxt}>Unlock with Biometrics</Text>
-            </>
-        }
-      </TouchableOpacity>
-    </View>
+    </BlobBackground>
   );
 }
 
 const s = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#021B3A',
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
-    zIndex: 9999,
     padding: 40,
   },
   logoPill: {
-    backgroundColor: '#0A2447',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
     borderRadius: 20, paddingHorizontal: 28, paddingVertical: 16,
     marginBottom: 12,
   },
   logo:    { width: 180, height: 64 },
   heading: { color: '#FFFFFF', fontSize: 26, fontWeight: '900' },
-  sub:     { color: '#8FA3B1', fontSize: 14 },
+  sub:     { color: 'rgba(255,255,255,0.55)', fontSize: 14 },
   error:   { color: '#E74C3C', fontSize: 13, textAlign: 'center' },
+  btnWrap: { marginTop: 8 },
   btn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#F5A623', borderRadius: 16,
-    paddingHorizontal: 32, paddingVertical: 16, marginTop: 8,
+    borderRadius: 16,
+    paddingHorizontal: 32, paddingVertical: 16,
   },
-  btnTxt: { color: '#021B3A', fontSize: 16, fontWeight: '800' },
+  btnTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
 });

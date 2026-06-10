@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
+import BlobBackground from '../../components/BlobBackground';
 
 const { width } = Dimensions.get('window');
 
@@ -115,8 +116,8 @@ export default function OnboardingScreen({ onComplete }: Props) {
           <View
             key={f.text}
             style={[s.featureRow, {
-              backgroundColor: isDark ? theme.surface : theme.surfaceLight,
-              borderColor: isDark ? theme.border : item.color + '22',
+              backgroundColor: isDark ? theme.surface : 'rgba(255,255,255,0.82)',
+              borderColor: isDark ? theme.border : 'rgba(255,255,255,0.9)',
               borderLeftColor: item.color,
             }]}
           >
@@ -132,10 +133,11 @@ export default function OnboardingScreen({ onComplete }: Props) {
   );
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: theme.background }]}>
+    <BlobBackground style={{ flex: 1 }}>
+    <SafeAreaView style={s.container}>
 
       {/* Logo at top */}
-      <View style={[s.logoBar, { borderBottomColor: theme.border }]}>
+      <View style={[s.logoBar, { borderBottomColor: isDark ? theme.border : 'rgba(0,0,0,0.08)' }]}>
         <View style={[s.logoPill, { backgroundColor: '#021B3A' }]}>
           <Image
             source={require('../../../assets/logo/cst_logo_white.png')}
@@ -174,10 +176,10 @@ export default function OnboardingScreen({ onComplete }: Props) {
       </View>
 
       {/* Buttons */}
-      <View style={[s.btnBar, { borderTopColor: theme.border }]}>
+      <View style={[s.btnBar, { borderTopColor: isDark ? theme.border : 'rgba(0,0,0,0.08)' }]}>
         {!isLast && (
           <TouchableOpacity
-            style={[s.skipBtn, { backgroundColor: isDark ? theme.surfaceLight : theme.surface, borderColor: theme.border }]}
+            style={[s.skipBtn, { backgroundColor: isDark ? theme.surfaceLight : 'rgba(255,255,255,0.82)', borderColor: isDark ? theme.border : 'rgba(255,255,255,0.9)' }]}
             onPress={handleDone}
           >
             <Text style={[s.skipText, { color: theme.textMuted }]}>Skip</Text>
@@ -200,11 +202,12 @@ export default function OnboardingScreen({ onComplete }: Props) {
       </View>
 
     </SafeAreaView>
+    </BlobBackground>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, backgroundColor: 'transparent' },
 
   // Top logo bar
   logoBar: { alignItems: 'center', paddingVertical: 16, borderBottomWidth: 1 },
