@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/node';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import { Server } from 'socket.io';
@@ -48,6 +49,9 @@ import cargoClaimsRoutes from './routes/cargo-claims';
 import socialAuthRoutes from './routes/social-auth';
 import fuelRoutes from './routes/fuel';
 import legalRoutes from './routes/legal';
+import partnerApplicationsRoutes from './routes/partner-applications';
+import partnerRoutes from './routes/partner';
+import adminRoutes from './routes/admin';
 import uploadsRoutes from './routes/uploads';
 import translateRoutes from './routes/translate';
 import { initCronJobs } from './cron/notificationCron';
@@ -131,13 +135,24 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Limit expensive third-party API calls (Grok AI, DeepL) to prevent cost abuse
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  message: { message: 'Too many requests, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRoutes);
-app.use('/api/ai', aiRoutes);
+app.use('/api/ai', apiLimiter, aiRoutes);
+app.use('/api/translate', apiLimiter, translateRoutes);
 app.use('/api/expenses', expensesRoutes);
 app.use('/api/ifta', iftaRoutes);
 app.use('/api/truck', truckRoutes);
@@ -175,8 +190,10 @@ app.use('/api/cdl-docs', cdlDocsRoutes);
 app.use('/api/cargo-claims', cargoClaimsRoutes);
 app.use('/api/fuel', fuelRoutes);
 app.use('/api/uploads', uploadsRoutes);
-app.use('/api/translate', translateRoutes);
 app.use('/', legalRoutes);
+app.use('/api/partner-applications', partnerApplicationsRoutes);
+app.use('/api/partner', partnerRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });
