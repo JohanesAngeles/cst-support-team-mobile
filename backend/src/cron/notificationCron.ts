@@ -4,6 +4,7 @@ import Deadline from '../models/Deadline';
 import MaintenanceRecord from '../models/MaintenanceRecord';
 import HOSEntry from '../models/HOSEntry';
 import { sendPushToUser } from '../routes/notifications';
+import { syncApprovedPartners } from './partnerSyncCron';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -93,4 +94,10 @@ export function initCronJobs(): void {
   // Daily at 8:00 AM UTC
   cron.schedule('0 8 * * *', runNotifications);
   console.log('[cron] Notification jobs scheduled (daily @ 08:00 UTC)');
+
+  // Every hour — sync approved founding partners from website DB
+  cron.schedule('0 * * * *', syncApprovedPartners);
+  // Run once immediately on startup so listings are available right away
+  syncApprovedPartners();
+  console.log('[cron] Partner sync scheduled (every hour + immediate run on startup)');
 }
