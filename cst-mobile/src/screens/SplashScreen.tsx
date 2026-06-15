@@ -5,8 +5,7 @@ interface Props {
   onFinish: () => void;
 }
 
-// Splash always uses dark bg — logo is white, needs dark background
-const BG = '#021B3A';
+const BG = '#FFFFFF';
 const GOLD = '#2C6EBD';
 
 export default function SplashScreen({ onFinish }: Props) {
@@ -33,7 +32,7 @@ export default function SplashScreen({ onFinish }: Props) {
       {/* Logo */}
       <Animated.View style={[s.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
         <Image
-          source={require('../../assets/logo/cst_logo_white.png')}
+          source={require('../../assets/road_ready_logo.png')}
           style={s.logo}
           resizeMode="contain"
         />
@@ -79,7 +78,7 @@ const s = StyleSheet.create({
     borderRadius: 1,
   },
   tagline: {
-    color: '#8FA3B1',
+    color: '#6B7280',
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: 0.6,
@@ -87,7 +86,7 @@ const s = StyleSheet.create({
   version: {
     position: 'absolute',
     bottom: 48,
-    color: '#1A3560',
+    color: '#AEAEB2',
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,

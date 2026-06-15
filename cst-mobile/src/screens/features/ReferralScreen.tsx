@@ -74,8 +74,8 @@ export default function ReferralScreen() {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `Join me on CST — the #1 app for truck drivers! Use my referral code ${referralCode} when you sign up and we both save.\n\nDownload CST now!`,
-        title: 'Join CST Driver App',
+        message: `Join me on Road Ready Network — the #1 app for truck drivers! Use my referral code ${referralCode} when you sign up and we both save.\n\nDownload Road Ready Network now!`,
+        title: 'Join Road Ready Network',
       });
     } catch (err: any) {
       Alert.alert('Error', err.message);
@@ -109,7 +109,7 @@ export default function ReferralScreen() {
             <Ionicons name="gift-outline" size={40} color={Colors.secondary} />
           </View>
           <Text style={styles.heroTitle}>Refer a Fellow Driver</Text>
-          <Text style={styles.heroSub}>Share CST with other drivers. When they join, you both get rewarded — every month they stay is money in your pocket.</Text>
+          <Text style={styles.heroSub}>Share Road Ready Network with other drivers. When they join, you both get rewarded — every month they stay is money in your pocket.</Text>
         </View>
 
         {/* Your code */}
@@ -188,7 +188,7 @@ export default function ReferralScreen() {
               style={styles.applyInput}
               value={applyCode}
               onChangeText={v => setApplyCode(v.toUpperCase())}
-              placeholder="Enter code (e.g. CSTABC123)"
+              placeholder="Enter code (e.g. RRN123)"
               placeholderTextColor={Colors.textMuted}
               autoCapitalize="characters"
               maxLength={12}

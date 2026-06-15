@@ -11,7 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import { getHOSEntries } from '../../api/features';
 
-const STORAGE_KEY = '@cst_hos_alerts';
+const STORAGE_KEY = '@rrn_hos_alerts';
 
 interface AlertSettings {
   enabled: boolean;

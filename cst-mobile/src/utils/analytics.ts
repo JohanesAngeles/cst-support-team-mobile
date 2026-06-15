@@ -4,13 +4,13 @@ export function useAnalytics() {
   const posthog = usePostHog();
 
   return {
-    track(event: string, props?: Record<string, unknown>) {
+    track(event: string, props?: Record<string, string | number | boolean>) {
       posthog?.capture(event, props);
     },
-    screen(name: string, props?: Record<string, unknown>) {
+    screen(name: string, props?: Record<string, string | number | boolean>) {
       posthog?.screen(name, props);
     },
-    identify(userId: string, traits?: Record<string, unknown>) {
+    identify(userId: string, traits?: Record<string, string | number | boolean>) {
       posthog?.identify(userId, traits);
     },
     reset() {

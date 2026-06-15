@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../api/auth';
 import { registerPushToken, unregisterPushToken } from '../utils/notifications';
 import { setLogoutHandler } from '../api/client';
@@ -9,6 +10,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  role?: 'driver' | 'admin' | 'partner';
   isVerified: boolean;
   avatarUrl?: string | null;
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
@@ -54,16 +56,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadStoredAuth = async () => {
       try {
-        const storedToken = await AsyncStorage.getItem('token');
+        const storedToken = await SecureStore.getItemAsync('token');
         if (storedToken) {
           setToken(storedToken);
           const res = await authAPI.getMe();
           setUser(res.data.user);
-          const v = await AsyncStorage.getItem('@cst_onboarded');
+          const v = await AsyncStorage.getItem('@rrn_onboarded');
           setOnboarded(v === 'true');
         }
       } catch {
-        await AsyncStorage.removeItem('token');
+        await SecureStore.deleteItemAsync('token');
       } finally {
         setLoading(false);
       }
@@ -74,10 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     const res = await authAPI.login({ email, password });
     const { token: t, user: u } = res.data;
-    await AsyncStorage.setItem('token', t);
+    await SecureStore.setItemAsync('token', t);
     setToken(t);
     setUser(u);
-    const v = await AsyncStorage.getItem('@cst_onboarded');
+    const v = await AsyncStorage.getItem('@rrn_onboarded');
     setOnboarded(v === 'true');
     registerPushToken();
   };
@@ -88,16 +90,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Save token so app restart can recover, but do NOT set user state yet.
     // Keeping user=null means: AuthStack stays visible naturally,
     // and BiometricLock won't trigger (it only fires when user transitions null→value).
-    await AsyncStorage.setItem('token', t);
+    await SecureStore.setItemAsync('token', t);
     pendingReg.current = { token: t, user: u };
     registerPushToken();
   };
 
   const loginWithSocial = async (t: string, u: User) => {
-    await AsyncStorage.setItem('token', t);
+    await SecureStore.setItemAsync('token', t);
     setToken(t);
     setUser(u);
-    const v = await AsyncStorage.getItem('@cst_onboarded');
+    const v = await AsyncStorage.getItem('@rrn_onboarded');
     setOnboarded(v === 'true');
     registerPushToken();
   };
@@ -114,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     unregisterPushToken();
-    await AsyncStorage.removeItem('token');
+    await SecureStore.deleteItemAsync('token');
     pendingReg.current = null;
     setToken(null);
     setUser(null);
@@ -134,13 +136,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const completeOnboarding = async () => {
-    await AsyncStorage.setItem('@cst_onboarded', 'true');
+    await AsyncStorage.setItem('@rrn_onboarded', 'true');
     setOnboarded(true);
   };
 
   // Resets the onboarding flag so the tour shows again — no logout needed
   const resetOnboarding = async () => {
-    await AsyncStorage.removeItem('@cst_onboarded');
+    await AsyncStorage.removeItem('@rrn_onboarded');
     setOnboarded(false);
   };
 

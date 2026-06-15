@@ -20,7 +20,7 @@
   "auth": {
     "login": {
       "greeting": "¡Hola, Bienvenido! 👋",
-      "subtitle": "Inicia sesión en tu cuenta CST",
+      "subtitle": "Inicia sesión en Road Ready Network",
       "emailLabel": "Correo electrónico",
       "emailPlaceholder": "Tu correo",
       "passwordLabel": "Contraseña",
@@ -178,6 +178,7 @@
   "tabs": {
     "dashboard": "Inicio",
     "docs": "Docs",
+    "game": "Juego",
     "tools": "Herramientas",
     "fuel": "Combustible",
     "profile": "Perfil"
@@ -258,8 +259,8 @@
     "passwordPlaceholder": "Tu contraseña",
     "exportingData": "Exportando tus datos...",
     "exportTitle": "Mi exportación de datos CST",
-    "shareMessage": "¡Descubre CST Driver — la app definitiva para camioneros! Descárgala gratis en App Store y Google Play.",
-    "rateAlertTitle": "Califica CST Driver",
+    "shareMessage": "¡Descubre Road Ready Network — la app definitiva para camioneros! Descárgala gratis en App Store y Google Play.",
+    "rateAlertTitle": "Califica Road Ready Network",
     "rateAlertMsg": "¿Disfrutas la app? Déjanos una reseña — ¡ayuda a otros conductores a encontrarnos!"
   },
   "notifications": {

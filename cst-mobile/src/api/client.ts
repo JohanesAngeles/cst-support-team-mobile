@@ -1,5 +1,5 @@
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 const BASE_URL = 'https://cst-support-api-3020a5341eb4.herokuapp.com/api';
 
@@ -13,7 +13,7 @@ let _logoutHandler: (() => void) | null = null;
 export const setLogoutHandler = (fn: () => void) => { _logoutHandler = fn; };
 
 client.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('token');
+  const token = await SecureStore.getItemAsync('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CST Driver",
+    "name": "Road Ready Network",
     "slug": "cst-mobile",
     "version": "1.0.0",
     "scheme": "cst",
@@ -9,20 +9,19 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/road_ready_logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A3A5C"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cst.driver",
       "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "CST uses your location to find nearby fuel stops, truck stops, rest areas, and emergency services.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "CST uses your location to find nearby truck stops, fuel, and emergency services.",
-        "NSDocumentPickerUsageDescription": "CST needs access to your files to store documents in your Document Vault.",
-        "NSPhotoLibraryUsageDescription": "CST needs access to your photos to attach images to documents and update your profile picture.",
-        "NSCameraUsageDescription": "CST uses the camera to let you take a profile photo.",
+        "NSLocationWhenInUseUsageDescription": "Road Ready Network uses your location to find nearby fuel stops, truck stops, rest areas, and emergency services.",
+        "NSDocumentPickerUsageDescription": "Road Ready Network needs access to your files to store documents in your Document Vault.",
+        "NSPhotoLibraryUsageDescription": "Road Ready Network needs access to your photos to attach images to documents and update your profile picture.",
+        "NSCameraUsageDescription": "Road Ready Network uses the camera to let you take a profile photo.",
         "UIBackgroundModes": [
           "remote-notification"
         ]
@@ -38,12 +37,16 @@
       "package": "com.cst.driver",
       "versionCode": 1,
       "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.VIBRATE",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -63,7 +66,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "CST uses your location to find nearby fuel stops, truck stops, and emergency services."
+          "locationAlwaysAndWhenInUsePermission": "Road Ready Network uses your location to find nearby fuel stops, truck stops, and emergency services."
         }
       ],
       [
@@ -76,17 +79,20 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "CST needs access to your photos to update your profile picture.",
-          "cameraPermission": "CST uses the camera to take a profile photo."
+          "photosPermission": "Road Ready Network needs access to your photos to update your profile picture.",
+          "cameraPermission": "Road Ready Network uses the camera to take a profile photo."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-secure-store",
+      "@sentry/react-native",
+      "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "your-eas-project-id"
+        "projectId": "4911ea0c-485c-45a3-9902-a721a851155c"
       }
     },
-    "owner": "your-expo-username"
+    "owner": "california-school-of-trucking"
   }
 }

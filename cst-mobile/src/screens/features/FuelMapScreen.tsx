@@ -151,7 +151,7 @@ export default function FuelMapScreen() {
             {index === 1 ? '🥇 Cheapest region' : index === rest.length ? '🔴 Most expensive' : `#${index} of ${rest.length}`}
           </Text>
           <View style={styles.barWrap}>
-            <View style={[styles.barFill, { width: `${(barPct * 100).toFixed(0)}%`, backgroundColor: priceColor }]} />
+            <View style={[styles.barFill, { width: `${(barPct * 100).toFixed(0)}%` as `${number}%`, backgroundColor: priceColor }]} />
           </View>
         </View>
         <View style={styles.cardRight}>

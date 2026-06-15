@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feature } from '../constants/features';
 
-const KEY = '@cst_recent_features';
+const KEY = '@rrn_recent_features';
 const MAX = 5;
 
 export type RecentFeature = Pick<Feature, 'label' | 'icon' | 'color' | 'desc' | 'screen'>;

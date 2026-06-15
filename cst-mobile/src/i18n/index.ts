@@ -12,23 +12,18 @@ import zh from './locales/zh.json';
 import ru from './locales/ru.json';
 
 export const SUPPORTED_LANGUAGES = [
-  { code: 'en', name: 'English',    nativeName: 'English',    countryCode: 'us' },
-  { code: 'es', name: 'Spanish',    nativeName: 'Español',    countryCode: 'es' },
-  { code: 'fr', name: 'French',     nativeName: 'Français',   countryCode: 'fr' },
-  { code: 'de', name: 'German',     nativeName: 'Deutsch',    countryCode: 'de' },
-  { code: 'it', name: 'Italian',    nativeName: 'Italiano',   countryCode: 'it' },
-  { code: 'zh', name: 'Chinese',    nativeName: '中文',        countryCode: 'cn' },
-  { code: 'ru', name: 'Russian',    nativeName: 'Русский',    countryCode: 'ru' },
-  { code: 'pt', name: 'Portuguese', nativeName: 'Português',  countryCode: 'br' },
-  { code: 'ar', name: 'Arabic',     nativeName: 'العربية',    countryCode: 'sa' },
-  { code: 'ja', name: 'Japanese',   nativeName: '日本語',      countryCode: 'jp' },
-  { code: 'ko', name: 'Korean',     nativeName: '한국어',      countryCode: 'kr' },
-  { code: 'hi', name: 'Hindi',      nativeName: 'हिन्दी',      countryCode: 'in' },
+  { code: 'en', name: 'English', nativeName: 'English', countryCode: 'us' },
+  { code: 'es', name: 'Spanish', nativeName: 'Español', countryCode: 'es' },
+  { code: 'fr', name: 'French',  nativeName: 'Français', countryCode: 'fr' },
+  { code: 'de', name: 'German',  nativeName: 'Deutsch',  countryCode: 'de' },
+  { code: 'it', name: 'Italian', nativeName: 'Italiano', countryCode: 'it' },
+  { code: 'zh', name: 'Chinese', nativeName: '中文',      countryCode: 'cn' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский',  countryCode: 'ru' },
 ] as const;
 
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code'];
 
-export const LANGUAGE_STORAGE_KEY = '@cst_language';
+export const LANGUAGE_STORAGE_KEY = '@rrn_language';
 
 // Detect device language, falling back to English
 function getDeviceLanguage(): string {

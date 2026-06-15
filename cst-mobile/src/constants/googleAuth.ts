@@ -10,6 +10,6 @@
 // All three must have "Authorized redirect URIs" / "Allowed origins" configured
 // in the Google Cloud Console for the flows to succeed.
 
-export const GOOGLE_WEB_CLIENT_ID     = 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com';
-export const GOOGLE_IOS_CLIENT_ID     = 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com';
-export const GOOGLE_ANDROID_CLIENT_ID = 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com';
+export const GOOGLE_WEB_CLIENT_ID     = '382199502733-rq76uj90r0oucs12q6874j47srvc0ctb.apps.googleusercontent.com';
+export const GOOGLE_IOS_CLIENT_ID     = '382199502733-frfjk9a7858gbt47vvu396utvb0j39i4.apps.googleusercontent.com';
+export const GOOGLE_ANDROID_CLIENT_ID = '382199502733-ocvpoj6rs9d5t7rjbpj1q2kfj3bmvr8u.apps.googleusercontent.com';

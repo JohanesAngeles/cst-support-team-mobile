@@ -20,7 +20,7 @@
   "auth": {
     "login": {
       "greeting": "Hallo, Willkommen! 👋",
-      "subtitle": "Melden Sie sich bei Ihrem CST-Konto an",
+      "subtitle": "Melden Sie sich bei Road Ready Network an",
       "emailLabel": "E-Mail-Adresse",
       "emailPlaceholder": "Ihre E-Mail",
       "passwordLabel": "Passwort",
@@ -178,6 +178,7 @@
   "tabs": {
     "dashboard": "Start",
     "docs": "Docs",
+    "game": "Spiel",
     "tools": "Tools",
     "fuel": "Kraftstoff",
     "profile": "Profil"
@@ -258,8 +259,8 @@
     "passwordPlaceholder": "Ihr Passwort",
     "exportingData": "Daten werden exportiert...",
     "exportTitle": "Mein CST-Datenexport",
-    "shareMessage": "Entdecken Sie CST Driver — die ultimative App für LKW-Fahrer! Kostenlos im App Store und Google Play.",
-    "rateAlertTitle": "CST Driver bewerten",
+    "shareMessage": "Entdecken Sie Road Ready Network — die ultimative App für LKW-Fahrer! Kostenlos im App Store und Google Play.",
+    "rateAlertTitle": "Road Ready Network bewerten",
     "rateAlertMsg": "Gefällt Ihnen die App? Hinterlassen Sie eine Bewertung — es hilft anderen Fahrern, uns zu finden!"
   },
   "notifications": {

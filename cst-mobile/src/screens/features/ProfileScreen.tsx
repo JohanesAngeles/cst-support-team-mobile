@@ -24,8 +24,9 @@ import { MainStackParamList } from '../../navigation/MainStack';
 
 const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '1';
-const IOS_STORE_URL   = 'https://apps.apple.com/app/id000000000';
-const ANDROID_STORE_URL = `https://play.google.com/store/apps/details?id=com.cst.driver`;
+const IOS_APP_ID = process.env.EXPO_PUBLIC_IOS_APP_ID ?? '';
+const IOS_STORE_URL = IOS_APP_ID ? `https://apps.apple.com/app/id${IOS_APP_ID}` : null;
+const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.cst.driver'; // TODO: update package ID when published
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
@@ -191,6 +192,10 @@ export default function ProfileScreen() {
   // ── Rate the app ──────────────────────────────────────────────────────────
   const handleRateApp = () => {
     const url = Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL;
+    if (!url) {
+      Alert.alert('Coming Soon', 'The App Store listing is not available yet. Check back after the app launches.');
+      return;
+    }
     Alert.alert(t('profile.rateAlertTitle'), t('profile.rateAlertMsg'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: '⭐ Rate Now', onPress: () => Linking.openURL(url) },
@@ -199,7 +204,7 @@ export default function ProfileScreen() {
 
   // ── Share app ─────────────────────────────────────────────────────────────
   const handleShareApp = async () => {
-    const storeUrl = Platform.OS === 'ios' ? IOS_STORE_URL : ANDROID_STORE_URL;
+    const storeUrl = Platform.OS === 'ios' ? (IOS_STORE_URL ?? ANDROID_STORE_URL) : ANDROID_STORE_URL;
     try {
       await Share.share({ message: `${t('profile.shareMessage')}\n${storeUrl}` });
     } catch { /* user cancelled */ }
@@ -241,7 +246,7 @@ export default function ProfileScreen() {
   .footer { margin-top: 40px; color: #AEAEB2; font-size: 11px; text-align: center; }
 </style>
 </head><body>
-  <h1>CST Driver — Data Export</h1>
+  <h1>Road Ready Network — Data Export</h1>
   <p class="sub">Generated on ${now} · Version ${APP_VERSION}</p>
 
   <div class="section">
@@ -265,7 +270,7 @@ export default function ProfileScreen() {
     <p style="font-size:13px;color:#636366;">To export detailed records for individual features, open each screen and use its built-in export/share button: Invoices, IFTA Tracker, Cargo Claims, Document Vault, Bill of Lading, Ticket Dispute.</p>
   </div>
 
-  <div class="footer">CST Driver App · Commercial Support Technologies · Exported ${now}</div>
+  <div class="footer">Road Ready Network · Exported ${now}</div>
 </body></html>`;
 
             const { uri } = await Print.printToFileAsync({ html, base64: false });
@@ -330,7 +335,7 @@ export default function ProfileScreen() {
     {
       icon: 'help-circle-outline',
       label: t('profile.helpSupport'),
-      onPress: () => Linking.openURL('mailto:support@commercialsupporttech.com?subject=CST%20App%20Support'),
+      onPress: () => Linking.openURL('mailto:caschooloftruckingofficial@gmail.com?subject=Road%20Ready%20Network%20Support'),
     },
   ];
 
@@ -545,7 +550,7 @@ export default function ProfileScreen() {
             {t('profile.version')} {APP_VERSION} ({BUILD_NUMBER})
           </Text>
           <Text style={[s.copyrightText, { color: muted }]}>
-            © CST Driver · Commercial Support Tech
+            © Road Ready Network
           </Text>
         </View>
 

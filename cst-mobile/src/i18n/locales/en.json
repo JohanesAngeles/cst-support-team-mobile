@@ -20,7 +20,7 @@
   "auth": {
     "login": {
       "greeting": "Hi, Welcome! 👋",
-      "subtitle": "Sign in to your CST account",
+      "subtitle": "Sign in to Road Ready Network",
       "emailLabel": "Email address",
       "emailPlaceholder": "Your email",
       "passwordLabel": "Password",
@@ -38,7 +38,7 @@
     },
     "register": {
       "title": "Create Account",
-      "subtitle": "Join the CST Driver Network",
+      "subtitle": "Join the Road Ready Network",
       "nameLabel": "Full Name",
       "namePlaceholder": "Your full name",
       "emailLabel": "Email Address",
@@ -178,6 +178,7 @@
   "tabs": {
     "dashboard": "Home",
     "docs": "Docs",
+    "game": "Game",
     "tools": "Tools",
     "fuel": "Fuel",
     "profile": "Profile"
@@ -258,8 +259,8 @@
     "passwordPlaceholder": "Your password",
     "exportingData": "Exporting your data...",
     "exportTitle": "My CST Data Export",
-    "shareMessage": "Check out CST Driver — the ultimate app for truck drivers! Download it free on the App Store & Google Play.",
-    "rateAlertTitle": "Rate CST Driver",
+    "shareMessage": "Check out Road Ready Network — the ultimate app for truck drivers! Download it free on the App Store & Google Play.",
+    "rateAlertTitle": "Rate Road Ready Network",
     "rateAlertMsg": "Enjoying the app? Leave us a review — it helps other drivers find us!"
   },
   "notifications": {

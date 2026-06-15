@@ -107,7 +107,7 @@ export default function ScorecardScreen() {
   const shareScorecard = async () => {
     if (!sc) return;
     const g = grade(sc);
-    const msg = `CST Driver Weekly Scorecard — ${fmtDate(sc.weekStart)} to ${fmtDate(sc.weekEnd)}
+    const msg = `Road Ready Network Weekly Scorecard — ${fmtDate(sc.weekStart)} to ${fmtDate(sc.weekEnd)}
 
 Grade: ${g.letter} (${g.label})
 Revenue: $${sc.grossRevenue.toFixed(2)}
@@ -118,7 +118,7 @@ Rate/Mile: $${sc.avgRatePerMile.toFixed(2)}
 Fuel: ${sc.fuelGallons} gal · $${sc.fuelCost.toFixed(2)} · ${sc.fuelEfficiency.toFixed(1)} MPG
 Drive Time: ${sc.drivingHours.toFixed(1)}h
 
-Sent via CST Driver App`;
+Sent via Road Ready Network`;
     try { await Share.share({ message: msg }); } catch { /* cancelled */ }
   };
 

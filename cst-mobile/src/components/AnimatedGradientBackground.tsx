@@ -43,7 +43,7 @@ function GradientLayer({ configs, baseBg }: { configs: GradConfig[]; baseBg: str
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: FADE_DURATION,
-        easing: Easing.inOut(Easing.sine),
+        easing: Easing.inOut(Easing.sin),
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (!finished) return;

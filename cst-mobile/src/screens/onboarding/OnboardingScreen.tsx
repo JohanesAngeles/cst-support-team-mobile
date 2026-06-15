@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Dimensions, NativeSyntheticEvent, NativeScrollEvent, Image,
+  Dimensions, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,7 +35,7 @@ const SLIDES: Slide[] = [
       { icon: 'calendar-outline',         colors: ['#14B8A6', '#0EA5E9'] },
       { icon: 'shield-checkmark-outline', colors: ['#10B981', '#14B8A6'] },
     ],
-    title: 'Welcome to CST',
+    title: 'Welcome to Road Ready Network',
     subtitle: 'Built for Commercial Drivers',
     body: '60+ purpose-built tools — trip tracking, IFTA, legal help, and more — in one platform designed for the road.',
   },
@@ -112,7 +112,7 @@ export default function OnboardingScreen({ onComplete }: Props) {
   };
 
   const handleDone = async () => {
-    await AsyncStorage.setItem('@cst_onboarded', 'true');
+    await AsyncStorage.setItem('@rrn_onboarded', 'true');
     onComplete();
   };
 
@@ -120,17 +120,6 @@ export default function OnboardingScreen({ onComplete }: Props) {
 
   return (
     <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-
-      {/* ── Logo bar ── */}
-      <View style={s.logoBar}>
-        <View style={s.logoPill}>
-          <Image
-            source={require('../../../assets/logo/cst_logo_white.png')}
-            style={s.logoImg}
-            resizeMode="contain"
-          />
-        </View>
-      </View>
 
       {/* ── Slide area ── */}
       <View style={{ flex: 1 }} onLayout={e => setContainerH(e.nativeEvent.layout.height)}>
@@ -227,11 +216,6 @@ export default function OnboardingScreen({ onComplete }: Props) {
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FAFBFF' },
-
-  // Logo
-  logoBar:  { alignItems: 'center', paddingVertical: 14 },
-  logoPill: { backgroundColor: '#021B3A', borderRadius: 12, paddingHorizontal: 18, paddingVertical: 9 },
-  logoImg:  { width: 110, height: 36 },
 
   // Mosaic
   mosaicWrapper: {

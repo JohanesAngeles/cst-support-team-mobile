@@ -2,7 +2,7 @@
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const STORAGE_KEY = '@cst_theme';
+const STORAGE_KEY = '@rrn_theme';
 
 // ─── Color palettes ───────────────────────────────────────────────────────────
 // Primary brand: #021B3A (navy)   Muted/gray: #757575   Accent: #2C6EBD (gold)

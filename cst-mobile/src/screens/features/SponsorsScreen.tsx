@@ -166,7 +166,7 @@ function PartnerCard({ partner }: { partner: Partner }) {
             style={[styles.actionBtn, { backgroundColor: '#021B3A' }]}
             onPress={() =>
               Linking.openURL(
-                'mailto:partners@commercialsupporttech.com?subject=Partnership%20Inquiry'
+                'mailto:caschooloftruckingofficial@gmail.com?subject=Partnership%20Inquiry'
               )
             }
             activeOpacity={0.85}
@@ -212,7 +212,7 @@ export default function SponsorsScreen() {
               style={styles.ctaBtn}
               onPress={() =>
                 Linking.openURL(
-                  'mailto:partners@commercialsupporttech.com?subject=Partnership%20Inquiry'
+                  'mailto:caschooloftruckingofficial@gmail.com?subject=Partnership%20Inquiry'
                 )
               }
               activeOpacity={0.85}

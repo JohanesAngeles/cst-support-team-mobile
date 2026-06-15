@@ -6,15 +6,15 @@ import { useColors } from '../../constants/colors';
 const SECTIONS = [
   {
     title: '1. Acceptance of Terms',
-    body: 'By accessing or using the Commercial Support Technologies (CST) mobile application, you agree to be bound by these Terms of Service. If you do not agree, do not use the app.',
+    body: 'By accessing or using the Road Ready Network mobile application, you agree to be bound by these Terms of Service. If you do not agree, do not use the app.',
   },
   {
     title: '2. Description of Service',
-    body: 'CST provides trucking professionals with tools including IFTA tracking, HOS logging, fuel logs, expense management, AI-assisted legal information, document storage, and related services. The app is intended for lawful commercial use only.',
+    body: 'Road Ready Network provides trucking professionals with tools including IFTA tracking, HOS logging, fuel logs, expense management, AI-assisted legal information, document storage, and related services. The app is intended for lawful commercial use only.',
   },
   {
     title: '3. AI Legal Assistant Disclaimer',
-    body: 'The AI Legal Assistant provides general information about trucking law and regulations. It does NOT constitute legal advice and is NOT a substitute for a licensed attorney. CST is not a law firm and assumes no liability for actions taken based on AI-generated content.',
+    body: 'The AI Legal Assistant provides general information about trucking law and regulations. It does NOT constitute legal advice and is NOT a substitute for a licensed attorney. Road Ready Network is not a law firm and assumes no liability for actions taken based on AI-generated content.',
   },
   {
     title: '4. User Responsibilities',
@@ -26,31 +26,47 @@ const SECTIONS = [
   },
   {
     title: '6. Data Accuracy',
-    body: 'CST provides IFTA, HOS, tax, and other calculations as estimates based on user-entered data. Users are responsible for verifying all figures before filing with any government agency. CST is not liable for errors resulting from incorrect data entry.',
+    body: 'Road Ready Network provides IFTA, HOS, tax, and other calculations as estimates based on user-entered data. Users are responsible for verifying all figures before filing with any government agency. Road Ready Network is not liable for errors resulting from incorrect data entry.',
   },
   {
     title: '7. Emergency Services',
-    body: 'The Emergency SOS feature supplements — it does not replace — official emergency services. Always call 911 in a life-threatening emergency. CST is not liable for any delay, failure, or outcome related to emergency feature use.',
+    body: 'The Emergency SOS feature supplements — it does not replace — official emergency services. Always call 911 in a life-threatening emergency. Road Ready Network is not liable for any delay, failure, or outcome related to emergency feature use.',
   },
   {
     title: '8. Intellectual Property',
-    body: 'All content, branding, and software in the CST app are the property of Commercial Support Technologies. You may not copy, modify, distribute, or reverse-engineer any part of the application.',
+    body: 'All content, branding, and software in the Road Ready Network app are the property of Road Ready Network. You may not copy, modify, distribute, or reverse-engineer any part of the application.',
   },
   {
     title: '9. Limitation of Liability',
-    body: 'To the maximum extent permitted by law, CST shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the app, including lost profits or data loss.',
+    body: 'To the maximum extent permitted by law, Road Ready Network shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the app, including lost profits or data loss.',
   },
   {
     title: '10. Governing Law',
     body: 'These terms are governed by the laws of the United States. Any disputes shall be resolved through binding arbitration in accordance with the American Arbitration Association rules.',
   },
   {
-    title: '11. Changes to Terms',
-    body: 'CST reserves the right to modify these terms at any time. Continued use of the app after changes constitutes acceptance of the updated terms.',
+    title: '11. Business Directory & Partner Listings',
+    body: 'The Road Ready Network app includes a directory of partner businesses ("Listings") that drivers may use to locate services. Road Ready Network does not endorse, guarantee, or assume responsibility for the quality, accuracy, or availability of any listed business. Businesses listed on the platform have agreed to separate partner terms. Road Ready Network reserves the right to remove or modify any listing at any time.',
   },
   {
-    title: '12. Contact',
-    body: 'For questions about these Terms of Service, contact us at support@commercialsupporttech.com.',
+    title: '12. User Reviews & Ratings',
+    body: 'Drivers may submit ratings and reviews of listed businesses. By submitting a review, you confirm that it is honest, based on your personal experience, and does not contain false, defamatory, or inappropriate content. Road Ready Network reserves the right to remove any review that violates these standards. Reviews do not represent the views of Road Ready Network.',
+  },
+  {
+    title: '13. Founding Partner Program',
+    body: 'Businesses may apply to become Founding Partners of the Road Ready Network. Partner listings are subject to approval. Partners are responsible for the accuracy of their business information. Subscription fees and terms are communicated at time of enrollment. Road Ready Network reserves the right to suspend or remove any partner listing for violations of these terms or for non-payment.',
+  },
+  {
+    title: '14. California School of Trucking Endorsement',
+    body: 'The Road Ready Network app is endorsed by the California School of Trucking (CST). CST\'s endorsement does not constitute ownership or operational responsibility for the app. The Road Ready Network app is an independent product operated separately from CST\'s educational programs.',
+  },
+  {
+    title: '15. Changes to Terms',
+    body: 'Road Ready Network reserves the right to modify these terms at any time. Continued use of the app after changes constitutes acceptance of the updated terms.',
+  },
+  {
+    title: '16. Contact',
+    body: 'For questions about these Terms of Service, contact us at caschooloftruckingofficial@gmail.com.',
   },
 ];
 
@@ -75,12 +91,12 @@ export default function TermsScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Terms of Service</Text>
-          <Text style={styles.effective}>Effective: January 1, 2025</Text>
+          <Text style={styles.effective}>Effective: June 1, 2026 · Endorsed by California School of Trucking</Text>
         </View>
 
         <View style={styles.intro}>
           <Text style={styles.introText}>
-            Please read these Terms of Service carefully before using the CST Driver Support App operated by Commercial Support Technologies.
+            Please read these Terms of Service carefully before using the Road Ready Network app.
           </Text>
         </View>
 
@@ -92,7 +108,7 @@ export default function TermsScreen() {
         ))}
 
         <Text style={styles.footer}>
-          © {new Date().getFullYear()} Commercial Support Technologies. All rights reserved.
+          © {new Date().getFullYear()} Road Ready Network. All rights reserved.
         </Text>
       </ScrollView>
     </SafeAreaView>

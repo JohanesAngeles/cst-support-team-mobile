@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -124,7 +124,10 @@ export default function TRACCommunityScreen() {
   const comingSoon = () =>
     Alert.alert('TRAC Community', 'TRAC Community is coming soon. Join the waitlist to get early access and help shape the community.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Join Waitlist', onPress: () => {} },
+      {
+        text: 'Join Waitlist',
+        onPress: () => Linking.openURL('mailto:caschooloftruckingofficial@gmail.com?subject=TRAC%20Community%20Waitlist&body=I%20would%20like%20to%20join%20the%20TRAC%20Community%20waitlist.'),
+      },
     ]);
 
   return (

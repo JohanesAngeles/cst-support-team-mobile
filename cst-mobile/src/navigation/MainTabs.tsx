@@ -6,15 +6,51 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
 import FeaturesScreen from '../screens/features/FeaturesScreen';
 import FuelLogScreen from '../screens/features/FuelLogScreen';
 import ProfileScreen from '../screens/features/ProfileScreen';
+import RoadReadyScreen from '../screens/features/RoadReadyScreen';
+
+const TAB_ORDER = ['Dashboard', 'Documents', 'Game', 'Tools', 'Fuel', 'Profile'];
+
+// Wraps a screen with left/right fling gestures to swipe between tabs
+function makeSwipeable(Screen: React.ComponentType<any>, tabIndex: number) {
+  return function SwipeableScreen(props: any) {
+    const flingLeft = Gesture.Fling()
+      .direction(Directions.LEFT)
+      .runOnJS(true)
+      .onEnd(() => {
+        if (tabIndex < TAB_ORDER.length - 1) {
+          props.navigation.navigate(TAB_ORDER[tabIndex + 1] as any);
+        }
+      });
+
+    const flingRight = Gesture.Fling()
+      .direction(Directions.RIGHT)
+      .runOnJS(true)
+      .onEnd(() => {
+        if (tabIndex > 0) {
+          props.navigation.navigate(TAB_ORDER[tabIndex - 1] as any);
+        }
+      });
+
+    return (
+      <GestureDetector gesture={Gesture.Exclusive(flingLeft, flingRight)}>
+        <View style={{ flex: 1 }}>
+          <Screen {...props} />
+        </View>
+      </GestureDetector>
+    );
+  };
+}
 
 export type MainTabParamList = {
   Dashboard: undefined;
   Documents: undefined;
+  Game:      undefined;
   Tools:     undefined;
   Fuel:      undefined;
   Profile:   undefined;
@@ -26,11 +62,12 @@ type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 type TabMeta = { outline: IoniconsName; filled: IoniconsName; tKey: string };
 const TAB_META: Record<string, TabMeta> = {
-  Dashboard: { outline: 'home-outline',   filled: 'home',   tKey: 'tabs.dashboard' },
-  Documents: { outline: 'folder-outline', filled: 'folder', tKey: 'tabs.docs'      },
-  Tools:     { outline: 'grid-outline',   filled: 'grid',   tKey: 'tabs.tools'     },
-  Fuel:      { outline: 'water-outline',  filled: 'water',  tKey: 'tabs.fuel'      },
-  Profile:   { outline: 'person-outline', filled: 'person', tKey: 'tabs.profile'   },
+  Dashboard: { outline: 'home-outline',            filled: 'home',            tKey: 'tabs.dashboard' },
+  Documents: { outline: 'folder-outline',           filled: 'folder',          tKey: 'tabs.docs'      },
+  Game:      { outline: 'game-controller-outline',  filled: 'game-controller', tKey: 'tabs.game'      },
+  Tools:     { outline: 'grid-outline',             filled: 'grid',            tKey: 'tabs.tools'     },
+  Fuel:      { outline: 'water-outline',            filled: 'water',           tKey: 'tabs.fuel'      },
+  Profile:   { outline: 'person-outline',           filled: 'person',          tKey: 'tabs.profile'   },
 };
 
 // ─── Floating glass tab bar ────────────────────────────────────────────────────
@@ -54,21 +91,21 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
         borderRadius: 40,
         paddingVertical: 7,
         paddingHorizontal: 6,
-        backgroundColor: 'rgba(4, 22, 70, 0.88)',
+        backgroundColor: 'rgba(255, 255, 255, 0.82)',
         borderWidth: 1,
-        borderColor: 'rgba(100, 170, 255, 0.22)',
-        shadowColor: '#0A2A6E',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.55,
-        shadowRadius: 28,
-        elevation: 28,
+        borderColor: 'rgba(200, 200, 210, 0.55)',
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.10,
+        shadowRadius: 24,
+        elevation: 16,
         overflow: 'hidden',
       }}>
 
-        {/* Blue glass sheen — wrapped in View so pointerEvents works correctly */}
+        {/* White glass sheen */}
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%' }}>
           <LinearGradient
-            colors={['rgba(100, 160, 255, 0.12)', 'rgba(100, 160, 255, 0.00)']}
+            colors={['rgba(255, 255, 255, 0.70)', 'rgba(255, 255, 255, 0.00)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1, borderRadius: 40 }}
@@ -108,19 +145,19 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
                 paddingVertical: 10,
                 paddingHorizontal: isFocused ? 18 : 4,
                 borderRadius: 30,
-                backgroundColor: isFocused ? 'rgba(100, 170, 255, 0.20)' : 'transparent',
+                backgroundColor: isFocused ? 'rgba(2, 27, 58, 0.08)' : 'transparent',
                 borderWidth: isFocused ? 1 : 0,
-                borderColor: 'rgba(120, 190, 255, 0.25)',
+                borderColor: 'rgba(2, 27, 58, 0.12)',
                 gap: 7,
               }}
             >
               <Ionicons
                 name={isFocused ? meta.filled : meta.outline}
                 size={21}
-                color={isFocused ? '#FFFFFF' : 'rgba(255,255,255,0.42)'}
+                color={isFocused ? '#021B3A' : 'rgba(0, 0, 0, 0.35)'}
               />
               {isFocused && (
-                <Text numberOfLines={1} style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', letterSpacing: 0.1 }}>
+                <Text numberOfLines={1} style={{ color: '#021B3A', fontSize: 13, fontWeight: '700', letterSpacing: 0.1 }}>
                   {label}
                 </Text>
               )}
@@ -137,17 +174,18 @@ export default function MainTabs() {
   return (
     <Tab.Navigator
       tabBar={props => <GlassTabBar {...props} />}
-      sceneContainerStyle={{ backgroundColor: 'transparent' }}
       screenOptions={{
         headerShown: false,
         tabBarStyle: { display: 'none' },
+        sceneStyle: { backgroundColor: 'transparent' },
       }}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Documents" component={DocumentVaultScreen} />
-      <Tab.Screen name="Tools"     component={FeaturesScreen} />
-      <Tab.Screen name="Fuel"      component={FuelLogScreen} />
-      <Tab.Screen name="Profile"   component={ProfileScreen} />
+      <Tab.Screen name="Dashboard" component={makeSwipeable(DashboardScreen,     0)} />
+      <Tab.Screen name="Documents" component={makeSwipeable(DocumentVaultScreen, 1)} />
+      <Tab.Screen name="Game"      component={makeSwipeable(RoadReadyScreen,     2)} />
+      <Tab.Screen name="Tools"     component={makeSwipeable(FeaturesScreen,      3)} />
+      <Tab.Screen name="Fuel"      component={makeSwipeable(FuelLogScreen,       4)} />
+      <Tab.Screen name="Profile"   component={makeSwipeable(ProfileScreen,       5)} />
     </Tab.Navigator>
   );
 }

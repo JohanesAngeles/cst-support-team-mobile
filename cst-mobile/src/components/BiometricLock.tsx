@@ -10,8 +10,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import BlobBackground from './BlobBackground';
 
-const BIOMETRIC_KEY   = '@cst_biometric_enabled';
-const BG_TIME_KEY     = '@cst_bg_time';
+const BIOMETRIC_KEY   = '@rrn_biometric_enabled';
+const BG_TIME_KEY     = '@rrn_bg_time';
 const LOCK_AFTER_MS   = 10_000; // lock after 10 s in background
 
 export const BIOMETRIC_STORAGE_KEY = BIOMETRIC_KEY;
@@ -56,6 +56,13 @@ export default function BiometricLock({ children }: Props) {
     ]);
     if (enabled !== 'true') return;
 
+    // Don't lock if the device has no enrolled biometrics — would trap the user
+    const [hasHardware, isEnrolled] = await Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+    ]);
+    if (!hasHardware || !isEnrolled) return;
+
     const bgTime = bgTimeRaw ? parseInt(bgTimeRaw, 10) : 0;
     const elapsed = Date.now() - bgTime;
     if (bgTime > 0 && elapsed < LOCK_AFTER_MS) return;
@@ -69,7 +76,7 @@ export default function BiometricLock({ children }: Props) {
     setError('');
     try {
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock CST Driver',
+        promptMessage: 'Unlock Road Ready Network',
         fallbackLabel: 'Use Passcode',
         cancelLabel: 'Cancel',
         disableDeviceFallback: false,
@@ -94,7 +101,7 @@ export default function BiometricLock({ children }: Props) {
       <View style={s.overlay}>
         <View style={s.logoPill}>
           <Image
-            source={require('../../assets/logo/cst_logo_white.png')}
+            source={require('../../assets/road_ready_favicon.jpeg')}
             style={s.logo}
             resizeMode="contain"
           />

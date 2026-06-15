@@ -10,7 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
-export const PREFERENCES_KEY = '@cst_preferences';
+export const PREFERENCES_KEY = '@rrn_preferences';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'PostSignupPreferences'> };
 

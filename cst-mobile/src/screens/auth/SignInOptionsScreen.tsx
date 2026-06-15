@@ -25,7 +25,6 @@ type Provider = {
   icon: React.ReactNode;
   onPress: () => void;
   available: boolean;
-  comingSoon?: boolean;
 };
 
 function SparkleCluster() {
@@ -70,8 +69,6 @@ export default function SignInOptionsScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const { loginWithSocial } = useAuth();
   const [socialBusy, setSocialBusy] = useState<string | null>(null);
-
-  const comingSoon = () => Alert.alert(t('common.comingSoon'), t('common.comingSoonMsg'));
 
   const [, googleResponse, googlePrompt] = Google.useAuthRequest({
     clientId:        GOOGLE_WEB_CLIENT_ID,
@@ -150,46 +147,6 @@ export default function SignInOptionsScreen({ navigation }: Props) {
       onPress: handleApple,
       available: Platform.OS === 'ios',
     },
-    {
-      key: 'facebook',
-      label: t('auth.signInOptions.facebook'),
-      icon: <Ionicons name="logo-facebook" size={22} color="#1877F2" />,
-      onPress: comingSoon,
-      available: true,
-      comingSoon: true,
-    },
-    {
-      key: 'github',
-      label: t('auth.signInOptions.github'),
-      icon: <Ionicons name="logo-github" size={22} color="#1A1A2E" />,
-      onPress: comingSoon,
-      available: true,
-      comingSoon: true,
-    },
-    {
-      key: 'microsoft',
-      label: t('auth.signInOptions.microsoft'),
-      icon: <Ionicons name="logo-windows" size={22} color="#00A4EF" />,
-      onPress: comingSoon,
-      available: true,
-      comingSoon: true,
-    },
-    {
-      key: 'linkedin',
-      label: t('auth.signInOptions.linkedin'),
-      icon: <Ionicons name="logo-linkedin" size={22} color="#0077B5" />,
-      onPress: comingSoon,
-      available: true,
-      comingSoon: true,
-    },
-    {
-      key: 'instagram',
-      label: t('auth.signInOptions.instagram'),
-      icon: <Ionicons name="logo-instagram" size={22} color="#E1306C" />,
-      onPress: comingSoon,
-      available: true,
-      comingSoon: true,
-    },
   ];
 
   return (
@@ -217,7 +174,7 @@ export default function SignInOptionsScreen({ navigation }: Props) {
             {providers.filter(p => p.available).map(p => (
               <TouchableOpacity
                 key={p.key}
-                style={[s.row, (socialBusy === p.key || p.comingSoon) && s.disabled]}
+                style={[s.row, socialBusy === p.key && s.disabled]}
                 onPress={p.onPress}
                 disabled={!!socialBusy}
                 activeOpacity={0.8}
@@ -229,10 +186,7 @@ export default function SignInOptionsScreen({ navigation }: Props) {
                   }
                 </View>
                 <Text style={s.rowLabel}>{p.label}</Text>
-                {p.comingSoon
-                  ? <View style={s.soonBadge}><Text style={s.soonText}>Soon</Text></View>
-                  : <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
-                }
+                <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
               </TouchableOpacity>
             ))}
           </View>
@@ -278,7 +232,4 @@ const s = StyleSheet.create({
   footer:    { alignItems: 'center', marginTop: 28 },
   footerText:{ fontSize: 14, color: '#8E8E93' },
   footerBold:{ color: '#021B3A', fontWeight: '700' },
-
-  soonBadge: { backgroundColor: '#F0F0F5', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  soonText:  { fontSize: 11, fontWeight: '700', color: '#AEAEB2', letterSpacing: 0.3 },
 });

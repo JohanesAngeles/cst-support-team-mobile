@@ -13,8 +13,14 @@
     "preview": {
       "distribution": "internal",
       "ios": { "simulator": false },
-      "android": { "buildType": "apk" },
-      "env": { "NODE_ENV": "production" }
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=arm64-v8a"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     },
     "production": {
       "autoIncrement": true,
@@ -25,7 +31,10 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "env": { "NODE_ENV": "production" }
+      "env": {
+        "NODE_ENV": "production",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     }
   },
   "submit": {
@@ -37,7 +46,7 @@
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-key.json",
-        "track": "internal"
+        "track": "production"
       }
     }
   }

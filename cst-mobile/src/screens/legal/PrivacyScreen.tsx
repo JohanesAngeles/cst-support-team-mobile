@@ -10,7 +10,7 @@ const SECTIONS = [
   },
   {
     title: '2. How We Use Your Information',
-    body: "We use your data to provide and improve the CST app services, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant and AI Rate Advisor (your messages are sent to xAI's Grok API), and respond to support requests.",
+    body: "We use your data to provide and improve the Road Ready Network app, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant and AI Rate Advisor (your messages are sent to xAI's Grok API), and respond to support requests.",
   },
   {
     title: '3. Data Storage & Security',
@@ -34,7 +34,7 @@ const SECTIONS = [
   },
   {
     title: '8. Data Retention',
-    body: 'We retain your data for as long as your account is active. You may request deletion of your account and all associated data by contacting support@commercialsupporttech.com. Deletion is processed within 30 days.',
+    body: 'We retain your data for as long as your account is active. You may request deletion of your account and all associated data by contacting caschooloftruckingofficial@gmail.com. Deletion is processed within 30 days.',
   },
   {
     title: '9. Your Rights',
@@ -42,7 +42,7 @@ const SECTIONS = [
   },
   {
     title: '10. Children\'s Privacy',
-    body: 'The CST app is intended for commercial trucking professionals aged 18 and older. We do not knowingly collect personal information from children under 13.',
+    body: 'Road Ready Network is intended for commercial trucking professionals aged 18 and older. We do not knowingly collect personal information from children under 13.',
   },
   {
     title: '11. Changes to This Policy',
@@ -50,7 +50,7 @@ const SECTIONS = [
   },
   {
     title: '12. Contact Us',
-    body: 'For privacy questions or data requests, contact us at:\n\nEmail: privacy@commercialsupporttech.com\nSupport: support@commercialsupporttech.com',
+    body: 'For privacy questions or data requests, contact us at:\n\nEmail: caschooloftruckingofficial@gmail.com',
   },
 ];
 
@@ -80,7 +80,7 @@ export default function PrivacyScreen() {
 
         <View style={styles.intro}>
           <Text style={styles.introText}>
-            Commercial Support Technologies ("CST", "we", "us") is committed to protecting your privacy. This policy explains what data we collect, how we use it, and your rights.
+            Road Ready Network ("Road Ready", "we", "us") is committed to protecting your privacy. This policy explains what data we collect, how we use it, and your rights.
           </Text>
         </View>
 
@@ -92,7 +92,7 @@ export default function PrivacyScreen() {
         ))}
 
         <Text style={styles.footer}>
-          © {new Date().getFullYear()} Commercial Support Technologies. All rights reserved.
+          © {new Date().getFullYear()} Road Ready Network. All rights reserved.
         </Text>
       </ScrollView>
     </SafeAreaView>

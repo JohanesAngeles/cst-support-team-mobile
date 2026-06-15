@@ -340,7 +340,7 @@ export default function DocumentVaultScreen() {
         ) : null}
       />
 
-      <TouchableOpacity style={styles.fab} onPress={openModal}>
+      <TouchableOpacity style={styles.fab} onPress={() => openModal()}>
         <Ionicons name="add" size={28} color={Colors.textDark} />
       </TouchableOpacity>
 

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KEY = '@cst_notif_history';
+const KEY = '@rrn_notif_history';
 const MAX_ITEMS = 100;
 
 export interface StoredNotification {

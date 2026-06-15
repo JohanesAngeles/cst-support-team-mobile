@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
-  Image, ScrollView,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,8 +11,6 @@ import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import SparkleCluster from '../../components/auth/SparkleCluster';
-
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'> };
 
 export default function RegisterScreen({ navigation }: Props) {
@@ -54,19 +52,13 @@ export default function RegisterScreen({ navigation }: Props) {
     <View style={s.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
+          </TouchableOpacity>
+
           <ScrollView keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
-            <View style={s.topRow}>
-              <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-                <Ionicons name="chevron-back" size={22} color={Colors.text} />
-              </TouchableOpacity>
-              <View style={s.logoPill}>
-                <Image source={require('../../../assets/logo/cst_logo_white.png')} style={s.logoImg} resizeMode="contain" />
-              </View>
-            </View>
-
             <View style={s.header}>
-              <SparkleCluster size="sm" />
               <Text style={[s.title, { color: Colors.text }]}>{t('auth.register.title')}</Text>
               <Text style={[s.subtitle, { color: Colors.textMuted }]}>{t('auth.register.subtitle')}</Text>
             </View>
@@ -126,11 +118,8 @@ export default function RegisterScreen({ navigation }: Props) {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 32 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 16, marginBottom: 8 },
-  backBtn: { padding: 4 },
-  logoPill: { backgroundColor: '#021B3A', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7 },
-  logoImg: { width: 90, height: 30 },
+  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 32, justifyContent: 'center' },
+  backBtn: { padding: 12, paddingLeft: 16, alignSelf: 'flex-start' },
   header: { paddingTop: 12, paddingBottom: 4 },
   title: { fontSize: 28, fontWeight: '800', marginTop: 10 },
   subtitle: { fontSize: 15, marginTop: 5 },

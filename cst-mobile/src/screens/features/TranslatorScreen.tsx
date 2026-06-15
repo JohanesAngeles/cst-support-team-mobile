@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, Clipboard,
+  ScrollView, Alert, ActivityIndicator,
   FlatList, Modal, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
@@ -190,8 +191,8 @@ export default function TranslatorScreen() {
     setDetectedLang('');
   };
 
-  const handleCopy = (text: string) => {
-    Clipboard.setString(text);
+  const handleCopy = async (text: string) => {
+    await Clipboard.setStringAsync(text);
     Alert.alert('Copied', 'Text copied to clipboard.');
   };
 
@@ -205,9 +206,9 @@ export default function TranslatorScreen() {
     });
   };
 
-  const handleQuickPhrase = (phrase: string) => {
+  const handleQuickPhrase = async (phrase: string) => {
     setInputText(phrase);
-    handleTranslate(phrase);
+    await handleTranslate(phrase);
   };
 
   const handleClear = () => {

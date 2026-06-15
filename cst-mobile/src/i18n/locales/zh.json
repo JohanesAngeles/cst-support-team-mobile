@@ -20,7 +20,7 @@
   "auth": {
     "login": {
       "greeting": "你好，欢迎！👋",
-      "subtitle": "登录您的CST账户",
+      "subtitle": "登录Road Ready Network",
       "emailLabel": "电子邮件",
       "emailPlaceholder": "您的邮件",
       "passwordLabel": "密码",
@@ -178,6 +178,7 @@
   "tabs": {
     "dashboard": "首页",
     "docs": "文件",
+    "game": "游戏",
     "tools": "工具",
     "fuel": "燃料",
     "profile": "我的"
@@ -258,8 +259,8 @@
     "passwordPlaceholder": "您的密码",
     "exportingData": "正在导出数据...",
     "exportTitle": "我的CST数据导出",
-    "shareMessage": "发现CST Driver — 卡车司机的终极应用！在App Store和Google Play免费下载。",
-    "rateAlertTitle": "评价CST Driver",
+    "shareMessage": "发现Road Ready Network — 卡车司机的终极应用！在App Store和Google Play免费下载。",
+    "rateAlertTitle": "评价Road Ready Network",
     "rateAlertMsg": "喜欢这款应用吗？给我们留下评价 — 帮助其他司机找到我们！"
   },
   "notifications": {

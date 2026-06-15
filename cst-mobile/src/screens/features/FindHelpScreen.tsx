@@ -1,177 +1,595 @@
-﻿import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, ActivityIndicator, Linking, Platform,
+  Alert, ActivityIndicator, Linking, Platform, Modal,
+  Dimensions, RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useColors } from '../../constants/colors';
+import client from '../../api/client';
 
-interface HelpCategory {
-  icon: string;
-  label: string;
-  sublabel: string;
-  color: string;
-  query: string;
+const { width: SW } = Dimensions.get('window');
+const MAP_HEIGHT = 260;
+const DEFAULT_REGION = { latitude: 34.0522, longitude: -118.2437, latitudeDelta: 0.8, longitudeDelta: 0.8 };
+
+interface Listing {
+  _id: string;
+  businessName: string;
+  category: string;
+  city: string;
+  state: string;
+  phone: string;
+  website?: string;
+  description?: string;
+  hours?: string;
+  rating: number;
+  reviewCount: number;
+  latitude?: number;
+  longitude?: number;
+  physicalAddress?: string;
+  mobileService?: boolean;
+  roadsideAssistance?: boolean;
+  heavyDutyService?: boolean;
+  is24Hours?: boolean;
 }
 
-const CATEGORIES: HelpCategory[] = [
-  { icon: 'business-outline',   label: 'Truck Stops',        sublabel: 'Flying J, Loves, Pilot',    color: '#3498DB', query: 'truck+stop' },
-  { icon: 'water-outline',      label: 'Diesel Fuel',         sublabel: 'Fuel stations near me',     color: '#1ABC9C', query: 'diesel+fuel+station' },
-  { icon: 'construct-outline',  label: 'Truck Repair',        sublabel: 'Mechanics & service shops', color: '#E67E22', query: 'semi+truck+repair+shop' },
-  { icon: 'scale-outline',      label: 'Weigh Stations',      sublabel: 'DOT inspection stations',   color: '#9B59B6', query: 'weigh+station+truck' },
-  { icon: 'medical-outline',    label: 'Hospitals / Urgent',  sublabel: 'Emergency medical care',    color: '#E74C3C', query: 'hospital+emergency+room' },
-  { icon: 'bed-outline',        label: 'Rest Areas',          sublabel: 'Rest stops & parking',      color: '#F39C12', query: 'rest+area+truck+parking' },
-  { icon: 'car-outline',        label: 'Tire Shops',          sublabel: 'Truck tire repair',         color: '#2ECC71', query: 'semi+truck+tire+shop' },
-  { icon: 'shield-outline',     label: 'DOT / Inspections',   sublabel: 'DOT offices near me',       color: '#1A3A5C', query: 'DOT+truck+inspection+station' },
-  { icon: 'restaurant-outline', label: 'Restaurants',         sublabel: 'Truck-friendly dining',     color: '#2C6EBD', query: 'truck+friendly+restaurant' },
-  { icon: 'home-outline',       label: 'Truck Parking',       sublabel: 'Safe overnight parking',    color: '#8E44AD', query: 'semi+truck+parking' },
-  { icon: 'people-outline',     label: 'CAT Scale',           sublabel: 'Certified scales',          color: '#16A085', query: 'CAT+Scale+truck' },
-  { icon: 'briefcase-outline',  label: 'Freight / Brokers',   sublabel: 'Load boards & brokers',     color: '#C0392B', query: 'freight+broker+office' },
+const MAP_CATEGORIES = [
+  { icon: 'business-outline',   label: 'Truck Stops',   color: '#3498DB', query: 'truck+stop'             },
+  { icon: 'water-outline',      label: 'Diesel Fuel',   color: '#1ABC9C', query: 'diesel+fuel+station'    },
+  { icon: 'construct-outline',  label: 'Truck Repair',  color: '#E67E22', query: 'semi+truck+repair+shop' },
+  { icon: 'bed-outline',        label: 'Rest Areas',    color: '#F39C12', query: 'rest+area+truck+parking'},
+  { icon: 'car-outline',        label: 'Tire Shops',    color: '#2ECC71', query: 'semi+truck+tire+shop'   },
+  { icon: 'restaurant-outline', label: 'Restaurants',   color: '#2C6EBD', query: 'truck+friendly+restaurant'},
+  { icon: 'medical-outline',    label: 'Hospitals',     color: '#E74C3C', query: 'hospital+emergency+room'},
+  { icon: 'home-outline',       label: 'Truck Parking', color: '#8E44AD', query: 'semi+truck+parking'     },
 ];
+
+const CATEGORY_ICONS: Record<string, { icon: string; color: string }> = {
+  'Mechanic':                    { icon: 'construct-outline',  color: '#E67E22' },
+  'Tire Shop':                   { icon: 'car-outline',        color: '#2ECC71' },
+  'Fuel Station':                { icon: 'water-outline',      color: '#1ABC9C' },
+  'Hotel / Motel':               { icon: 'bed-outline',        color: '#F39C12' },
+  'Restaurant':                  { icon: 'restaurant-outline', color: '#2C6EBD' },
+  'Truck Wash':                  { icon: 'car-wash-outline',   color: '#3498DB' },
+  'Compliance Service':          { icon: 'document-outline',   color: '#9B59B6' },
+  'Towing':                      { icon: 'car-outline',        color: '#E74C3C' },
+  'Other Trucking-Related Service': { icon: 'business-outline', color: '#7F8C8D' },
+  'Other':                       { icon: 'business-outline',   color: '#7F8C8D' },
+};
+
+function StarRow({ rating }: { rating: number }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1,2,3,4,5].map(n => (
+        <Ionicons key={n} name={n <= Math.round(rating) ? 'star' : 'star-outline'} size={12} color="#F5C842" />
+      ))}
+    </View>
+  );
+}
+
+function BusinessCard({ listing, onPress }: { listing: Listing; onPress: () => void }) {
+  const cat    = CATEGORY_ICONS[listing.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+  const flags  = [
+    listing.mobileService      && 'Mobile',
+    listing.roadsideAssistance && 'Roadside',
+    listing.heavyDutyService   && 'Heavy Duty',
+    listing.is24Hours          && '24hr',
+  ].filter(Boolean) as string[];
+
+  return (
+    <TouchableOpacity style={bc.card} onPress={onPress} activeOpacity={0.8}>
+      <View style={[bc.left, { backgroundColor: cat.color + '18' }]}>
+        <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+      </View>
+      <View style={bc.body}>
+        <View style={bc.titleRow}>
+          <Text style={bc.name} numberOfLines={1}>{listing.businessName}</Text>
+          <View style={bc.rrnBadge}>
+            <Text style={bc.rrnBadgeText}>RRN</Text>
+          </View>
+        </View>
+        <Text style={bc.sub} numberOfLines={1}>
+          {listing.physicalAddress || `${listing.city}, ${listing.state}`}
+        </Text>
+        {listing.rating > 0 && (
+          <View style={bc.ratingRow}>
+            <StarRow rating={listing.rating} />
+            <Text style={bc.ratingText}>{listing.rating.toFixed(1)} ({listing.reviewCount})</Text>
+          </View>
+        )}
+        {flags.length > 0 && (
+          <View style={bc.flagRow}>
+            {flags.map(f => (
+              <View key={f} style={bc.flag}>
+                <Text style={bc.flagText}>{f}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        {listing.hours ? (
+          <Text style={bc.hours} numberOfLines={1}>
+            <Ionicons name="time-outline" size={11} /> {listing.hours}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+    </TouchableOpacity>
+  );
+}
+
+const bc = StyleSheet.create({
+  card:         { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F8FA', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 8, gap: 12 },
+  left:         { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  body:         { flex: 1, gap: 3 },
+  titleRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  name:         { flex: 1, fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
+  rrnBadge:     { backgroundColor: '#021B3A', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
+  rrnBadgeText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
+  sub:          { fontSize: 12, color: '#8E8E93' },
+  ratingRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ratingText:   { fontSize: 11, color: '#8E8E93' },
+  flagRow:      { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
+  flag:         { backgroundColor: '#EEF2FF', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  flagText:     { fontSize: 9, fontWeight: '700', color: '#6366F1' },
+  hours:        { fontSize: 11, color: '#8E8E93' },
+});
+
+function BusinessDetailModal({ listing, onClose }: { listing: Listing; onClose: () => void }) {
+  const callBusiness = () => {
+    if (!listing.phone) return;
+    Linking.openURL(`tel:${listing.phone.replace(/\D/g, '')}`);
+    client.post(`/partner/listing/${listing._id}/click`).catch(() => {});
+  };
+
+  const getDirections = () => {
+    const addr  = listing.physicalAddress || `${listing.businessName}, ${listing.city}, ${listing.state}`;
+    const query = encodeURIComponent(addr);
+    const url = listing.latitude && listing.longitude
+      ? (Platform.OS === 'ios'
+          ? `maps://maps.apple.com/?daddr=${listing.latitude},${listing.longitude}`
+          : `geo:${listing.latitude},${listing.longitude}?q=${query}`)
+      : (Platform.OS === 'ios'
+          ? `maps://maps.apple.com/?q=${query}`
+          : `geo:0,0?q=${query}`);
+    Linking.canOpenURL(url).then(can =>
+      Linking.openURL(can ? url : `https://www.google.com/maps/search/${query}`)
+    );
+    client.post(`/partner/listing/${listing._id}/click`).catch(() => {});
+  };
+
+  const openWebsite = () => {
+    if (!listing.website) return;
+    const url = listing.website.startsWith('http') ? listing.website : `https://${listing.website}`;
+    Linking.openURL(url);
+    client.post(`/partner/listing/${listing._id}/click`).catch(() => {});
+  };
+
+  const cat = CATEGORY_ICONS[listing.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <TouchableOpacity style={dm.overlay} activeOpacity={1} onPress={onClose} />
+      <View style={dm.sheet}>
+        <View style={dm.handle} />
+
+        <View style={dm.header}>
+          <View style={[dm.headerIcon, { backgroundColor: cat.color + '18' }]}>
+            <Ionicons name={cat.icon as any} size={26} color={cat.color} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={dm.bName}>{listing.businessName}</Text>
+            <Text style={dm.bMeta}>{listing.category}</Text>
+          </View>
+          <TouchableOpacity onPress={onClose} style={dm.closeBtn}>
+            <Ionicons name="close" size={20} color="#8E8E93" />
+          </TouchableOpacity>
+        </View>
+
+        {listing.rating > 0 && (
+          <View style={dm.ratingRow}>
+            <StarRow rating={listing.rating} />
+            <Text style={dm.ratingText}>{listing.rating.toFixed(1)} · {listing.reviewCount} review{listing.reviewCount !== 1 ? 's' : ''}</Text>
+          </View>
+        )}
+
+        <View style={dm.details}>
+          {(listing.physicalAddress || listing.city) ? (
+            <View style={dm.detailRow}>
+              <Ionicons name="location-outline" size={16} color="#8E8E93" />
+              <Text style={dm.detailText}>{listing.physicalAddress || `${listing.city}, ${listing.state}`}</Text>
+            </View>
+          ) : null}
+          {listing.hours ? (
+            <View style={dm.detailRow}>
+              <Ionicons name="time-outline" size={16} color="#8E8E93" />
+              <Text style={dm.detailText}>{listing.hours}</Text>
+            </View>
+          ) : null}
+          {listing.phone ? (
+            <View style={dm.detailRow}>
+              <Ionicons name="call-outline" size={16} color="#8E8E93" />
+              <Text style={dm.detailText}>{listing.phone}</Text>
+            </View>
+          ) : null}
+          {listing.website ? (
+            <View style={dm.detailRow}>
+              <Ionicons name="globe-outline" size={16} color="#8E8E93" />
+              <Text style={dm.detailText} numberOfLines={1}>{listing.website}</Text>
+            </View>
+          ) : null}
+          {listing.description ? (
+            <View style={dm.detailRow}>
+              <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+              <Text style={dm.detailText}>{listing.description}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={dm.actions}>
+          {listing.phone ? (
+            <TouchableOpacity style={dm.callBtn} onPress={callBusiness} activeOpacity={0.85}>
+              <Ionicons name="call" size={18} color="#FFFFFF" />
+              <Text style={dm.callBtnText}>Call Now</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity style={dm.dirBtn} onPress={getDirections} activeOpacity={0.85}>
+            <Ionicons name="navigate" size={18} color="#021B3A" />
+            <Text style={dm.dirBtnText}>Directions</Text>
+          </TouchableOpacity>
+          {listing.website ? (
+            <TouchableOpacity style={dm.webBtn} onPress={openWebsite} activeOpacity={0.85}>
+              <Ionicons name="globe-outline" size={18} color="#021B3A" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const dm = StyleSheet.create({
+  overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet:      { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 44, position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '80%' },
+  handle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', alignSelf: 'center', marginBottom: 20 },
+  header:     { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
+  headerIcon: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  bName:      { fontSize: 18, fontWeight: '800', color: '#1A1A2E' },
+  bMeta:      { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+  closeBtn:   { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F5F5F5', justifyContent: 'center', alignItems: 'center' },
+  ratingRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, paddingHorizontal: 2 },
+  ratingText: { fontSize: 13, color: '#8E8E93' },
+  details:    { gap: 10, marginBottom: 20, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#EBEBEF' },
+  detailRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  detailText: { flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 },
+  actions:    { flexDirection: 'row', gap: 10 },
+  callBtn:    { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#021B3A', gap: 8 },
+  callBtnText:{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  dirBtn:     { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C5D0E8', gap: 8 },
+  dirBtnText: { fontSize: 15, fontWeight: '700', color: '#021B3A' },
+  webBtn:     { width: 52, height: 52, borderRadius: 14, backgroundColor: '#F8F8FA', borderWidth: 1, borderColor: '#EBEBEF', justifyContent: 'center', alignItems: 'center' },
+});
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function FindHelpScreen() {
   const Colors = useColors();
-  const styles = useMemo(() => StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
-    content: { padding: 16, paddingBottom: 36 },
-    banner: {
-      flexDirection: 'row', alignItems: 'center', gap: 12,
-      backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
-      borderWidth: 1, borderColor: Colors.secondary + '44', marginBottom: 20,
-    },
-    bannerTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
-    bannerSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
-    locBtn: { backgroundColor: Colors.secondary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
-    locBtnText: { color: Colors.textDark, fontSize: 12, fontWeight: '800' },
-    sectionLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-    card: {
-      width: '47%', backgroundColor: Colors.surface, borderRadius: 14,
-      padding: 14, borderWidth: 1, borderColor: Colors.border,
-    },
-    iconCircle: {
-      width: 52, height: 52, borderRadius: 26,
-      justifyContent: 'center', alignItems: 'center', marginBottom: 10,
-    },
-    cardLabel: { color: Colors.text, fontSize: 13, fontWeight: '700' },
-    cardSub: { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
-    openBadge: {
-      flexDirection: 'row', alignItems: 'center', gap: 4,
-      marginTop: 8, backgroundColor: Colors.secondary + '18',
-      paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4,
-      alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary + '44',
-    },
-    openBadgeText: { color: Colors.secondary, fontSize: 9, fontWeight: '800' },
-    tipCard: {
-      flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-      backgroundColor: Colors.secondary + '12', borderRadius: 12, padding: 14,
-      borderWidth: 1, borderColor: Colors.secondary + '30',
-    },
-    tipText: { color: Colors.secondary, fontSize: 12, flex: 1, lineHeight: 18 },
-  }), [Colors]);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locLoading, setLocLoading] = useState(false);
+  const mapRef = useRef<MapView>(null);
 
-  const getLocation = useCallback(async (): Promise<{ lat: number; lng: number } | null> => {
-    if (location) return location;
-    setLocLoading(true);
+  const [listings,        setListings]        = useState<Listing[]>([]);
+  const [loading,         setLoading]         = useState(true);
+  const [refreshing,      setRefreshing]      = useState(false);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+  const [userCoords,      setUserCoords]      = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapReady,        setMapReady]        = useState(false);
+  const [nearbyMode,      setNearbyMode]      = useState(false);
+  const [locLoading,      setLocLoading]      = useState(false);
+  const coordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  // ── Fetch — no params = all partners, coords = nearby filter ─────────────
+  const fetchListings = useCallback(async (coords?: { latitude: number; longitude: number } | null, isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Location Required', 'Enable location to find nearby services.');
-        return null;
-      }
-      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      setLocation(coords);
-      return coords;
+      const params: Record<string, string> = coords
+        ? { lat: String(coords.latitude), lng: String(coords.longitude), radius: '75' }
+        : {};
+      const res = await client.get('/partner/listings', { params });
+      const results: Listing[] = res.data ?? [];
+      setListings(results);
+      if (!isRefresh) results.slice(0, 10).forEach(l => client.post(`/partner/listing/${l._id}/view`).catch(() => {}));
     } catch {
-      Alert.alert('Error', 'Could not get your location. Please try again.');
-      return null;
+      // silent — show empty state
     } finally {
-      setLocLoading(false);
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [location]);
+  }, []);
 
-  const openMap = async (category: HelpCategory) => {
-    const coords = await getLocation();
-    if (!coords) return;
+  // ── Initial load — show ALL partners ─────────────────────────────────────
+  useEffect(() => {
+    fetchListings();
+    // Get GPS in background for "Near Me" button — don't wait for it
+    Location.requestForegroundPermissionsAsync().then(({ status }) => {
+      if (status === 'granted') {
+        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(pos => {
+          const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          setUserCoords(coords);
+          coordsRef.current = coords;
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, [fetchListings]);
 
-    const { lat, lng } = coords;
-    let url: string;
+  // ── Auto-refresh every 60 seconds ────────────────────────────────────────
+  useFocusEffect(useCallback(() => {
+    const interval = setInterval(() => {
+      fetchListings(nearbyMode ? coordsRef.current : null, true);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchListings, nearbyMode]));
 
-    if (Platform.OS === 'ios') {
-      url = `maps://maps.apple.com/?q=${category.query}&sll=${lat},${lng}&z=12`;
-    } else {
-      url = `geo:${lat},${lng}?q=${category.query}`;
+  // ── Near Me toggle ────────────────────────────────────────────────────────
+  const toggleNearby = useCallback(async () => {
+    if (nearbyMode) {
+      setNearbyMode(false);
+      fetchListings(null);
+      return;
     }
-
-    const canOpen = await Linking.canOpenURL(url);
-    if (canOpen) {
-      await Linking.openURL(url);
-    } else {
-      // Fallback to Google Maps web
-      const webUrl = `https://www.google.com/maps/search/${category.query}/@${lat},${lng},12z`;
-      await Linking.openURL(webUrl);
+    let coords = coordsRef.current;
+    if (!coords) {
+      setLocLoading(true);
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Location Required', 'Enable location to filter nearby partners.');
+          return;
+        }
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setUserCoords(coords);
+        coordsRef.current = coords;
+      } catch {
+        Alert.alert('Error', 'Could not get your location.');
+        return;
+      } finally { setLocLoading(false); }
     }
+    setNearbyMode(true);
+    fetchListings(coords);
+  }, [nearbyMode, fetchListings]);
+
+  // Re-center map when coords are ready
+  useEffect(() => {
+    if (mapReady && userCoords && mapRef.current) {
+      mapRef.current.animateToRegion({
+        ...userCoords,
+        latitudeDelta: 0.5,
+        longitudeDelta: 0.5,
+      }, 600);
+    }
+  }, [mapReady, userCoords]);
+
+  const recenter = () => {
+    if (!userCoords || !mapRef.current) return;
+    mapRef.current.animateToRegion({ ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 }, 400);
   };
 
+  const openExternalMap = async (query: string) => {
+    if (!userCoords) {
+      Alert.alert('Location Required', 'Enable location to use this feature.'); return;
+    }
+    const { latitude: lat, longitude: lng } = userCoords;
+    const url = Platform.OS === 'ios'
+      ? `maps://maps.apple.com/?q=${query}&sll=${lat},${lng}&z=12`
+      : `geo:${lat},${lng}?q=${query}`;
+    const canOpen = await Linking.canOpenURL(url);
+    Linking.openURL(canOpen ? url : `https://www.google.com/maps/search/${query}/@${lat},${lng},12z`);
+  };
+
+  // Group listings by category
+  const grouped = useMemo(() => {
+    const map: Record<string, Listing[]> = {};
+    for (const l of listings) {
+      if (!map[l.category]) map[l.category] = [];
+      map[l.category].push(l);
+    }
+    return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
+  }, [listings]);
+
+  const mappable = listings.filter(l => l.latitude && l.longitude);
+
+  const styles = useMemo(() => StyleSheet.create({
+    container:    { flex: 1, backgroundColor: Colors.background },
+    scroll:       { paddingBottom: 40 },
+
+    mapWrapper:   { height: MAP_HEIGHT, width: SW, backgroundColor: '#E8EDF2' },
+    map:          { flex: 1 },
+    recenterBtn:  { position: 'absolute', bottom: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 4 },
+    mapOverlay:   { position: 'absolute', top: 12, left: 12, backgroundColor: '#021B3A', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
+    mapOverlayTx: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+
+    body:         { padding: 16 },
+    sectionTitle: { color: Colors.text, fontSize: 16, fontWeight: '800', marginBottom: 4 },
+    sectionSub:   { color: Colors.textMuted, fontSize: 12, marginBottom: 14 },
+
+    catHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
+    catIcon:      { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+    catLabel:     { fontSize: 14, fontWeight: '800', color: Colors.text },
+    catCount:     { fontSize: 12, color: Colors.textMuted, marginLeft: 'auto' as any },
+
+    emptyBox:     { alignItems: 'center', paddingVertical: 32, gap: 8 },
+    emptyText:    { color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+
+    divider:      { height: 1, backgroundColor: Colors.border, marginVertical: 20 },
+    mapGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    mapCard:      { width: (SW - 48) / 2, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border },
+    mapIconCircle:{ width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+    mapLabel:     { color: Colors.text, fontSize: 13, fontWeight: '700' },
+    mapBadge:     { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, backgroundColor: Colors.secondary + '18', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary + '44' },
+    mapBadgeText: { color: Colors.secondary, fontSize: 9, fontWeight: '800' },
+  }), [Colors]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchListings(coordsRef.current, true)}
+            tintColor="#021B3A"
+            colors={['#021B3A']}
+          />
+        }
+      >
 
-        <View style={styles.banner}>
-          <Ionicons name="location" size={20} color={Colors.secondary} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>Find Help Near You</Text>
-            <Text style={styles.bannerSub}>
-              {location
-                ? `Location ready · ${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
-                : 'Tap any category to auto-detect your location'}
+        {/* ── Live Map ───────────────────────────────────────────────────────── */}
+        <View style={styles.mapWrapper}>
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_DEFAULT}
+            initialRegion={userCoords ? { ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 } : DEFAULT_REGION}
+            showsUserLocation
+            showsMyLocationButton={false}
+            onMapReady={() => setMapReady(true)}
+          >
+            {mappable.map(l => {
+              const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+              return (
+                <Marker
+                  key={l._id}
+                  coordinate={{ latitude: l.latitude!, longitude: l.longitude! }}
+                  title={l.businessName}
+                  description={l.category}
+                  pinColor={cat.color}
+                  onCalloutPress={() => setSelectedListing(l)}
+                />
+              );
+            })}
+          </MapView>
+
+          {/* Partner count badge */}
+          <View style={styles.mapOverlay}>
+            <Ionicons name="storefront" size={13} color="#F5C842" />
+            <Text style={styles.mapOverlayTx}>
+              {listings.length} RRN Partner{listings.length !== 1 ? 's' : ''}
+              {nearbyMode ? ' Nearby' : ' Nationwide'}
             </Text>
           </View>
-          {locLoading
-            ? <ActivityIndicator size="small" color={Colors.secondary} />
-            : location
-              ? <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
-              : <TouchableOpacity style={styles.locBtn} onPress={getLocation}>
-                  <Text style={styles.locBtnText}>Get Location</Text>
-                </TouchableOpacity>
-          }
-        </View>
 
-        <Text style={styles.sectionLabel}>SERVICES</Text>
-        <View style={styles.grid}>
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat.label}
-              style={styles.card}
-              onPress={() => openMap(cat)}
-              activeOpacity={0.75}
-            >
-              <View style={[styles.iconCircle, { backgroundColor: cat.color + '22' }]}>
-                <Ionicons name={cat.icon as any} size={28} color={cat.color} />
-              </View>
-              <Text style={styles.cardLabel}>{cat.label}</Text>
-              <Text style={styles.cardSub}>{cat.sublabel}</Text>
-              <View style={styles.openBadge}>
-                <Ionicons name="map-outline" size={10} color={Colors.secondary} />
-                <Text style={styles.openBadgeText}>OPEN MAPS</Text>
-              </View>
+          {/* Re-center button */}
+          {userCoords && (
+            <TouchableOpacity style={styles.recenterBtn} onPress={recenter} activeOpacity={0.8}>
+              <Ionicons name="locate" size={18} color="#021B3A" />
             </TouchableOpacity>
-          ))}
+          )}
         </View>
 
-        <View style={styles.tipCard}>
-          <Ionicons name="information-circle-outline" size={16} color={Colors.secondary} />
-          <Text style={styles.tipText}>
-            Tapping any service opens your phone's Maps app and searches near your current GPS location. Make sure location services are enabled for best results.
+        <View style={styles.body}>
+
+          {/* ── RRN Partner Directory ─────────────────────────────────────────── */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Text style={[styles.sectionTitle, { flex: 1 }]}>Road Ready Network Partners</Text>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 5,
+                backgroundColor: nearbyMode ? '#021B3A' : '#EEF2FF',
+                borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7,
+                borderWidth: 1, borderColor: nearbyMode ? '#021B3A' : '#C5D0E8',
+              }}
+              onPress={toggleNearby}
+              activeOpacity={0.8}
+              disabled={locLoading}
+            >
+              {locLoading
+                ? <ActivityIndicator size="small" color={nearbyMode ? '#FFF' : '#021B3A'} />
+                : <Ionicons name="locate" size={14} color={nearbyMode ? '#FFFFFF' : '#021B3A'} />
+              }
+              <Text style={{ fontSize: 12, fontWeight: '700', color: nearbyMode ? '#FFFFFF' : '#021B3A' }}>
+                {nearbyMode ? 'Near Me ✓' : 'Near Me'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.sectionSub}>
+            {nearbyMode
+              ? 'Showing partners within 75 miles of your location.'
+              : 'All verified businesses on the Road Ready Network.'}
           </Text>
+
+          {loading ? (
+            <View style={styles.emptyBox}>
+              <ActivityIndicator size="large" color="#021B3A" />
+              <Text style={styles.emptyText}>Finding nearby partners...</Text>
+            </View>
+          ) : grouped.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Ionicons name="storefront-outline" size={48} color="#E0E0E0" />
+              <Text style={styles.emptyText}>
+                {nearbyMode
+                  ? 'No RRN partners within 75 miles of your location.\nTry turning off Near Me to see all partners.'
+                  : 'No RRN partners yet.\nCheck back soon as more businesses join the network.'}
+              </Text>
+            </View>
+          ) : (
+            grouped.map(([category, items]) => {
+              const cat = CATEGORY_ICONS[category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+              return (
+                <View key={category}>
+                  <View style={styles.catHeader}>
+                    <View style={[styles.catIcon, { backgroundColor: cat.color + '18' }]}>
+                      <Ionicons name={cat.icon as any} size={16} color={cat.color} />
+                    </View>
+                    <Text style={styles.catLabel}>{category}</Text>
+                    <Text style={styles.catCount}>{items.length} location{items.length !== 1 ? 's' : ''}</Text>
+                  </View>
+                  {items.map(l => (
+                    <BusinessCard key={l._id} listing={l} onPress={() => setSelectedListing(l)} />
+                  ))}
+                </View>
+              );
+            })
+          )}
+
+          {/* ── Divider ────────────────────────────────────────────────────────── */}
+          <View style={styles.divider} />
+
+          {/* ── External Maps Fallback ─────────────────────────────────────────── */}
+          <Text style={styles.sectionTitle}>Search Near Me</Text>
+          <Text style={styles.sectionSub}>Opens your phone's maps app for general searches.</Text>
+
+          <View style={styles.mapGrid}>
+            {MAP_CATEGORIES.map(cat => (
+              <TouchableOpacity
+                key={cat.label}
+                style={styles.mapCard}
+                onPress={() => openExternalMap(cat.query)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.mapIconCircle, { backgroundColor: cat.color + '22' }]}>
+                  <Ionicons name={cat.icon as any} size={26} color={cat.color} />
+                </View>
+                <Text style={styles.mapLabel}>{cat.label}</Text>
+                <View style={styles.mapBadge}>
+                  <Ionicons name="map-outline" size={10} color={Colors.secondary} />
+                  <Text style={styles.mapBadgeText}>OPEN MAPS</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
         </View>
       </ScrollView>
+
+      {selectedListing && (
+        <BusinessDetailModal
+          listing={selectedListing}
+          onClose={() => setSelectedListing(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }

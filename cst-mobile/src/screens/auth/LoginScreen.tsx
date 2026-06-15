@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
-  Image, ScrollView,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,8 +16,6 @@ import { useAuth } from '../../context/AuthContext';
 import { googleAuth, appleAuth } from '../../api/socialAuth';
 import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID } from '../../constants/googleAuth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-import SparkleCluster from '../../components/auth/SparkleCluster';
-
 WebBrowser.maybeCompleteAuthSession();
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'> };
@@ -100,14 +98,7 @@ export default function LoginScreen({ navigation }: Props) {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} bounces={false}>
 
-            <View style={s.logoRow}>
-              <View style={s.logoPill}>
-                <Image source={require('../../../assets/logo/cst_logo_white.png')} style={s.logoImg} resizeMode="contain" />
-              </View>
-            </View>
-
             <View style={s.header}>
-              <SparkleCluster size="lg" />
               <Text style={[s.greeting, { color: Colors.text }]}>{t('auth.login.greeting')}</Text>
               <Text style={[s.subtitle, { color: Colors.textMuted }]}>{t('auth.login.subtitle')}</Text>
             </View>
@@ -186,10 +177,7 @@ export default function LoginScreen({ navigation }: Props) {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 32 },
-  logoRow: { alignItems: 'center', paddingTop: 20, paddingBottom: 4 },
-  logoPill: { backgroundColor: '#021B3A', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 10 },
-  logoImg: { width: 120, height: 40 },
+  scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 32, justifyContent: 'center' },
   header: { paddingTop: 20, paddingBottom: 4 },
   greeting: { fontSize: 30, fontWeight: '800', marginTop: 10 },
   subtitle: { fontSize: 15, marginTop: 5 },

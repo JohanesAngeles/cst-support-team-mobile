@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, FlatList,
-  Image, Dimensions, NativeSyntheticEvent, NativeScrollEvent,
+  Image, Dimensions, NativeSyntheticEvent, NativeScrollEvent, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -81,6 +81,16 @@ export default function DashboardScreen() {
 
   const carouselRef = useRef<FlatList>(null);
   const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sosPulse    = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(sosPulse, { toValue: 1.12, duration: 700, useNativeDriver: true }),
+        Animated.timing(sosPulse, { toValue: 1,    duration: 700, useNativeDriver: true }),
+      ])
+    ).start();
+  }, [sosPulse]);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -187,7 +197,7 @@ export default function DashboardScreen() {
             {/* Avatar */}
             <TouchableOpacity
               style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: NAVY, justifyContent: 'center', alignItems: 'center' }}
-              onPress={() => navigation.navigate('Profile')}
+              onPress={() => (navigation as any).navigate('Profile')}
               activeOpacity={0.8}
             >
               <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '800' }}>{initials}</Text>
@@ -508,22 +518,40 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        {/* ⑨ Emergency SOS */}
+
+      </ScrollView>
+
+      {/* ── Floating SOS Button (always visible above tab bar) ─────────────── */}
+      <Animated.View style={{
+        position: 'absolute',
+        bottom: 98,
+        right: 20,
+        transform: [{ scale: sosPulse }],
+        shadowColor: '#FF3B30',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.55,
+        shadowRadius: 12,
+        elevation: 10,
+      }}>
         <TouchableOpacity
-          style={{ backgroundColor: '#FF3B30', marginHorizontal: 16, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', marginTop: 20, shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 }}
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: '#FF3B30',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 3,
+            borderColor: '#FFFFFF',
+          }}
           onPress={() => navigation.navigate('EmergencySOS')}
           activeOpacity={0.85}
         >
-          <Ionicons name="alert-circle" size={26} color="#FFFFFF" />
-          <View style={{ flex: 1, marginLeft: 12 }}>
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>{t('dashboard.emergency')}</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.75)', fontSize: 10, marginTop: 1 }}>{t('dashboard.emergencySub')}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={17} color="#FFFFFF" />
+          <Ionicons name="alert-circle" size={22} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '900', letterSpacing: 1, marginTop: 1 }}>SOS</Text>
         </TouchableOpacity>
+      </Animated.View>
 
-
-      </ScrollView>
     </View>
   );
 }

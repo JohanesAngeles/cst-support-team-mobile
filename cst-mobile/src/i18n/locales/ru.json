@@ -20,7 +20,7 @@
   "auth": {
     "login": {
       "greeting": "Привет, Добро пожаловать! 👋",
-      "subtitle": "Войдите в свой аккаунт CST",
+      "subtitle": "Войдите в Road Ready Network",
       "emailLabel": "Электронная почта",
       "emailPlaceholder": "Ваш email",
       "passwordLabel": "Пароль",
@@ -178,6 +178,7 @@
   "tabs": {
     "dashboard": "Главная",
     "docs": "Docs",
+    "game": "Игра",
     "tools": "Инструменты",
     "fuel": "Топливо",
     "profile": "Профиль"
@@ -258,8 +259,8 @@
     "passwordPlaceholder": "Ваш пароль",
     "exportingData": "Экспорт данных...",
     "exportTitle": "Экспорт моих данных CST",
-    "shareMessage": "Откройте для себя CST Driver — лучшее приложение для дальнобойщиков! Скачайте бесплатно в App Store и Google Play.",
-    "rateAlertTitle": "Оценить CST Driver",
+    "shareMessage": "Откройте для себя Road Ready Network — лучшее приложение для дальнобойщиков! Скачайте бесплатно в App Store и Google Play.",
+    "rateAlertTitle": "Оценить Road Ready Network",
     "rateAlertMsg": "Нравится приложение? Оставьте отзыв — это помогает другим водителям нас найти!"
   },
   "notifications": {

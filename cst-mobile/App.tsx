@@ -24,6 +24,7 @@ import SplashScreen from './src/screens/SplashScreen';
 import OfflineBanner from './src/components/OfflineBanner';
 import BiometricLock from './src/components/BiometricLock';
 import AnimatedGradientBackground from './src/components/AnimatedGradientBackground';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { addNotification } from './src/utils/notificationHistory';
 
 const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
@@ -52,7 +53,7 @@ function Root() {
     notifListener.current = Notifications.addNotificationReceivedListener(notif => {
       const { title, body, data } = notif.request.content;
       addNotification(
-        title ?? 'CST Alert',
+        title ?? 'Road Ready Network',
         body ?? '',
         data as Record<string, unknown> | undefined,
       );
@@ -74,17 +75,19 @@ function Root() {
 
 function App() {
   return (
-    <Analytics>
-      <GestureHandlerRootView style={s.root}>
-        <SafeAreaProvider>
-          <ThemeProvider>
-            <AuthProvider>
-              <Root />
-            </AuthProvider>
-          </ThemeProvider>
-        </SafeAreaProvider>
-      </GestureHandlerRootView>
-    </Analytics>
+    <ErrorBoundary>
+      <Analytics>
+        <GestureHandlerRootView style={s.root}>
+          <SafeAreaProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <Root />
+              </AuthProvider>
+            </ThemeProvider>
+          </SafeAreaProvider>
+        </GestureHandlerRootView>
+      </Analytics>
+    </ErrorBoundary>
   );
 }
 
