@@ -8,12 +8,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../../api/client';
 
+const NAVY = '#021B3A';
+
 export default function AdminListingsScreen() {
   const [listings,   setListings]   = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting,   setDeleting]   = useState<string | null>(null);
   const [toggling,   setToggling]   = useState<string | null>(null);
+  const [geocoding,  setGeocoding]  = useState(false);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -67,8 +70,39 @@ export default function AdminListingsScreen() {
     );
   };
 
+  const handleGeocodeBackfill = async () => {
+    const missing = listings.filter(l => !l.latitude).length;
+    if (missing === 0) {
+      Alert.alert('All good!', 'All listings already have map coordinates.');
+      return;
+    }
+    Alert.alert(
+      'Fix Map Pins',
+      `${missing} listing${missing > 1 ? 's are' : ' is'} missing coordinates. This will geocode them now (takes ~${missing} seconds). Continue?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Fix Now',
+          onPress: async () => {
+            setGeocoding(true);
+            try {
+              const { data } = await client.post('/admin/listings/geocode-missing');
+              Alert.alert('Done', `Updated ${data.updated} listing${data.updated !== 1 ? 's' : ''}.${data.failed > 0 ? ` ${data.failed} could not be geocoded.` : ''}`);
+              load();
+            } catch {
+              Alert.alert('Error', 'Geocoding failed. Check the server logs.');
+            } finally {
+              setGeocoding(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const active   = listings.filter(l => l.isActive);
   const inactive = listings.filter(l => !l.isActive);
+  const noPin    = listings.filter(l => !l.latitude).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
@@ -80,8 +114,27 @@ export default function AdminListingsScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 17, fontWeight: '800', color: '#1A1A2E' }}>Business Listings</Text>
-            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>{active.length} live · {inactive.length} offline</Text>
+            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>
+              {active.length} live · {inactive.length} offline
+              {noPin > 0 ? ` · ${noPin} no pin` : ''}
+            </Text>
           </View>
+          {noPin > 0 && (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: NAVY, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, opacity: geocoding ? 0.6 : 1 }}
+              onPress={handleGeocodeBackfill}
+              disabled={geocoding}
+              activeOpacity={0.8}
+            >
+              {geocoding
+                ? <ActivityIndicator size="small" color="#FFF" />
+                : <Ionicons name="location-outline" size={14} color="#FFF" />
+              }
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#FFF' }}>
+                {geocoding ? 'Fixing…' : 'Fix Pins'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {loading ? (
@@ -147,6 +200,12 @@ function ListingCard({ listing: l, deleting, toggling, onDelete, onToggle }: {
         <Text style={{ fontSize: 15, fontWeight: '800', color: '#1A1A2E' }}>{l.businessName}</Text>
         <Text style={{ fontSize: 13, color: '#8E8E93' }}>{l.category} · {l.city}, {l.state}</Text>
         {l.phone ? <Text style={{ fontSize: 12, color: '#AEAEB2' }}>{l.phone}</Text> : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+          <Ionicons name={l.latitude ? 'location' : 'location-outline'} size={12} color={l.latitude ? '#27AE60' : '#E53935'} />
+          <Text style={{ fontSize: 11, color: l.latitude ? '#27AE60' : '#E53935' }}>
+            {l.latitude ? 'Map pin set' : 'No map pin'}
+          </Text>
+        </View>
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="eye-outline" size={13} color="#8E8E93" />

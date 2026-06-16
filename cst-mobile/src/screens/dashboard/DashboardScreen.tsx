@@ -481,6 +481,57 @@ export default function DashboardScreen() {
         </Animated.View>
       )}
 
+      {/* ── Partner card strip ───────────────────────────────────────────── */}
+      {!selectedListing && filtered.length > 0 && (
+        <View style={{ position: 'absolute', bottom: insets.bottom + 90, left: 0, right: 0 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 12, gap: 10 }}
+          >
+            {filtered.map(l => {
+              const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+              return (
+                <TouchableOpacity
+                  key={l._id}
+                  style={{
+                    width: 220, backgroundColor: '#FFF', borderRadius: 16,
+                    padding: 12, gap: 6,
+                    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.1, shadowRadius: 8, elevation: 5,
+                  }}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    setSelectedListing(l);
+                    if (l.latitude && l.longitude) {
+                      mapRef.current?.animateToRegion(
+                        { latitude: l.latitude - 0.01, longitude: l.longitude, latitudeDelta: 0.08, longitudeDelta: 0.08 },
+                        400
+                      );
+                    }
+                    client.post(`/partner/listing/${l._id}/view`).catch(() => {});
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: cat.color + '18', justifyContent: 'center', alignItems: 'center' }}>
+                      <Ionicons name={cat.icon as any} size={18} color={cat.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '800', color: '#1A1A2E' }} numberOfLines={1}>{l.businessName}</Text>
+                      <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>{l.city}, {l.state}</Text>
+                    </View>
+                  </View>
+                  {l.rating > 0 && <StarRow rating={l.rating} />}
+                  {!l.latitude && (
+                    <Text style={{ fontSize: 10, color: '#C0C0C0' }}>No map pin</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
       {/* ── SOS button ───────────────────────────────────────────────────── */}
       <Animated.View style={{
         position: 'absolute', bottom: insets.bottom + 98, right: 20,
