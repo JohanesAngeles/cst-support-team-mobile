@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import BusinessListing from '../models/BusinessListing';
 import BusinessReview from '../models/BusinessReview';
+import { geocodeAddress } from '../utils/geocode';
 
 const router = Router();
 
@@ -34,14 +35,18 @@ router.post('/listing', protect, partnerOnly, async (req: AuthRequest, res: Resp
       res.status(409).json({ message: 'Listing already exists. Use PUT to update.' });
       return;
     }
-    const { businessName, category, phone, city, state, website, description, hours } = req.body;
+    const { businessName, category, phone, city, state, website, description, hours, physicalAddress } = req.body;
     if (!businessName || !category || !phone || !city || !state) {
       res.status(400).json({ message: 'businessName, category, phone, city, and state are required.' });
       return;
     }
+    const geoQuery = physicalAddress ? `${physicalAddress}, ${city}, ${state}, USA` : `${city}, ${state}, USA`;
+    const coords = await geocodeAddress(geoQuery);
     const listing = await BusinessListing.create({
       ownerId: req.user._id,
-      businessName, category, phone, city, state, website, description, hours,
+      businessName, category, phone, city, state, website, description, hours, physicalAddress,
+      latitude:  coords?.latitude,
+      longitude: coords?.longitude,
     });
     res.status(201).json(listing);
   } catch {
@@ -53,10 +58,18 @@ router.post('/listing', protect, partnerOnly, async (req: AuthRequest, res: Resp
 // Update or upsert listing
 router.put('/listing', protect, partnerOnly, async (req: AuthRequest, res: Response) => {
   try {
-    const { businessName, category, phone, city, state, website, description, hours, isActive } = req.body;
+    const { businessName, category, phone, city, state, website, description, hours, isActive, physicalAddress } = req.body;
+    const geoQuery = physicalAddress ? `${physicalAddress}, ${city}, ${state}, USA`
+                                     : city && state ? `${city}, ${state}, USA` : null;
+    const coords = geoQuery ? await geocodeAddress(geoQuery) : null;
     const listing = await BusinessListing.findOneAndUpdate(
       { ownerId: req.user._id },
-      { $set: { businessName, category, phone, city, state, website, description, hours, isActive } },
+      {
+        $set: {
+          businessName, category, phone, city, state, website, description, hours, isActive, physicalAddress,
+          ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
+        },
+      },
       { new: true, upsert: true, runValidators: true }
     );
     res.json(listing);
@@ -166,7 +179,7 @@ router.post('/listing/:listingId/review', protect, async (req: AuthRequest, res:
 router.get('/listings', async (req: AuthRequest, res: Response) => {
   try {
     const { city, state, category, lat, lng, radius } = req.query;
-    const filter: Record<string, any> = { isActive: true };
+    const filter: Record<string, any> = { isActive: { $ne: false } };
 
     if (lat && lng) {
       // Bounding-box radius filter using stored lat/lng on listings

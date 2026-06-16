@@ -3,6 +3,7 @@ import { protect, AuthRequest } from '../middleware/auth';
 import BusinessListing from '../models/BusinessListing';
 import PartnerApplication from '../models/PartnerApplication';
 import User from '../models/User';
+import { geocodeAddress } from '../utils/geocode';
 
 const router = Router();
 
@@ -48,7 +49,8 @@ router.post('/listings/bulk', protect, adminOnly, async (req: AuthRequest, res: 
       }
 
       try {
-        // Use a placeholder ownerId for magazine-imported listings (use admin's own id)
+        const query = `${city.trim()}, ${state.trim()}, USA`;
+        const coords = await geocodeAddress(query);
         await BusinessListing.create({
           ownerId:      req.user._id,
           businessName: businessName.trim(),
@@ -60,6 +62,8 @@ router.post('/listings/bulk', protect, adminOnly, async (req: AuthRequest, res: 
           description:  description?.trim() || undefined,
           hours:        hours?.trim()        || undefined,
           isActive:     true,
+          latitude:     coords?.latitude,
+          longitude:    coords?.longitude,
         });
         created++;
       } catch (err: any) {
@@ -141,6 +145,38 @@ router.patch('/listings/:id', protect, adminOnly, async (req: AuthRequest, res: 
     res.json(listing);
   } catch {
     res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/admin/listings/geocode-missing ─────────────────────────────────
+// Backfill lat/lng for any listings that don't have coordinates yet
+router.post('/listings/geocode-missing', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const missing = await BusinessListing.find({
+      $or: [{ latitude: { $exists: false } }, { latitude: null }],
+    }).select('_id businessName city state physicalAddress');
+
+    let updated = 0;
+    let failed  = 0;
+
+    for (const listing of missing) {
+      const query = listing.physicalAddress
+        ? `${listing.physicalAddress}, ${listing.city}, ${listing.state}, USA`
+        : `${listing.city}, ${listing.state}, USA`;
+      const coords = await geocodeAddress(query);
+      if (coords) {
+        await BusinessListing.findByIdAndUpdate(listing._id, {
+          latitude: coords.latitude, longitude: coords.longitude,
+        });
+        updated++;
+      } else {
+        failed++;
+      }
+    }
+
+    res.json({ message: 'Geocode backfill complete.', updated, failed, total: missing.length });
+  } catch {
+    res.status(500).json({ message: 'Server error during geocode backfill.' });
   }
 });
 
