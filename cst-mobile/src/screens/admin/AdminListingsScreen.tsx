@@ -13,6 +13,7 @@ export default function AdminListingsScreen() {
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [deleting,   setDeleting]   = useState<string | null>(null);
+  const [toggling,   setToggling]   = useState<string | null>(null);
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -28,6 +29,18 @@ export default function AdminListingsScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const handleToggle = async (id: string, currentActive: boolean) => {
+    setToggling(id);
+    try {
+      const { data } = await client.patch(`/admin/listings/${id}`, { isActive: !currentActive });
+      setListings(prev => prev.map(l => l._id === id ? { ...l, isActive: data.isActive } : l));
+    } catch {
+      Alert.alert('Error', 'Could not update listing.');
+    } finally {
+      setToggling(null);
+    }
+  };
 
   const handleDelete = (id: string, name: string) => {
     Alert.alert(
@@ -95,7 +108,7 @@ export default function AdminListingsScreen() {
               </Text>
             )}
             {active.map(l => (
-              <ListingCard key={l._id} listing={l} deleting={deleting} onDelete={handleDelete} />
+              <ListingCard key={l._id} listing={l} deleting={deleting} toggling={toggling} onDelete={handleDelete} onToggle={handleToggle} />
             ))}
 
             {inactive.length > 0 && (
@@ -104,7 +117,7 @@ export default function AdminListingsScreen() {
               </Text>
             )}
             {inactive.map(l => (
-              <ListingCard key={l._id} listing={l} deleting={deleting} onDelete={handleDelete} />
+              <ListingCard key={l._id} listing={l} deleting={deleting} toggling={toggling} onDelete={handleDelete} onToggle={handleToggle} />
             ))}
           </ScrollView>
         )}
@@ -114,8 +127,15 @@ export default function AdminListingsScreen() {
   );
 }
 
-function ListingCard({ listing: l, deleting, onDelete }: { listing: any; deleting: string | null; onDelete: (id: string, name: string) => void }) {
+function ListingCard({ listing: l, deleting, toggling, onDelete, onToggle }: {
+  listing: any;
+  deleting: string | null;
+  toggling: string | null;
+  onDelete: (id: string, name: string) => void;
+  onToggle: (id: string, currentActive: boolean) => void;
+}) {
   const isDeleting = deleting === l._id;
+  const isToggling = toggling === l._id;
 
   return (
     <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#EBEBEF', padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
@@ -139,11 +159,24 @@ function ListingCard({ listing: l, deleting, onDelete }: { listing: any; deletin
         </View>
       </View>
 
+      {/* Toggle active/inactive */}
+      <TouchableOpacity
+        style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: l.isActive ? '#E8F5E9' : '#F5F5F5', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: l.isActive ? '#A5D6A7' : '#E0E0E0', opacity: isToggling ? 0.5 : 1 }}
+        onPress={() => onToggle(l._id, l.isActive)}
+        disabled={isToggling || isDeleting}
+        activeOpacity={0.8}
+      >
+        {isToggling
+          ? <ActivityIndicator size="small" color={l.isActive ? '#27AE60' : '#8E8E93'} />
+          : <Ionicons name={l.isActive ? 'eye-outline' : 'eye-off-outline'} size={16} color={l.isActive ? '#27AE60' : '#8E8E93'} />
+        }
+      </TouchableOpacity>
+
       {/* Delete */}
       <TouchableOpacity
         style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFF5F5', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFCDD2', opacity: isDeleting ? 0.5 : 1 }}
         onPress={() => onDelete(l._id, l.businessName)}
-        disabled={isDeleting}
+        disabled={isDeleting || isToggling}
         activeOpacity={0.8}
       >
         {isDeleting

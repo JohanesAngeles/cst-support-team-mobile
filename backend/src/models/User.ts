@@ -28,6 +28,9 @@ export interface IUser extends Document {
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual';
   subscriptionEnd?: Date;
+  cashAppPending?: boolean;
+  cashAppPendingPlan?: 'monthly' | 'annual';
+  cashAppPendingAt?: Date;
   referralCode?: string;
   referredBy?: string;
   notificationPreferences?: INotificationPreferences;
@@ -56,6 +59,9 @@ const UserSchema = new Schema<IUser>(
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },
     subscriptionPlan:    { type: String, enum: ['monthly', 'annual'] },
     subscriptionEnd:     { type: Date },
+    cashAppPending:      { type: Boolean, default: false },
+    cashAppPendingPlan:  { type: String, enum: ['monthly', 'annual'] },
+    cashAppPendingAt:    { type: Date },
     referralCode:        { type: String, unique: true, sparse: true },
     referredBy:          { type: String },
     notificationPreferences: {

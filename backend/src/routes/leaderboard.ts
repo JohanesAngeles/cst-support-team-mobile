@@ -82,4 +82,52 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /api/leaderboard/challenge
+// Body: { score, total, weekKey }  — awards skill+education pts for new weekly bests
+router.post('/challenge', async (req: AuthRequest, res: Response) => {
+  const { score, total, weekKey } = req.body as { score: number; total: number; weekKey: string };
+  if (typeof score !== 'number' || typeof total !== 'number' || !weekKey) {
+    res.status(400).json({ message: 'Invalid payload.' }); return;
+  }
+
+  try {
+    let record = await RoadReadyScore.findOne({ userId: req.user._id });
+    if (!record) record = new RoadReadyScore({ userId: req.user._id });
+
+    const storeKey = `weekly_${weekKey}`;
+    const prevBest = ((record.challengesBestScores as Record<string, number>)[storeKey] ?? -1);
+
+    const newPts  = Math.floor((score / total) * 25);
+    const prevPts = prevBest >= 0 ? Math.floor((prevBest / total) * 25) : 0;
+    const delta   = Math.max(0, newPts - prevPts);
+
+    let pointsEarned = 0;
+    let needsSave    = false;
+
+    if (score > prevBest) {
+      (record.challengesBestScores as Record<string, number>)[storeKey] = score;
+      record.markModified('challengesBestScores');
+      needsSave = true;
+    }
+
+    if (delta > 0) {
+      const skillGain = Math.round(delta * 0.8);
+      const eduGain   = delta - skillGain;
+      record.skillScore     = Math.min(200, (record.skillScore     ?? 0) + skillGain);
+      record.educationScore = Math.min(50,  (record.educationScore ?? 0) + eduGain);
+      record.totalScore     = (record.safetyScore ?? 0) + (record.skillScore ?? 0) +
+                              (record.complianceScore ?? 0) + (record.businessScore ?? 0) +
+                              (record.reputationScore ?? 0) + (record.educationScore ?? 0);
+      pointsEarned = delta;
+      needsSave    = true;
+    }
+
+    if (needsSave) await record.save();
+
+    res.json({ pointsEarned, newSkillScore: record.skillScore, newTotalScore: record.totalScore });
+  } catch (err: any) {
+    res.status(500).json({ message: err.message ?? 'Server error.' });
+  }
+});
+
 export default router;

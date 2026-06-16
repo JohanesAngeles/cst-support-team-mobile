@@ -144,7 +144,11 @@ router.post('/listing/:listingId/review', protect, async (req: AuthRequest, res:
       reviewCount: reviews.length,
     });
 
-    res.json(review);
+    // Return updated listing stats so the client can update its local state
+    res.json({
+      rating:      Math.round(avgRating * 10) / 10,
+      reviewCount: reviews.length,
+    });
   } catch (err: any) {
     if (err.code === 11000) {
       res.status(409).json({ message: 'You have already reviewed this listing.' });

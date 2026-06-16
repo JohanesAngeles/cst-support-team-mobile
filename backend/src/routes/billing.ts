@@ -131,6 +131,25 @@ router.post('/webhook', express_raw_body, async (req: Request, res: Response) =>
   res.json({ received: true });
 });
 
+// ── POST /api/billing/cashapp-request ────────────────────────────────────────
+// Partner submits "I've sent Cash App payment" — admin will manually activate
+router.post('/cashapp-request', protect, async (req: AuthRequest, res: Response) => {
+  const { plan } = req.body;
+  if (!['monthly', 'annual'].includes(plan)) {
+    res.status(400).json({ message: 'Invalid plan.' }); return;
+  }
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      cashAppPending: true,
+      cashAppPendingPlan: plan,
+      cashAppPendingAt: new Date(),
+    });
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // Middleware to capture raw body for Stripe webhook verification
 function express_raw_body(req: Request, _res: Response, next: () => void) {
   let data = '';

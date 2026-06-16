@@ -12,7 +12,7 @@ const games = [
   {
     icon: 'trophy-outline',
     label: "America's Top Trucker™",
-    desc: 'National leaderboards — compete by safety, skill, business & more',
+    desc: 'Play the Weekly Challenge, earn pts, and climb national leaderboards',
     color: '#FFD700',
     screen: 'AmericasTopTrucker' as const,
     featured: true,

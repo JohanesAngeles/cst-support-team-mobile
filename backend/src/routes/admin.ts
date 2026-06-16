@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import BusinessListing from '../models/BusinessListing';
 import PartnerApplication from '../models/PartnerApplication';
+import User from '../models/User';
 
 const router = Router();
 
@@ -127,12 +128,64 @@ router.patch('/applications/:id', protect, adminOnly, async (req: AuthRequest, r
   }
 });
 
+// ── PATCH /api/admin/listings/:id ────────────────────────────────────────────
+// Toggle isActive or update any listing field
+router.patch('/listings/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const listing = await BusinessListing.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    if (!listing) { res.status(404).json({ message: 'Listing not found.' }); return; }
+    res.json(listing);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // ── DELETE /api/admin/listings/:id ───────────────────────────────────────────
 // Remove a listing
 router.delete('/listings/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
     await BusinessListing.findByIdAndDelete(req.params.id);
     res.json({ message: 'Listing deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/cashapp-requests ──────────────────────────────────────────
+// List partners who have submitted a Cash App payment
+router.get('/cashapp-requests', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const pending = await User.find({ cashAppPending: true })
+      .select('name email cashAppPendingPlan cashAppPendingAt subscriptionStatus')
+      .sort({ cashAppPendingAt: -1 });
+    res.json(pending);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/admin/cashapp-approve/:userId ───────────────────────────────────
+// Admin manually activates a partner subscription after confirming Cash App payment
+router.post('/cashapp-approve/:userId', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  const { plan } = req.body as { plan: 'monthly' | 'annual' };
+  if (!['monthly', 'annual'].includes(plan)) {
+    res.status(400).json({ message: 'Invalid plan.' }); return;
+  }
+  try {
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + (plan === 'annual' ? 12 : 1));
+    await User.findByIdAndUpdate(req.params.userId, {
+      subscriptionStatus: 'active',
+      subscriptionPlan: plan,
+      subscriptionEnd: expiry,
+      cashAppPending: false,
+      cashAppPendingPlan: null,
+    });
+    res.json({ ok: true });
   } catch {
     res.status(500).json({ message: 'Server error.' });
   }

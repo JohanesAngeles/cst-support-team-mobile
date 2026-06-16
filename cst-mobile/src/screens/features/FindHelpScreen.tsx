@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
   Alert, ActivityIndicator, Linking, Platform, Modal,
-  Dimensions, RefreshControl,
+  Dimensions, RefreshControl, TextInput,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
@@ -138,7 +138,17 @@ const bc = StyleSheet.create({
   hours:        { fontSize: 11, color: '#8E8E93' },
 });
 
-function BusinessDetailModal({ listing, onClose }: { listing: Listing; onClose: () => void }) {
+function BusinessDetailModal({ listing, onClose, onReviewed }: {
+  listing: Listing;
+  onClose: () => void;
+  onReviewed?: (id: string, newRating: number, newCount: number) => void;
+}) {
+  const [ratingPick,    setRatingPick]    = useState(0);
+  const [comment,       setComment]       = useState('');
+  const [submitting,    setSubmitting]    = useState(false);
+  const [submitted,     setSubmitted]     = useState(false);
+  const [showRateForm,  setShowRateForm]  = useState(false);
+
   const callBusiness = () => {
     if (!listing.phone) return;
     Linking.openURL(`tel:${listing.phone.replace(/\D/g, '')}`);
@@ -168,12 +178,30 @@ function BusinessDetailModal({ listing, onClose }: { listing: Listing; onClose: 
     client.post(`/partner/listing/${listing._id}/click`).catch(() => {});
   };
 
+  const submitReview = async () => {
+    if (ratingPick === 0) { Alert.alert('Select a rating', 'Tap a star to rate this business.'); return; }
+    setSubmitting(true);
+    try {
+      const { data } = await client.post(`/partner/listing/${listing._id}/review`, {
+        rating: ratingPick,
+        comment: comment.trim() || undefined,
+      });
+      setSubmitted(true);
+      onReviewed?.(listing._id, data.rating ?? ratingPick, data.reviewCount ?? listing.reviewCount + 1);
+    } catch (e: any) {
+      const msg = e?.response?.data?.message ?? 'Could not submit review.';
+      Alert.alert('Error', msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const cat = CATEGORY_ICONS[listing.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <TouchableOpacity style={dm.overlay} activeOpacity={1} onPress={onClose} />
-      <View style={dm.sheet}>
+      <ScrollView style={dm.sheet} contentContainerStyle={{ paddingBottom: 44 }} showsVerticalScrollIndicator={false}>
         <View style={dm.handle} />
 
         <View style={dm.header}>
@@ -246,7 +274,51 @@ function BusinessDetailModal({ listing, onClose }: { listing: Listing; onClose: 
             </TouchableOpacity>
           ) : null}
         </View>
-      </View>
+
+        {/* ── Rate this business ──────────────────────────────────────────── */}
+        {submitted ? (
+          <View style={dm.rateBox}>
+            <Ionicons name="checkmark-circle" size={28} color="#27AE60" />
+            <Text style={dm.rateThanks}>Thanks for your review!</Text>
+          </View>
+        ) : !showRateForm ? (
+          <TouchableOpacity style={dm.rateToggle} onPress={() => setShowRateForm(true)} activeOpacity={0.8}>
+            <Ionicons name="star-outline" size={16} color="#021B3A" />
+            <Text style={dm.rateToggleText}>Rate this business</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={dm.rateBox}>
+            <Text style={dm.rateTitle}>Rate this business</Text>
+            <View style={dm.starPicker}>
+              {[1,2,3,4,5].map(n => (
+                <TouchableOpacity key={n} onPress={() => setRatingPick(n)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name={n <= ratingPick ? 'star' : 'star-outline'} size={32} color="#F5C842" />
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              style={dm.commentInput}
+              placeholder="Leave a comment (optional)"
+              placeholderTextColor="#AEAEB2"
+              value={comment}
+              onChangeText={setComment}
+              multiline
+              maxLength={300}
+            />
+            <TouchableOpacity
+              style={[dm.submitBtn, submitting && { opacity: 0.6 }]}
+              onPress={submitReview}
+              disabled={submitting}
+              activeOpacity={0.85}
+            >
+              {submitting
+                ? <ActivityIndicator size="small" color="#FFFFFF" />
+                : <Text style={dm.submitBtnText}>Submit Review</Text>
+              }
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
     </Modal>
   );
 }
@@ -271,6 +343,15 @@ const dm = StyleSheet.create({
   dirBtn:     { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C5D0E8', gap: 8 },
   dirBtnText: { fontSize: 15, fontWeight: '700', color: '#021B3A' },
   webBtn:     { width: 52, height: 52, borderRadius: 14, backgroundColor: '#F8F8FA', borderWidth: 1, borderColor: '#EBEBEF', justifyContent: 'center', alignItems: 'center' },
+  rateToggle:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#C5D0E8', backgroundColor: '#EEF2FF' },
+  rateToggleText: { fontSize: 14, fontWeight: '700', color: '#021B3A' },
+  rateBox:        { marginTop: 16, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EBEBEF', alignItems: 'center', gap: 12 },
+  rateTitle:      { fontSize: 15, fontWeight: '800', color: '#1A1A2E' },
+  starPicker:     { flexDirection: 'row', gap: 8 },
+  commentInput:   { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#EBEBEF', padding: 12, fontSize: 14, color: '#1A1A2E', minHeight: 72, textAlignVertical: 'top' },
+  submitBtn:      { width: '100%', height: 48, borderRadius: 12, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
+  submitBtnText:  { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  rateThanks:     { fontSize: 15, fontWeight: '700', color: '#27AE60' },
 });
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
@@ -287,6 +368,8 @@ export default function FindHelpScreen() {
   const [mapReady,        setMapReady]        = useState(false);
   const [nearbyMode,      setNearbyMode]      = useState(false);
   const [locLoading,      setLocLoading]      = useState(false);
+  const [searchQuery,     setSearchQuery]     = useState('');
+  const [activeCategory,  setActiveCategory]  = useState<string | null>(null);
   const coordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
 
   // ── Fetch — no params = all partners, coords = nearby filter ─────────────
@@ -388,15 +471,31 @@ export default function FindHelpScreen() {
     Linking.openURL(canOpen ? url : `https://www.google.com/maps/search/${query}/@${lat},${lng},12z`);
   };
 
-  // Group listings by category
+  const handleReviewed = useCallback((id: string, newRating: number, newCount: number) => {
+    setListings(prev => prev.map(l => l._id === id ? { ...l, rating: newRating, reviewCount: newCount } : l));
+    setSelectedListing(prev => prev?._id === id ? { ...prev, rating: newRating, reviewCount: newCount } : prev);
+  }, []);
+
+  // Filter + group listings
   const grouped = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = listings.filter(l => {
+      if (activeCategory && l.category !== activeCategory) return false;
+      if (!q) return true;
+      return (
+        l.businessName.toLowerCase().includes(q) ||
+        l.city.toLowerCase().includes(q) ||
+        l.state.toLowerCase().includes(q) ||
+        l.category.toLowerCase().includes(q)
+      );
+    });
     const map: Record<string, Listing[]> = {};
-    for (const l of listings) {
+    for (const l of filtered) {
       if (!map[l.category]) map[l.category] = [];
       map[l.category].push(l);
     }
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
-  }, [listings]);
+  }, [listings, searchQuery, activeCategory]);
 
   const mappable = listings.filter(l => l.latitude && l.longitude);
 
@@ -414,6 +513,11 @@ export default function FindHelpScreen() {
     sectionTitle: { color: Colors.text, fontSize: 16, fontWeight: '800', marginBottom: 4 },
     sectionSub:   { color: Colors.textMuted, fontSize: 12, marginBottom: 14 },
 
+    searchRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, gap: 8, marginBottom: 10, height: 44 },
+    searchInput:  { flex: 1, fontSize: 14, color: Colors.text },
+    chipScroll:   { marginBottom: 14 },
+    chip:         { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, marginRight: 8 },
+    chipText:     { fontSize: 12, fontWeight: '700' },
     catHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 8 },
     catIcon:      { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
     catLabel:     { fontSize: 14, fontWeight: '800', color: Colors.text },
@@ -490,6 +594,46 @@ export default function FindHelpScreen() {
         </View>
 
         <View style={styles.body}>
+
+          {/* ── Search bar ───────────────────────────────────────────────────── */}
+          <View style={styles.searchRow}>
+            <Ionicons name="search-outline" size={18} color={Colors.textMuted} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name, city, or state…"
+              placeholderTextColor={Colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* ── Category chips ───────────────────────────────────────────────── */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+            {[null, ...Object.keys(CATEGORY_ICONS)].map(cat => {
+              const isAll    = cat === null;
+              const active   = isAll ? activeCategory === null : activeCategory === cat;
+              const catInfo  = cat ? CATEGORY_ICONS[cat] : null;
+              return (
+                <TouchableOpacity
+                  key={cat ?? '__all'}
+                  style={[styles.chip, { backgroundColor: active ? '#021B3A' : Colors.surface, borderColor: active ? '#021B3A' : Colors.border }]}
+                  onPress={() => setActiveCategory(isAll ? null : cat)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, { color: active ? '#FFFFFF' : Colors.text }]}>
+                    {isAll ? 'All' : cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
 
           {/* ── RRN Partner Directory ─────────────────────────────────────────── */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
@@ -588,6 +732,7 @@ export default function FindHelpScreen() {
         <BusinessDetailModal
           listing={selectedListing}
           onClose={() => setSelectedListing(null)}
+          onReviewed={handleReviewed}
         />
       )}
     </SafeAreaView>

@@ -1,17 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  Linking, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
+import client from '../../api/client';
 
-const PLAN_FEATURES = [
+const CASHTAG   = '$roadreadyapp';
+const CASHAPP_URL = 'https://cash.app/$roadreadyapp';
+
+const PLANS = [
+  {
+    id: 'monthly' as const,
+    label: 'Monthly',
+    price: '$10',
+    per: '/ month',
+    note: 'Cancel anytime',
+    amount: 10,
+    saveBadge: null,
+  },
+  {
+    id: 'annual' as const,
+    label: 'Annual',
+    price: '$100',
+    per: '/ year',
+    note: null,
+    amount: 100,
+    saveBadge: '2 months free',
+  },
+];
+
+const FEATURES = [
   'Your business listed on the driver map',
   'Appear in driver searches by city & category',
   'Receive ratings and reviews from drivers',
-  'View analytics (views & tap-to-calls)',
+  'View analytics — views & tap-to-calls',
   'Direct call button for drivers',
   'Business hours & website link displayed',
 ];
@@ -19,18 +45,49 @@ const PLAN_FEATURES = [
 export default function PartnerSubscriptionScreen() {
   const { user } = useAuth();
 
-  const status = user?.subscriptionStatus ?? 'free';
-  const plan   = user?.subscriptionPlan   ?? null;
+  const status      = (user as any)?.subscriptionStatus ?? 'free';
+  const activePlan  = (user as any)?.subscriptionPlan   ?? null;
+  const isActive    = status === 'active';
+  const isFree      = status === 'free';
+  const cashPending = (user as any)?.cashAppPending ?? false;
 
-  const isActive = status === 'active';
-  const isFree   = status === 'free';
+  const [selectedPlan, setSelectedPlan]   = useState<'monthly' | 'annual' | null>(null);
+  const [submitted, setSubmitted]         = useState(cashPending);
+  const [submitting, setSubmitting]       = useState(false);
+
+  // Pre-select plan if already pending
+  useEffect(() => {
+    const pendingPlan = (user as any)?.cashAppPendingPlan;
+    if (pendingPlan) setSelectedPlan(pendingPlan);
+  }, [user]);
+
+  const openCashApp = () => {
+    Linking.canOpenURL(CASHAPP_URL).then(can =>
+      Linking.openURL(can ? CASHAPP_URL : `https://cash.app/${CASHTAG.replace('$', '%24')}`)
+    );
+  };
+
+  const handleSubmitPayment = async () => {
+    if (!selectedPlan) return;
+    setSubmitting(true);
+    try {
+      await client.post('/billing/cashapp-request', { plan: selectedPlan });
+      setSubmitted(true);
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message ?? 'Could not submit. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const chosenPlan = PLANS.find(p => p.id === selectedPlan);
 
   return (
     <View style={s.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
-          {/* Header */}
+          {/* ── Header ──────────────────────────────────────────────── */}
           <View style={s.topBar}>
             <View style={s.topBarIcon}>
               <Ionicons name="card" size={20} color="#021B3A" />
@@ -38,91 +95,201 @@ export default function PartnerSubscriptionScreen() {
             <Text style={s.topBarTitle}>Billing & Subscription</Text>
           </View>
 
-          {/* Current status banner */}
+          {/* ── Status banner ───────────────────────────────────────── */}
           <LinearGradient
-            colors={isActive ? ['#021B3A', '#03306B'] : ['#B8860B', '#D4A017']}
+            colors={isActive ? ['#021B3A', '#03306B'] : submitted ? ['#1B5E20', '#2E7D32'] : ['#B8860B', '#D4A017']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={s.statusBanner}
           >
             <View style={s.statusIcon}>
-              <Ionicons name={isActive ? 'shield-checkmark' : 'time-outline'} size={28} color={isActive ? '#FFFFFF' : '#021B3A'} />
+              <Ionicons
+                name={isActive ? 'shield-checkmark' : submitted ? 'time-outline' : 'time-outline'}
+                size={28}
+                color={isActive || submitted ? '#FFFFFF' : '#021B3A'}
+              />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.statusTitle, !isActive && { color: '#021B3A' }]}>
-                {isFree ? '30-Day Free Trial' : isActive ? `${plan === 'annual' ? 'Annual' : 'Monthly'} Plan` : 'Subscription Inactive'}
+              <Text style={[s.statusTitle, !isActive && !submitted && { color: '#021B3A' }]}>
+                {isActive
+                  ? `${activePlan === 'annual' ? 'Annual' : 'Monthly'} Plan — Active`
+                  : submitted
+                    ? 'Payment Submitted — Pending Review'
+                    : isFree
+                      ? '30-Day Free Trial'
+                      : 'Subscription Inactive'}
               </Text>
-              <Text style={[s.statusSub, !isActive && { color: 'rgba(2,27,58,0.7)' }]}>
-                {isFree
-                  ? 'Your listing is live and free for your first 30 days.'
-                  : isActive
-                    ? 'Your listing is live and active.'
-                    : 'Renew your subscription to keep your listing visible.'
-                }
+              <Text style={[s.statusSub, !isActive && !submitted && { color: 'rgba(2,27,58,0.7)' }]}>
+                {isActive
+                  ? 'Your listing is live and active.'
+                  : submitted
+                    ? "We've received your payment request. Your listing will be activated within 24–48 hours."
+                    : isFree
+                      ? 'Your listing is live and free for your first 30 days.'
+                      : 'Renew your subscription to keep your listing visible.'}
               </Text>
             </View>
           </LinearGradient>
 
-          {/* What's included */}
+          {/* ── What's included ─────────────────────────────────────── */}
           <Text style={s.sectionLabel}>WHAT'S INCLUDED</Text>
           <View style={s.featuresCard}>
-            {PLAN_FEATURES.map((feature, i) => (
-              <View key={i} style={[s.featureRow, i < PLAN_FEATURES.length - 1 && s.featureBorder]}>
+            {FEATURES.map((f, i) => (
+              <View key={i} style={[s.featureRow, i < FEATURES.length - 1 && s.featureBorder]}>
                 <View style={s.checkCircle}>
                   <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                 </View>
-                <Text style={s.featureText}>{feature}</Text>
+                <Text style={s.featureText}>{f}</Text>
               </View>
             ))}
           </View>
 
-          {/* Plans */}
-          <Text style={s.sectionLabel}>CHOOSE A PLAN</Text>
+          {/* ── Plan selection ───────────────────────────────────────── */}
+          {!isActive && (
+            <>
+              <Text style={s.sectionLabel}>CHOOSE A PLAN</Text>
 
-          {/* Monthly */}
-          <View style={[s.planCard, plan === 'monthly' && s.planCardActive]}>
-            <View style={s.planLeft}>
-              <Text style={s.planName}>Monthly</Text>
-              <Text style={s.planPrice}>$10 <Text style={s.planPer}>/ month</Text></Text>
-            </View>
-            <View style={s.planRight}>
-              {plan === 'monthly' && isActive
-                ? <View style={s.currentBadge}><Text style={s.currentBadgeText}>Current Plan</Text></View>
-                : <Text style={s.planNote}>Cancel anytime</Text>
-              }
-            </View>
-          </View>
+              {PLANS.map(plan => {
+                const isSelected = selectedPlan === plan.id;
+                const isCurrent  = activePlan === plan.id && isActive;
+                return (
+                  <TouchableOpacity
+                    key={plan.id}
+                    style={[s.planCard, isSelected && s.planCardSelected]}
+                    onPress={() => setSelectedPlan(plan.id)}
+                    activeOpacity={0.8}
+                    disabled={submitted}
+                  >
+                    <View style={s.planLeft}>
+                      <Text style={s.planName}>{plan.label}</Text>
+                      <Text style={s.planPrice}>
+                        {plan.price}{' '}
+                        <Text style={s.planPer}>{plan.per}</Text>
+                      </Text>
+                      {plan.note && <Text style={s.planNote}>{plan.note}</Text>}
+                    </View>
+                    <View style={s.planRight}>
+                      {plan.saveBadge && (
+                        <View style={s.saveBadge}>
+                          <Text style={s.saveBadgeText}>{plan.saveBadge}</Text>
+                        </View>
+                      )}
+                      {isCurrent && (
+                        <View style={s.currentBadge}>
+                          <Text style={s.currentBadgeText}>Current Plan</Text>
+                        </View>
+                      )}
+                      <View style={[s.radioOuter, isSelected && s.radioOuterSelected]}>
+                        {isSelected && <View style={s.radioInner} />}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
 
-          {/* Annual */}
-          <View style={[s.planCard, plan === 'annual' && s.planCardActive]}>
-            <View style={s.planLeft}>
-              <Text style={s.planName}>Annual</Text>
-              <Text style={s.planPrice}>$100 <Text style={s.planPer}>/ year</Text></Text>
-            </View>
-            <View style={s.planRight}>
-              <View style={s.saveBadge}><Text style={s.saveBadgeText}>2 months free</Text></View>
-              {plan === 'annual' && isActive
-                ? <View style={s.currentBadge}><Text style={s.currentBadgeText}>Current Plan</Text></View>
-                : null
-              }
-            </View>
-          </View>
+              {/* ── Cash App payment section ─────────────────────────── */}
+              {selectedPlan && !submitted && (
+                <View style={s.cashAppCard}>
+                  {/* Green Cash App header */}
+                  <View style={s.cashAppHeader}>
+                    <View style={s.cashAppIconWrap}>
+                      <Ionicons name="cash" size={22} color="#FFFFFF" />
+                    </View>
+                    <View>
+                      <Text style={s.cashAppHeaderTitle}>Pay with Cash App</Text>
+                      <Text style={s.cashAppHeaderSub}>Quick, easy, secure</Text>
+                    </View>
+                  </View>
 
-          {/* Payment coming soon */}
-          <View style={s.comingSoon}>
-            <Ionicons name="lock-closed-outline" size={20} color="#8E8E93" />
-            <View style={{ flex: 1 }}>
-              <Text style={s.comingSoonTitle}>Payment Setup In Progress</Text>
-              <Text style={s.comingSoonSub}>
-                Our team is finalizing the payment system. You'll be notified by email as soon as billing is ready. Your free trial continues in the meantime.
+                  {/* Amount + cashtag */}
+                  <View style={s.cashAppAmountRow}>
+                    <View style={s.cashAppAmountBox}>
+                      <Text style={s.cashAppAmountLabel}>SEND EXACTLY</Text>
+                      <Text style={s.cashAppAmount}>${chosenPlan?.amount}</Text>
+                    </View>
+                    <Ionicons name="arrow-forward" size={20} color="#8E8E93" />
+                    <View style={s.cashAppTagBox}>
+                      <Text style={s.cashAppTagLabel}>TO</Text>
+                      <Text style={s.cashAppTag}>{CASHTAG}</Text>
+                    </View>
+                  </View>
+
+                  {/* Note instruction */}
+                  <View style={s.cashAppNoteBox}>
+                    <Ionicons name="chatbubble-outline" size={14} color="#8E8E93" />
+                    <Text style={s.cashAppNoteText}>
+                      In the note, include:{' '}
+                      <Text style={{ fontWeight: '700', color: '#1A1A2E' }}>
+                        "{chosenPlan?.label} Plan — {(user as any)?.name ?? 'Partner'}"
+                      </Text>
+                    </Text>
+                  </View>
+
+                  {/* Open Cash App button */}
+                  <TouchableOpacity style={s.openCashAppBtn} onPress={openCashApp} activeOpacity={0.85}>
+                    <Ionicons name="open-outline" size={17} color="#FFFFFF" />
+                    <Text style={s.openCashAppTxt}>Open Cash App</Text>
+                  </TouchableOpacity>
+
+                  <View style={s.divider} />
+
+                  {/* I've sent payment */}
+                  <Text style={s.confirmInstruction}>
+                    After sending payment in Cash App, tap below so our team knows to activate your listing.
+                  </Text>
+                  <TouchableOpacity
+                    style={[s.sentBtn, submitting && { opacity: 0.6 }]}
+                    onPress={handleSubmitPayment}
+                    disabled={submitting}
+                    activeOpacity={0.85}
+                  >
+                    {submitting
+                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      : <>
+                          <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+                          <Text style={s.sentBtnTxt}>I've Sent My Payment</Text>
+                        </>
+                    }
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Already submitted state */}
+              {submitted && (
+                <View style={s.pendingCard}>
+                  <Ionicons name="time-outline" size={24} color="#27AE60" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.pendingTitle}>Payment Under Review</Text>
+                    <Text style={s.pendingSub}>
+                      Your {selectedPlan} plan payment is being verified. We'll activate your listing within 24–48 hours.
+                      Questions? Email{' '}
+                      <Text
+                        style={s.pendingEmail}
+                        onPress={() => Linking.openURL('mailto:support@roadreadynetwork.com')}
+                      >
+                        support@roadreadynetwork.com
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </>
+          )}
+
+          {/* Already active */}
+          {isActive && (
+            <View style={s.activeNote}>
+              <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+              <Text style={s.activeNoteText}>
+                To change or cancel your plan, email{' '}
+                <Text
+                  style={s.contactLink}
+                  onPress={() => Linking.openURL('mailto:support@roadreadynetwork.com')}
+                >
+                  support@roadreadynetwork.com
+                </Text>
               </Text>
             </View>
-          </View>
-
-          {/* Contact */}
-          <View style={s.contactRow}>
-            <Ionicons name="mail-outline" size={16} color="#8E8E93" />
-            <Text style={s.contactText}>Questions? Email us at <Text style={s.contactLink}>support@roadreadynetwork.com</Text></Text>
-          </View>
+          )}
 
         </ScrollView>
       </SafeAreaView>
@@ -130,35 +297,37 @@ export default function PartnerSubscriptionScreen() {
   );
 }
 
+const CASHAPP_GREEN = '#00D64F';
+
 const s = StyleSheet.create({
   root:   { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 100 },
 
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5', gap: 10, marginBottom: 4 },
-  topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
+  topBar:      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5', gap: 10, marginBottom: 4 },
+  topBarIcon:  { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
   topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
 
   statusBanner: { borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, marginBottom: 20 },
   statusIcon:   { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  statusTitle:  { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  statusTitle:  { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
   statusSub:    { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4, lineHeight: 18 },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginTop: 4 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 12, marginTop: 4 },
 
-  featuresCard: { backgroundColor: '#F8F8FA', borderRadius: 18, borderWidth: 1, borderColor: '#EBEBEF', overflow: 'hidden', marginBottom: 24 },
-  featureRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  featureBorder:{ borderBottomWidth: 1, borderBottomColor: '#F0F0F5' },
-  checkCircle:  { width: 22, height: 22, borderRadius: 11, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
-  featureText:  { flex: 1, fontSize: 14, color: '#1A1A2E', lineHeight: 19 },
+  featuresCard:  { backgroundColor: '#F8F8FA', borderRadius: 18, borderWidth: 1, borderColor: '#EBEBEF', overflow: 'hidden', marginBottom: 24 },
+  featureRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  featureBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F0F5' },
+  checkCircle:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
+  featureText:   { flex: 1, fontSize: 14, color: '#1A1A2E', lineHeight: 19 },
 
   planCard: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 16, padding: 18, marginBottom: 10,
     borderWidth: 1.5, borderColor: '#EBEBEF', backgroundColor: '#F8F8FA',
   },
-  planCardActive: { borderColor: '#021B3A', backgroundColor: '#EEF2FF' },
+  planCardSelected: { borderColor: '#021B3A', backgroundColor: '#EEF2FF' },
   planLeft:    { flex: 1, gap: 4 },
-  planRight:   { alignItems: 'flex-end', gap: 6 },
+  planRight:   { alignItems: 'flex-end', gap: 8 },
   planName:    { fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
   planPrice:   { fontSize: 22, fontWeight: '800', color: '#021B3A' },
   planPer:     { fontSize: 14, fontWeight: '500', color: '#8E8E93' },
@@ -167,16 +336,79 @@ const s = StyleSheet.create({
   saveBadgeText: { fontSize: 11, fontWeight: '700', color: '#2E7D32' },
   currentBadge: { backgroundColor: '#021B3A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   currentBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
+  radioOuter:   { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#C8C8D0', justifyContent: 'center', alignItems: 'center' },
+  radioOuterSelected: { borderColor: '#021B3A' },
+  radioInner:   { width: 11, height: 11, borderRadius: 6, backgroundColor: '#021B3A' },
 
-  comingSoon: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 16,
-    borderWidth: 1, borderColor: '#EBEBEF',
+  // ── Cash App card ────────────────────────────────────────────────────────────
+  cashAppCard: {
+    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#C8F7D9',
+    backgroundColor: '#F0FFF6', overflow: 'hidden', marginBottom: 16,
   },
-  comingSoonTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', marginBottom: 4 },
-  comingSoonSub:   { fontSize: 13, color: '#8E8E93', lineHeight: 18 },
+  cashAppHeader: {
+    backgroundColor: CASHAPP_GREEN, flexDirection: 'row', alignItems: 'center',
+    gap: 12, paddingHorizontal: 18, paddingVertical: 14,
+  },
+  cashAppIconWrap: {
+    width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.15)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  cashAppHeaderTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  cashAppHeaderSub:   { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 1 },
 
-  contactRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
-  contactText: { fontSize: 13, color: '#8E8E93' },
-  contactLink: { color: '#021B3A', fontWeight: '600', textDecorationLine: 'underline' },
+  cashAppAmountRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 18, paddingVertical: 20, gap: 12,
+  },
+  cashAppAmountBox: { alignItems: 'center', flex: 1 },
+  cashAppAmountLabel: { fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 4 },
+  cashAppAmount:  { fontSize: 36, fontWeight: '900', color: '#1A1A2E' },
+  cashAppTagBox:  { alignItems: 'center', flex: 1 },
+  cashAppTagLabel:{ fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 4 },
+  cashAppTag:     { fontSize: 22, fontWeight: '900', color: CASHAPP_GREEN },
+
+  cashAppNoteBox: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 12,
+    padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#E8F5E9',
+  },
+  cashAppNoteText: { flex: 1, fontSize: 13, color: '#8E8E93', lineHeight: 18 },
+
+  openCashAppBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: CASHAPP_GREEN, marginHorizontal: 16, borderRadius: 14,
+    paddingVertical: 14, marginBottom: 16,
+  },
+  openCashAppTxt: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+
+  divider: { height: 1, backgroundColor: '#D4F5E0', marginHorizontal: 16, marginBottom: 16 },
+
+  confirmInstruction: {
+    fontSize: 13, color: '#8E8E93', textAlign: 'center',
+    lineHeight: 18, paddingHorizontal: 16, marginBottom: 12,
+  },
+  sentBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: '#021B3A', marginHorizontal: 16, borderRadius: 14,
+    paddingVertical: 14, marginBottom: 20,
+  },
+  sentBtnTxt: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+
+  // ── Pending / active states ───────────────────────────────────────────────
+  pendingCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    backgroundColor: '#F0FFF6', borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 16,
+    borderWidth: 1, borderColor: '#C8F7D9',
+  },
+  pendingTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', marginBottom: 4 },
+  pendingSub:   { fontSize: 13, color: '#8E8E93', lineHeight: 18 },
+  pendingEmail: { color: '#021B3A', fontWeight: '600', textDecorationLine: 'underline' },
+
+  activeNote: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    marginTop: 16, padding: 14, backgroundColor: '#F8F8FA',
+    borderRadius: 14, borderWidth: 1, borderColor: '#EBEBEF',
+  },
+  activeNoteText: { flex: 1, fontSize: 13, color: '#8E8E93', lineHeight: 18 },
+  contactLink:    { color: '#021B3A', fontWeight: '600', textDecorationLine: 'underline' },
 });
