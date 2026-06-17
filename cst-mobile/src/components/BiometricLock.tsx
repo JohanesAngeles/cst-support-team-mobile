@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   AppState, AppStateStatus, ActivityIndicator, Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,7 +12,7 @@ import { useColors } from '../constants/colors';
 
 const BIOMETRIC_KEY   = '@rrn_biometric_enabled';
 const BG_TIME_KEY     = '@rrn_bg_time';
-const LOCK_AFTER_MS   = 10_000; // lock after 10 s in background
+const LOCK_AFTER_MS   = 10_000;
 
 export const BIOMETRIC_STORAGE_KEY = BIOMETRIC_KEY;
 
@@ -25,13 +26,11 @@ export default function BiometricLock({ children }: Props) {
   const [checking, setChecking] = useState(false);
   const appState = useRef(AppState.currentState);
 
-  // Check biometric eligibility once on mount
   useEffect(() => {
     if (!user) return;
     checkLockOnForeground();
   }, [user]);
 
-  // Watch AppState transitions
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next: AppStateStatus) => {
       if (!user) return;
@@ -56,7 +55,6 @@ export default function BiometricLock({ children }: Props) {
     ]);
     if (enabled !== 'true') return;
 
-    // Don't lock if the device has no enrolled biometrics — would trap the user
     const [hasHardware, isEnrolled] = await Promise.all([
       LocalAuthentication.hasHardwareAsync(),
       LocalAuthentication.isEnrolledAsync(),
@@ -97,62 +95,82 @@ export default function BiometricLock({ children }: Props) {
   if (!locked) return <>{children}</>;
 
   return (
-    <View style={[StyleSheet.absoluteFillObject, { zIndex: 9999 }]}>
-      <View style={s.overlay}>
-        <View style={[s.logoPill, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
+    <View style={[StyleSheet.absoluteFillObject, { zIndex: 9999, backgroundColor: Colors.background }]}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <View style={s.container}>
+
           <Image
             source={require('../../assets/logo/road_ready_logo.jpeg')}
             style={s.logo}
             resizeMode="contain"
           />
+
+          <View style={s.textBlock}>
+            <Text style={[s.heading, { color: Colors.text }]}>App Locked</Text>
+            <Text style={[s.subtitle, { color: Colors.textMuted }]}>Authenticate to continue</Text>
+          </View>
+
+          {error ? (
+            <View style={[s.errorBox, { backgroundColor: Colors.surface, borderColor: '#FFCDD2' }]}>
+              <Ionicons name="alert-circle-outline" size={16} color="#CC0000" />
+              <Text style={s.errorText}>{error}</Text>
+            </View>
+          ) : null}
+
+          <TouchableOpacity
+            style={[s.primaryBtn, checking && s.disabled]}
+            onPress={authenticate}
+            disabled={checking}
+            activeOpacity={0.85}
+          >
+            {checking
+              ? <ActivityIndicator color="#FFFFFF" />
+              : <>
+                  <Ionicons name="finger-print-outline" size={22} color="#FFFFFF" />
+                  <Text style={s.primaryBtnText}>Unlock with Biometrics</Text>
+                </>
+            }
+          </TouchableOpacity>
+
         </View>
-
-        <Text style={[s.heading, { color: Colors.text }]}>App Locked</Text>
-        <Text style={[s.sub, { color: Colors.textMuted }]}>Authenticate to continue</Text>
-
-        {error ? <Text style={s.error}>{error}</Text> : null}
-
-        <TouchableOpacity
-          style={[s.btn, { backgroundColor: Colors.primary }]}
-          onPress={authenticate}
-          disabled={checking}
-          activeOpacity={0.85}
-        >
-          {checking
-            ? <ActivityIndicator color="#FFFFFF" />
-            : <>
-                <Ionicons name="finger-print-outline" size={24} color="#FFFFFF" />
-                <Text style={s.btnTxt}>Unlock with Biometrics</Text>
-              </>
-          }
-        </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    alignItems: 'center',
+    paddingHorizontal: 28,
     justifyContent: 'center',
-    gap: 16,
-    padding: 40,
+    gap: 20,
   },
-  logoPill: {
-    borderWidth: 1,
-    borderRadius: 20, paddingHorizontal: 28, paddingVertical: 16,
-    marginBottom: 12,
+  logo: {
+    width: 200,
+    height: 72,
+    alignSelf: 'center',
+    marginBottom: 8,
   },
-  logo:  { width: 180, height: 64 },
-  heading: { fontSize: 26, fontWeight: '900' },
-  sub:     { fontSize: 14 },
-  error:   { color: '#CC0000', fontSize: 13, textAlign: 'center' },
-  btn: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: 28, height: 56,
-    paddingHorizontal: 32,
-    marginTop: 8,
+  textBlock: { gap: 6 },
+  heading:  { fontSize: 30, fontWeight: '800' },
+  subtitle: { fontSize: 15 },
+  errorBox: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 10,
   },
-  btnTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  errorText: { color: '#CC0000', fontSize: 13, flex: 1 },
+  primaryBtn: {
+    height: 56, borderRadius: 28,
+    backgroundColor: '#021B3A',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    shadowColor: '#021B3A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 5,
+    marginTop: 4,
+  },
+  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  disabled: { opacity: 0.55 },
 });
