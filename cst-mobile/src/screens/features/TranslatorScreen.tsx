@@ -14,6 +14,7 @@ import client from '../../api/client';
 // ─── Supported languages ──────────────────────────────────────────────────────
 const LANGUAGES = [
   { code: 'en', label: 'English',    native: 'English',    flag: '🇺🇸' },
+  { code: 'tl', label: 'Tagalog',    native: 'Tagalog',    flag: '🇵🇭' },
   { code: 'es', label: 'Spanish',    native: 'Español',    flag: '🇪🇸' },
   { code: 'fr', label: 'French',     native: 'Français',   flag: '🇫🇷' },
   { code: 'de', label: 'German',     native: 'Deutsch',    flag: '🇩🇪' },
@@ -29,6 +30,9 @@ const LANGUAGES = [
   { code: 'uk', label: 'Ukrainian',  native: 'Українська', flag: '🇺🇦' },
   { code: 'sv', label: 'Swedish',    native: 'Svenska',    flag: '🇸🇪' },
   { code: 'ro', label: 'Romanian',   native: 'Română',     flag: '🇷🇴' },
+  { code: 'hi', label: 'Hindi',      native: 'हिन्दी',       flag: '🇮🇳' },
+  { code: 'ar', label: 'Arabic',     native: 'العربية',    flag: '🇸🇦' },
+  { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt', flag: '🇻🇳' },
 ] as const;
 
 type LangCode = typeof LANGUAGES[number]['code'];
@@ -148,7 +152,7 @@ export default function TranslatorScreen() {
   const Colors = useColors();
 
   const [fromLang,    setFromLang]    = useState<LangCode>('en');
-  const [toLang,      setToLang]      = useState<LangCode>('es');
+  const [toLang,      setToLang]      = useState<LangCode>('tl');
   const [inputText,   setInputText]   = useState('');
   const [translated,  setTranslated]  = useState('');
   const [detectedLang,setDetectedLang]= useState('');
@@ -156,6 +160,7 @@ export default function TranslatorScreen() {
   const [speaking,    setSpeaking]    = useState(false);
   const [showFrom,    setShowFrom]    = useState(false);
   const [showTo,      setShowTo]      = useState(false);
+  const [micHint,     setMicHint]     = useState(false);
 
   const inputRef = useRef<TextInput>(null);
 
@@ -254,6 +259,17 @@ export default function TranslatorScreen() {
             <View style={s.cardHeader}>
               <Text style={[s.cardLang, { color: Colors.textMuted }]}>{fromLangObj.label}</Text>
               <View style={s.cardActions}>
+                {/* Voice mic button */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setMicHint(true);
+                    setTimeout(() => setMicHint(false), 3500);
+                    inputRef.current?.focus();
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="mic-outline" size={22} color={Colors.primary} />
+                </TouchableOpacity>
                 {inputText.length > 0 && (
                   <TouchableOpacity onPress={handleClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close-circle" size={20} color={Colors.textMuted} />
@@ -261,6 +277,15 @@ export default function TranslatorScreen() {
                 )}
               </View>
             </View>
+
+            {micHint && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.primary + '12', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 }}>
+                <Ionicons name="mic" size={14} color={Colors.primary} />
+                <Text style={{ fontSize: 12, color: Colors.primary, fontWeight: '600', flex: 1 }}>
+                  Tap the 🎤 on your keyboard to speak
+                </Text>
+              </View>
+            )}
 
             <TextInput
               ref={inputRef}
@@ -301,8 +326,13 @@ export default function TranslatorScreen() {
                       <TouchableOpacity onPress={() => handleCopy(translated)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <Ionicons name="copy-outline" size={20} color={Colors.primary} />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleSpeak(translated, toLang)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-high-outline'} size={22} color={Colors.primary} />
+                      <TouchableOpacity
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: speaking ? Colors.primary + '22' : Colors.primary + '12', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5 }}
+                        onPress={() => handleSpeak(translated, toLang)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name={speaking ? 'stop-circle-outline' : 'volume-high-outline'} size={18} color={Colors.primary} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.primary }}>{speaking ? 'Stop' : 'Speak'}</Text>
                       </TouchableOpacity>
                     </>
                   )}

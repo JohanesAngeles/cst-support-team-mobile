@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
+import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import { getDocuments, uploadDocument, deleteDocument } from '../../api/features';
@@ -62,6 +63,49 @@ const fileLabel = (type: string) => {
   if (type.includes('webp')) return 'WEBP';
   return 'FILE';
 };
+
+// ── Notification handler (show banner when app is foregrounded) ───────────────
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+async function scheduleDocReminders(docs: Doc[]) {
+  const { status } = await Notifications.requestPermissionsAsync();
+  if (status !== 'granted') return;
+
+  // Cancel previous doc-reminder notifications before rescheduling
+  const existing = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    existing
+      .filter(n => n.content.data?.type === 'doc_reminder')
+      .map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
+  );
+
+  const now = Date.now();
+  for (const doc of docs) {
+    if (!doc.expiryDate) continue;
+    const expiryMs = new Date(doc.expiryDate).getTime();
+
+    for (const daysBefore of [30, 7, 1]) {
+      const fireMs = expiryMs - daysBefore * 86_400_000;
+      if (fireMs <= now) continue;
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: daysBefore === 1 ? '🚨 Document Expires Tomorrow!' : `⚠️ Document Expiring in ${daysBefore} Days`,
+          body: `"${doc.name}" expires on ${new Date(doc.expiryDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. Renew it now.`,
+          data: { type: 'doc_reminder', docId: doc._id },
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(fireMs) },
+      });
+    }
+  }
+}
 
 export default function DocumentVaultScreen() {
   const Colors = useColors();
@@ -127,7 +171,9 @@ export default function DocumentVaultScreen() {
   const load = useCallback(async () => {
     try {
       const data = await getDocuments();
-      setDocs(Array.isArray(data) ? data : []);
+      const list: Doc[] = Array.isArray(data) ? data : [];
+      setDocs(list);
+      scheduleDocReminders(list);
     } catch { Alert.alert('Error', 'Failed to load documents'); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);
@@ -208,6 +254,39 @@ export default function DocumentVaultScreen() {
                 Keep your trucking docs safe & accessible
               </Text>
             </View>
+
+            {/* Expiring soon banner */}
+            {(() => {
+              const expiring = docs.filter(d => {
+                if (!d.expiryDate) return false;
+                const days = daysUntil(d.expiryDate);
+                return days >= 0 && days <= 30;
+              }).sort((a, b) => daysUntil(a.expiryDate!) - daysUntil(b.expiryDate!));
+              if (expiring.length === 0) return null;
+              return (
+                <View style={{ backgroundColor: '#FFF3E0', borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: '#FFB74D', gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="alert-circle" size={18} color="#E65100" />
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#E65100' }}>
+                      {expiring.length} Document{expiring.length > 1 ? 's' : ''} Expiring Soon
+                    </Text>
+                  </View>
+                  {expiring.map(d => {
+                    const days = daysUntil(d.expiryDate!);
+                    const urgent = days <= 7;
+                    return (
+                      <View key={d._id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: urgent ? '#E74C3C' : '#E67E22' }} />
+                        <Text style={{ flex: 1, fontSize: 13, color: '#5D4037', fontWeight: '600' }}>{d.name}</Text>
+                        <Text style={{ fontSize: 12, fontWeight: '800', color: urgent ? '#E74C3C' : '#E67E22' }}>
+                          {days === 0 ? 'Today!' : `${days}d`}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })()}
 
             {/* Stats row */}
             <View style={styles.summaryRow}>
