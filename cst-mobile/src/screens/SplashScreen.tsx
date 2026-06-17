@@ -32,7 +32,7 @@ export default function SplashScreen({ onFinish }: Props) {
       {/* Logo */}
       <Animated.View style={[s.logoWrap, { opacity: logoOpacity, transform: [{ scale: logoScale }] }]}>
         <Image
-          source={require('../../assets/road_ready_logo.png')}
+          source={require('../../assets/logo/road_ready_logo.jpeg')}
           style={s.logo}
           resizeMode="contain"
         />

@@ -101,7 +101,7 @@ export default function BiometricLock({ children }: Props) {
       <View style={s.overlay}>
         <View style={[s.logoPill, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
           <Image
-            source={require('../../assets/road_ready_favicon.jpeg')}
+            source={require('../../assets/logo/road_ready_logo.jpeg')}
             style={s.logo}
             resizeMode="contain"
           />
