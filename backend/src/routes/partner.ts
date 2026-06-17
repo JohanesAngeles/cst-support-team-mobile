@@ -35,7 +35,7 @@ router.post('/listing', protect, partnerOnly, async (req: AuthRequest, res: Resp
       res.status(409).json({ message: 'Listing already exists. Use PUT to update.' });
       return;
     }
-    const { businessName, category, phone, city, state, website, description, hours, physicalAddress } = req.body;
+    const { businessName, category, phone, city, state, website, description, hours, physicalAddress, coupon } = req.body;
     if (!businessName || !category || !phone || !city || !state) {
       res.status(400).json({ message: 'businessName, category, phone, city, and state are required.' });
       return;
@@ -45,6 +45,7 @@ router.post('/listing', protect, partnerOnly, async (req: AuthRequest, res: Resp
     const listing = await BusinessListing.create({
       ownerId: req.user._id,
       businessName, category, phone, city, state, website, description, hours, physicalAddress,
+      coupon: coupon?.trim() || undefined,
       latitude:  coords?.latitude,
       longitude: coords?.longitude,
     });
@@ -58,7 +59,7 @@ router.post('/listing', protect, partnerOnly, async (req: AuthRequest, res: Resp
 // Update or upsert listing
 router.put('/listing', protect, partnerOnly, async (req: AuthRequest, res: Response) => {
   try {
-    const { businessName, category, phone, city, state, website, description, hours, isActive, physicalAddress } = req.body;
+    const { businessName, category, phone, city, state, website, description, hours, isActive, physicalAddress, coupon } = req.body;
     const geoQuery = physicalAddress ? `${physicalAddress}, ${city}, ${state}, USA`
                                      : city && state ? `${city}, ${state}, USA` : null;
     const coords = geoQuery ? await geocodeAddress(geoQuery) : null;
@@ -67,6 +68,7 @@ router.put('/listing', protect, partnerOnly, async (req: AuthRequest, res: Respo
       {
         $set: {
           businessName, category, phone, city, state, website, description, hours, isActive, physicalAddress,
+          coupon: coupon?.trim() || undefined,
           ...(coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
         },
       },
@@ -200,7 +202,7 @@ router.get('/listings', async (req: AuthRequest, res: Response) => {
 
     const listings = await BusinessListing.find(filter)
       .select('-ownerId')
-      .sort({ rating: -1 })
+      .sort({ tier: 1, rating: -1 })
       .limit(100);
     res.json(listings);
   } catch {

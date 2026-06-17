@@ -22,11 +22,12 @@ interface Listing {
   website: string;
   description: string;
   hours: string;
+  coupon: string;
   isActive: boolean;
 }
 
 export default function MyListingScreen() {
-  const [form,          setForm]          = useState<Listing>({ businessName: '', category: '', phone: '', city: '', state: '', website: '', description: '', hours: '', isActive: true });
+  const [form,          setForm]          = useState<Listing>({ businessName: '', category: '', phone: '', city: '', state: '', website: '', description: '', hours: '', coupon: '', isActive: true });
   const [focused,       setFocused]       = useState<string | null>(null);
   const [loading,       setLoading]       = useState(true);
   const [saving,        setSaving]        = useState(false);
@@ -47,6 +48,7 @@ export default function MyListingScreen() {
           website:      res.data.website       ?? '',
           description:  res.data.description   ?? '',
           hours:        res.data.hours         ?? '',
+          coupon:       res.data.coupon        ?? '',
           isActive:     res.data.isActive      ?? true,
         });
       }
@@ -75,6 +77,7 @@ export default function MyListingScreen() {
         website:      form.website.trim()     || undefined,
         description:  form.description.trim() || undefined,
         hours:        form.hours.trim()        || undefined,
+        coupon:       form.coupon.trim()       || undefined,
         isActive:     form.isActive,
       });
       setExists(true);
@@ -229,6 +232,19 @@ export default function MyListingScreen() {
                   onChangeText={v => set('description', v)} multiline numberOfLines={4}
                   onFocus={() => setFocused('description')} onBlur={() => setFocused(null)} />
               </View>
+            </View>
+
+            <View style={s.field}>
+              <Text style={s.label}>Coupon / Special Offer</Text>
+              <View style={[inputStyle('coupon'), { borderColor: focused === 'coupon' ? '#021B3A' : '#F5C842', borderWidth: focused === 'coupon' ? 1.5 : 1, backgroundColor: focused === 'coupon' ? '#FFFFFF' : '#FFFEF5' }]}>
+                <Ionicons name="pricetag-outline" size={16} color="#F5C842" style={{ marginRight: 6 }} />
+                <TextInput style={s.input}
+                  placeholder="e.g. 10% off first service with RRN app"
+                  placeholderTextColor="#C7C7CC" value={form.coupon}
+                  onChangeText={v => set('coupon', v)} maxLength={120}
+                  onFocus={() => setFocused('coupon')} onBlur={() => setFocused(null)} />
+              </View>
+              <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 3 }}>Shown to drivers on your listing as a highlighted deal</Text>
             </View>
 
             {/* Driver preview hint */}

@@ -20,6 +20,48 @@ interface BenchmarkResult {
 
 const TRUCK_TYPES = ['Dry Van', 'Reefer', 'Flatbed', 'Step Deck', 'Tanker', 'LTL'];
 
+const COMMODITIES: { label: string; liability: string }[] = [
+  // Low liability
+  { label: 'General Freight',      liability: 'Low'    },
+  { label: 'Dry Goods',            liability: 'Low'    },
+  { label: 'Lumber / Building',    liability: 'Low'    },
+  { label: 'Paper / Cardboard',    liability: 'Low'    },
+  { label: 'Textiles / Clothing',  liability: 'Low'    },
+  { label: 'Plastic Materials',    liability: 'Low'    },
+  { label: 'Furniture',            liability: 'Low'    },
+  { label: 'Agricultural / Grain', liability: 'Low'    },
+  { label: 'Sand / Gravel',        liability: 'Low'    },
+  { label: 'Waste / Recycling',    liability: 'Low'    },
+  // Medium liability
+  { label: 'Refrigerated Produce', liability: 'Medium' },
+  { label: 'Fresh Produce',        liability: 'Medium' },
+  { label: 'Frozen Foods',         liability: 'Medium' },
+  { label: 'Food & Beverage',      liability: 'Medium' },
+  { label: 'Automotive Parts',     liability: 'Medium' },
+  { label: 'Steel / Metal',        liability: 'Medium' },
+  { label: 'Machinery / Heavy',    liability: 'Medium' },
+  { label: 'Construction Matl.',   liability: 'Medium' },
+  { label: 'Household Goods',      liability: 'Medium' },
+  { label: 'Petroleum Products',   liability: 'Medium' },
+  { label: 'Military / Gov\'t',    liability: 'Medium' },
+  { label: 'Oversized / OW Load',  liability: 'Medium' },
+  // High liability
+  { label: 'Electronics / Tech',   liability: 'High'   },
+  { label: 'Pharmaceuticals',      liability: 'High'   },
+  { label: 'Medical Equipment',    liability: 'High'   },
+  { label: 'Hazmat',               liability: 'High'   },
+  { label: 'Chemicals',            liability: 'High'   },
+  { label: 'Livestock',            liability: 'High'   },
+  { label: 'New Vehicles',         liability: 'High'   },
+  { label: 'Jewelry / Valuables',  liability: 'High'   },
+];
+
+const LIABILITY_COLOR: Record<string, string> = {
+  Low:    '#2ECC71',
+  Medium: '#F39C12',
+  High:   '#E74C3C',
+};
+
 const CONDITION_CONFIG = {
   TIGHT:    { color: '#2ECC71', bg: '#2ECC7122', label: 'Tight Market',    desc: 'High demand — rates favor drivers' },
   BALANCED: { color: '#F39C12', bg: '#F39C1222', label: 'Balanced Market', desc: 'Rates are near the average'         },
@@ -87,11 +129,12 @@ export default function RateBenchmarkScreen() {
     placeholderEmoji: { fontSize: 56 },
     placeholderText: { color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 22 },
   }), [Colors]);
-  const [origin, setOrigin]   = useState('');
-  const [dest, setDest]       = useState('');
+  const [origin, setOrigin]       = useState('');
+  const [dest, setDest]           = useState('');
   const [truckType, setTruckType] = useState('Dry Van');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult]   = useState<BenchmarkResult | null>(null);
+  const [commodity, setCommodity] = useState('General Freight');
+  const [loading, setLoading]     = useState(false);
+  const [result, setResult]       = useState<BenchmarkResult | null>(null);
 
   const search = async () => {
     if (!origin.trim() || !dest.trim()) {
@@ -105,6 +148,7 @@ export default function RateBenchmarkScreen() {
         origin: origin.trim(),
         destination: dest.trim(),
         truckType,
+        commodity,
       }, { timeout: 30000 });
       setResult(data);
     } catch (err: any) {
@@ -160,6 +204,43 @@ export default function RateBenchmarkScreen() {
             </View>
           </View>
 
+          {/* Commodity type */}
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Commodity Type</Text>
+            <Text style={[s.label, { marginBottom: 8 }]}>Affects freight liability and negotiation leverage</Text>
+            <View style={s.typeGrid}>
+              {COMMODITIES.map(c => {
+                const active = commodity === c.label;
+                return (
+                  <TouchableOpacity
+                    key={c.label}
+                    style={[s.typeChip, active && s.typeChipActive]}
+                    onPress={() => setCommodity(c.label)}
+                  >
+                    <Text style={[s.typeChipTxt, active && s.typeChipTxtActive]}>{c.label}</Text>
+                    {active && (
+                      <Text style={{ fontSize: 9, fontWeight: '800', color: LIABILITY_COLOR[c.liability], marginTop: 2 }}>
+                        {c.liability.toUpperCase()} LIABILITY
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {(() => {
+              const sel = COMMODITIES.find(c => c.label === commodity);
+              if (!sel) return null;
+              return (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, padding: 10, backgroundColor: LIABILITY_COLOR[sel.liability] + '14', borderRadius: 10, borderWidth: 1, borderColor: LIABILITY_COLOR[sel.liability] + '40' }}>
+                  <Ionicons name="warning-outline" size={14} color={LIABILITY_COLOR[sel.liability]} />
+                  <Text style={{ flex: 1, fontSize: 12, color: LIABILITY_COLOR[sel.liability], fontWeight: '600' }}>
+                    {sel.liability} liability freight — know the replacement value before negotiating your rate.
+                  </Text>
+                </View>
+              );
+            })()}
+          </View>
+
           <TouchableOpacity style={[s.searchBtn, loading && { opacity: 0.6 }]} onPress={search} disabled={loading}>
             {loading ? (
               <>
@@ -203,7 +284,7 @@ export default function RateBenchmarkScreen() {
               {result.rpmMin && result.rpmMax ? (
                 <View style={s.card}>
                   <Text style={s.cardTitle}>Market Rate Range — {truckType}</Text>
-                  <Text style={s.laneLabel}>{origin} → {dest}</Text>
+                  <Text style={s.laneLabel}>{origin} → {dest} · {commodity}</Text>
                   <View style={s.rateRow}>
                     <View style={s.rateBox}>
                       <Text style={s.rateBoxLabel}>Low</Text>

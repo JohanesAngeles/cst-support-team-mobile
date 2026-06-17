@@ -2,6 +2,7 @@ import { Router, Response, Request } from 'express';
 import Stripe from 'stripe';
 import { protect, AuthRequest } from '../middleware/auth';
 import User from '../models/User';
+import { sendPushToUser } from './notifications';
 
 const router = Router();
 
@@ -145,6 +146,20 @@ router.post('/cashapp-request', protect, async (req: AuthRequest, res: Response)
       cashAppPendingAt: new Date(),
     });
     res.json({ ok: true });
+
+    // Notify all admins so they don't have to manually check
+    const partnerName = req.user.name ?? req.user.email;
+    const planLabel   = plan === 'annual' ? 'Annual ($249.99)' : 'Monthly ($29.99)';
+    const admins = await User.find({ role: 'admin' }).select('_id');
+    await Promise.all(
+      admins.map(a =>
+        sendPushToUser(
+          String(a._id),
+          '💵 Cash App Payment Received',
+          `${partnerName} submitted a ${planLabel} payment. Open the Cash App tab to approve.`,
+        )
+      )
+    );
   } catch (err: any) {
     res.status(500).json({ message: 'Server error.' });
   }

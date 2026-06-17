@@ -16,6 +16,7 @@ export default function AdminListingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [deleting,   setDeleting]   = useState<string | null>(null);
   const [toggling,   setToggling]   = useState<string | null>(null);
+  const [featuring,  setFeaturing]  = useState<string | null>(null);
   const [geocoding,  setGeocoding]  = useState(false);
 
   const load = useCallback(async (isRefresh = false) => {
@@ -42,6 +43,19 @@ export default function AdminListingsScreen() {
       Alert.alert('Error', 'Could not update listing.');
     } finally {
       setToggling(null);
+    }
+  };
+
+  const handleTier = async (id: string, currentTier: string) => {
+    const newTier = currentTier === 'featured' ? 'standard' : 'featured';
+    setFeaturing(id);
+    try {
+      const { data } = await client.patch(`/admin/listings/${id}`, { tier: newTier });
+      setListings(prev => prev.map(l => l._id === id ? { ...l, tier: data.tier } : l));
+    } catch {
+      Alert.alert('Error', 'Could not update tier.');
+    } finally {
+      setFeaturing(null);
     }
   };
 
@@ -161,7 +175,7 @@ export default function AdminListingsScreen() {
               </Text>
             )}
             {active.map(l => (
-              <ListingCard key={l._id} listing={l} deleting={deleting} toggling={toggling} onDelete={handleDelete} onToggle={handleToggle} />
+              <ListingCard key={l._id} listing={l} deleting={deleting} toggling={toggling} featuring={featuring} onDelete={handleDelete} onToggle={handleToggle} onTier={handleTier} />
             ))}
 
             {inactive.length > 0 && (
@@ -170,7 +184,7 @@ export default function AdminListingsScreen() {
               </Text>
             )}
             {inactive.map(l => (
-              <ListingCard key={l._id} listing={l} deleting={deleting} toggling={toggling} onDelete={handleDelete} onToggle={handleToggle} />
+              <ListingCard key={l._id} listing={l} deleting={deleting} toggling={toggling} featuring={featuring} onDelete={handleDelete} onToggle={handleToggle} onTier={handleTier} />
             ))}
           </ScrollView>
         )}
@@ -180,15 +194,19 @@ export default function AdminListingsScreen() {
   );
 }
 
-function ListingCard({ listing: l, deleting, toggling, onDelete, onToggle }: {
+function ListingCard({ listing: l, deleting, toggling, featuring, onDelete, onToggle, onTier }: {
   listing: any;
   deleting: string | null;
   toggling: string | null;
+  featuring: string | null;
   onDelete: (id: string, name: string) => void;
   onToggle: (id: string, currentActive: boolean) => void;
+  onTier: (id: string, currentTier: string) => void;
 }) {
-  const isDeleting = deleting === l._id;
-  const isToggling = toggling === l._id;
+  const isDeleting  = deleting  === l._id;
+  const isToggling  = toggling  === l._id;
+  const isFeaturing = featuring === l._id;
+  const isFeatured  = l.tier === 'featured';
 
   return (
     <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#EBEBEF', padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
@@ -197,7 +215,14 @@ function ListingCard({ listing: l, deleting, toggling, onDelete, onToggle }: {
 
       {/* Info */}
       <View style={{ flex: 1, gap: 3 }}>
-        <Text style={{ fontSize: 15, fontWeight: '800', color: '#1A1A2E' }}>{l.businessName}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1A1A2E', flex: 1 }}>{l.businessName}</Text>
+          {isFeatured && (
+            <View style={{ backgroundColor: '#FEF3C7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#F5C842' }}>
+              <Text style={{ fontSize: 9, fontWeight: '800', color: '#92400E' }}>★ FEATURED</Text>
+            </View>
+          )}
+        </View>
         <Text style={{ fontSize: 13, color: '#8E8E93' }}>{l.category} · {l.city}, {l.state}</Text>
         {l.phone ? <Text style={{ fontSize: 12, color: '#AEAEB2' }}>{l.phone}</Text> : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
@@ -217,6 +242,19 @@ function ListingCard({ listing: l, deleting, toggling, onDelete, onToggle }: {
           </View>
         </View>
       </View>
+
+      {/* Featured toggle */}
+      <TouchableOpacity
+        style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isFeatured ? '#FEF3C7' : '#F5F5F5', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: isFeatured ? '#F5C842' : '#E0E0E0', opacity: isFeaturing ? 0.5 : 1 }}
+        onPress={() => onTier(l._id, l.tier ?? 'standard')}
+        disabled={isFeaturing || isDeleting || isToggling}
+        activeOpacity={0.8}
+      >
+        {isFeaturing
+          ? <ActivityIndicator size="small" color="#B45309" />
+          : <Ionicons name={isFeatured ? 'star' : 'star-outline'} size={16} color={isFeatured ? '#B45309' : '#8E8E93'} />
+        }
+      </TouchableOpacity>
 
       {/* Toggle active/inactive */}
       <TouchableOpacity

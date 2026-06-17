@@ -34,6 +34,8 @@ export interface IBusinessListing extends Document {
   linkedin?: string;
   importedFromWebsite?: boolean;
   websiteId?: string;
+  coupon?: string;
+  tier?: 'featured' | 'standard';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -73,6 +75,8 @@ const BusinessListingSchema = new Schema<IBusinessListing>(
     linkedin:            { type: String, trim: true },
     importedFromWebsite: { type: Boolean, default: false },
     websiteId:           { type: String },
+    coupon:              { type: String, trim: true },
+    tier:                { type: String, enum: ['featured', 'standard'], default: 'standard' },
   },
   { timestamps: true }
 );

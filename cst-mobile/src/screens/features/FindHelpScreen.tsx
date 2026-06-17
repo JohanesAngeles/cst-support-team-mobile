@@ -26,6 +26,8 @@ interface Listing {
   website?: string;
   description?: string;
   hours?: string;
+  coupon?: string;
+  tier?: 'featured' | 'standard';
   rating: number;
   reviewCount: number;
   latitude?: number;
@@ -275,6 +277,18 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
           ) : null}
         </View>
 
+        {/* ── Coupon / Special Offer ─────────────────────────────────────── */}
+        {listing.coupon ? (
+          <View style={dm.couponBox}>
+            <View style={dm.couponHeader}>
+              <Ionicons name="pricetag" size={15} color="#B45309" />
+              <Text style={dm.couponLabel}>SPECIAL OFFER</Text>
+            </View>
+            <Text style={dm.couponText}>{listing.coupon}</Text>
+            <Text style={dm.couponHint}>Show this screen at the business to redeem</Text>
+          </View>
+        ) : null}
+
         {/* ── Rate this business ──────────────────────────────────────────── */}
         {submitted ? (
           <View style={dm.rateBox}>
@@ -343,6 +357,11 @@ const dm = StyleSheet.create({
   dirBtn:     { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C5D0E8', gap: 8 },
   dirBtnText: { fontSize: 15, fontWeight: '700', color: '#021B3A' },
   webBtn:     { width: 52, height: 52, borderRadius: 14, backgroundColor: '#F8F8FA', borderWidth: 1, borderColor: '#EBEBEF', justifyContent: 'center', alignItems: 'center' },
+  couponBox:    { marginTop: 16, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 },
+  couponHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  couponLabel:  { fontSize: 11, fontWeight: '800', color: '#B45309', letterSpacing: 0.8 },
+  couponText:   { fontSize: 15, fontWeight: '700', color: '#92400E', lineHeight: 22 },
+  couponHint:   { fontSize: 11, color: '#B45309', fontStyle: 'italic' },
   rateToggle:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#C5D0E8', backgroundColor: '#EEF2FF' },
   rateToggleText: { fontSize: 14, fontWeight: '700', color: '#021B3A' },
   rateBox:        { marginTop: 16, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EBEBEF', alignItems: 'center', gap: 12 },
@@ -497,7 +516,8 @@ export default function FindHelpScreen() {
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
   }, [listings, searchQuery, activeCategory]);
 
-  const mappable = listings.filter(l => l.latitude && l.longitude);
+  const mappable  = listings.filter(l => l.latitude && l.longitude);
+  const featured  = listings.filter(l => l.tier === 'featured');
 
   const styles = useMemo(() => StyleSheet.create({
     container:    { flex: 1, backgroundColor: Colors.background },
@@ -526,6 +546,14 @@ export default function FindHelpScreen() {
     emptyBox:     { alignItems: 'center', paddingVertical: 32, gap: 8 },
     emptyText:    { color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
 
+    featuredSection:  { marginBottom: 18 },
+    featuredLabel:    { fontSize: 11, fontWeight: '800', color: '#92400E', letterSpacing: 0.8, marginBottom: 10, textTransform: 'uppercase' },
+    featuredCard:     { width: 200, backgroundColor: '#FFFBEB', borderRadius: 16, padding: 14, marginRight: 12, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 },
+    featuredBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: '#F5C842', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
+    featuredBadgeTxt: { fontSize: 9, fontWeight: '800', color: '#92400E' },
+    featuredName:     { fontSize: 14, fontWeight: '800', color: '#1A1A2E' },
+    featuredSub:      { fontSize: 12, color: '#8E8E93' },
+    featuredPhone:    { fontSize: 12, color: '#021B3A', fontWeight: '600' },
     divider:      { height: 1, backgroundColor: Colors.border, marginVertical: 20 },
     mapGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     mapCard:      { width: (SW - 48) / 2, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border },
@@ -634,6 +662,41 @@ export default function FindHelpScreen() {
               );
             })}
           </ScrollView>
+
+          {/* ── Featured Partners ($49.99/mo) ────────────────────────────────── */}
+          {featured.length > 0 && (
+            <View style={styles.featuredSection}>
+              <Text style={styles.featuredLabel}>★ Featured Partners{nearbyMode ? ' Near You' : ''}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {featured.map(l => {
+                  const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+                  return (
+                    <TouchableOpacity
+                      key={l._id}
+                      style={styles.featuredCard}
+                      onPress={() => setSelectedListing(l)}
+                      activeOpacity={0.85}
+                    >
+                      <View style={styles.featuredBadge}>
+                        <Ionicons name="star" size={9} color="#92400E" />
+                        <Text style={styles.featuredBadgeTxt}>FEATURED</Text>
+                      </View>
+                      <Text style={styles.featuredName} numberOfLines={1}>{l.businessName}</Text>
+                      <Text style={styles.featuredSub} numberOfLines={1}>{l.category}</Text>
+                      <Text style={styles.featuredSub} numberOfLines={1}>{l.physicalAddress || `${l.city}, ${l.state}`}</Text>
+                      {l.phone ? <Text style={styles.featuredPhone}>{l.phone}</Text> : null}
+                      {l.rating > 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <StarRow rating={l.rating} />
+                          <Text style={{ fontSize: 11, color: '#8E8E93' }}>{l.rating.toFixed(1)}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
           {/* ── RRN Partner Directory ─────────────────────────────────────────── */}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>

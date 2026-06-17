@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import AdminApplicationsScreen from '../screens/admin/AdminApplicationsScreen';
 import AdminListingsScreen from '../screens/admin/AdminListingsScreen';
+import AdminCashAppScreen from '../screens/admin/AdminCashAppScreen';
 import { useAuth } from '../context/AuthContext';
 
 const Tab   = createBottomTabNavigator();
@@ -52,6 +53,7 @@ function AdminTabs() {
           const icons: Record<string, any> = {
             Applications: focused ? 'document-text' : 'document-text-outline',
             Listings:     focused ? 'business'      : 'business-outline',
+            CashApp:      focused ? 'cash'           : 'cash-outline',
             Logout:       'log-out-outline',
           };
           return <Ionicons name={icons[route.name]} size={22} color={route.name === 'Logout' ? '#E53935' : color} />;
@@ -60,6 +62,11 @@ function AdminTabs() {
     >
       <Tab.Screen name="Applications" component={AdminApplicationsScreen} />
       <Tab.Screen name="Listings"     component={AdminListingsScreen} />
+      <Tab.Screen
+        name="CashApp"
+        component={AdminCashAppScreen}
+        options={{ tabBarLabel: 'Cash App' }}
+      />
       <Tab.Screen
         name="Logout"
         component={LogoutScreen}
