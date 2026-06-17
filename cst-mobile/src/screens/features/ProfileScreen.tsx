@@ -26,7 +26,7 @@ const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '1';
 const IOS_APP_ID = process.env.EXPO_PUBLIC_IOS_APP_ID ?? '';
 const IOS_STORE_URL = IOS_APP_ID ? `https://apps.apple.com/app/id${IOS_APP_ID}` : null;
-const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.cst.driver'; // TODO: update package ID when published
+const ANDROID_STORE_URL = 'https://play.google.com/store/apps/details?id=com.cst.driver';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 

@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Linking,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  Linking, Modal, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,9 +12,11 @@ interface Topic {
   category: string;
   title: string;
   preview: string;
+  body: string;
   replies: number;
   timeAgo: string;
   authorInitial: string;
+  authorName: string;
   authorColor: string;
 }
 
@@ -23,9 +26,11 @@ const TOPICS: Topic[] = [
     category: 'Rates & Negotiation',
     title: 'Best counter-offer strategy for Chicago → Dallas lanes right now?',
     preview: 'Broker offered me $2.10/mi yesterday. Market feels soft but I held at $2.60 and…',
+    body: 'Broker offered me $2.10/mi yesterday. Market feels soft but I held at $2.60 and eventually got $2.42 after some back and forth.\n\nMy approach: never accept on the first call. Let them know you have other options (even if you don\'t). Ask what the load pays out of Dallas — if they won\'t tell you, that\'s a red flag on a backhaul.\n\nAlso worth checking DAT rate view before the call so you know what the lane actually pays. This lane was showing $2.38 average last week.',
     replies: 14,
     timeAgo: '2h ago',
     authorInitial: 'M',
+    authorName: 'Mike T.',
     authorColor: '#3498DB',
   },
   {
@@ -33,9 +38,11 @@ const TOPICS: Topic[] = [
     category: 'HOS & Compliance',
     title: 'Split sleeper berth rule — anyone else getting tripped up at weigh stations?',
     preview: 'Had an inspector in TX who didn\'t seem to understand the split rule correctly. Here\'s what…',
+    body: 'Had an inspector in TX who didn\'t seem to understand the split rule correctly. Here\'s what happened and how I handled it:\n\nI ran a 7/3 split. He was trying to reset my clock as if the 3-hr berth didn\'t count. I pulled up FMCSA 395.1(g)(1)(ii) on my phone and showed him the regulation. He still wrote me up but I contested it and it was dismissed.\n\nTip: Screenshot the FMCSA HOS rules and keep them in your document vault. Inspectors vary a lot on this one.',
     replies: 27,
     timeAgo: '5h ago',
     authorInitial: 'T',
+    authorName: 'Terrell W.',
     authorColor: '#2ECC71',
   },
   {
@@ -43,9 +50,11 @@ const TOPICS: Topic[] = [
     category: 'Broker Talk',
     title: 'Broker added a 10-day payment clause on a spot load — red flag?',
     preview: 'Usually quick pay but this one snuck in extended terms. Here\'s what I found in the…',
+    body: 'Usually quick pay but this one snuck in extended terms. Here\'s what I found in the rate con buried in section 4.\n\nTechnically legal but definitely a yellow flag. I crossed it out and initialed my change before signing. They pushed back but accepted it. Know your paperwork.',
     replies: 9,
     timeAgo: '1d ago',
     authorInitial: 'D',
+    authorName: 'DeShawn R.',
     authorColor: '#E67E22',
   },
   {
@@ -53,9 +62,11 @@ const TOPICS: Topic[] = [
     category: 'O/O Business',
     title: 'Setting up an LLC vs S-Corp for trucking — real cost difference at $200k revenue',
     preview: 'Ran the numbers with my accountant last quarter. S-Corp saved me $11k in self-employment tax…',
+    body: 'Ran the numbers with my accountant last quarter. S-Corp saved me $11k in self-employment tax versus staying as a single-member LLC. The trade-off is payroll setup cost (~$600/yr with Gusto) and a reasonable salary requirement.\n\nAt $200k gross / $80k net profit, the SE tax savings on the salary split made it worth it. Under $60k net, probably not.',
     replies: 41,
     timeAgo: '2d ago',
     authorInitial: 'R',
+    authorName: 'Roberto M.',
     authorColor: '#9B59B6',
   },
   {
@@ -63,72 +74,92 @@ const TOPICS: Topic[] = [
     category: 'Road Tips',
     title: 'Hidden gem truck stops on I-70 west of Denver — full list',
     preview: 'The Loves at Limon is always packed. Here are 3 alternatives with better food and…',
+    body: 'The Loves at Limon is always packed. Here are 3 alternatives with better food and parking:\n\n1. Sapp Bros in Colby, KS — huge lot, clean showers, great breakfast buffet\n2. Flying J in Salina, KS — 24hr diner, rarely crowded overnight\n3. The little independent at Flagler, CO — no showers but the cheapest diesel on the corridor\n\nAvoid the TA in Hays on weekends — parking fills by 8pm.',
     replies: 18,
     timeAgo: '3d ago',
     authorInitial: 'J',
+    authorName: 'James P.',
     authorColor: '#1ABC9C',
   },
 ];
 
 const CATEGORIES = [
-  { label: 'Rates & Negotiation', icon: 'cash-outline', color: '#2ECC71' },
-  { label: 'HOS & Compliance',    icon: 'time-outline',  color: '#3498DB' },
-  { label: 'Broker Talk',         icon: 'briefcase-outline', color: '#E67E22' },
-  { label: 'O/O Business',        icon: 'trending-up-outline', color: '#9B59B6' },
-  { label: 'Road Tips',           icon: 'map-outline',   color: '#1ABC9C' },
-  { label: 'Jobs & Loads',        icon: 'cube-outline',  color: '#E74C3C' },
+  { label: 'All',                icon: 'grid-outline',           color: '#021B3A' },
+  { label: 'Rates & Negotiation', icon: 'cash-outline',          color: '#2ECC71' },
+  { label: 'HOS & Compliance',    icon: 'time-outline',          color: '#3498DB' },
+  { label: 'Broker Talk',         icon: 'briefcase-outline',     color: '#E67E22' },
+  { label: 'O/O Business',        icon: 'trending-up-outline',   color: '#9B59B6' },
+  { label: 'Road Tips',           icon: 'map-outline',           color: '#1ABC9C' },
+  { label: 'Jobs & Loads',        icon: 'cube-outline',          color: '#E74C3C' },
 ];
 
 export default function TRACCommunityScreen() {
   const Colors = useColors();
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [selectedTopic, setSelectedTopic]   = useState<Topic | null>(null);
+
+  const filtered = activeCategory === 'All'
+    ? TOPICS
+    : TOPICS.filter(t => t.category === activeCategory);
+
   const s = useMemo(() => StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
-    content: { padding: 16, paddingBottom: 40, gap: 16 },
-    earlyBanner: {
-      flexDirection: 'row', alignItems: 'center', gap: 12,
+    container:    { flex: 1, backgroundColor: Colors.background },
+    content:      { padding: 16, paddingBottom: 60, gap: 16 },
+    earlyBanner:  {
+      flexDirection: 'row', alignItems: 'flex-start', gap: 12,
       backgroundColor: Colors.secondary + '18', borderRadius: 14,
       borderWidth: 1, borderColor: Colors.secondary + '44', padding: 14,
     },
-    earlyIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.secondary + '22', justifyContent: 'center', alignItems: 'center' },
-    earlyTitle: { color: Colors.text, fontSize: 15, fontWeight: '800' },
-    earlySub: { color: Colors.textMuted, fontSize: 12, marginTop: 2, lineHeight: 17 },
-    joinBtn: {
-      backgroundColor: Colors.secondary, borderRadius: 12, paddingHorizontal: 18, paddingVertical: 10, marginTop: 8, alignSelf: 'flex-start',
-    },
+    earlyIcon:   { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.secondary + '22', justifyContent: 'center', alignItems: 'center', marginTop: 2 },
+    earlyTitle:  { color: Colors.text, fontSize: 15, fontWeight: '800' },
+    earlySub:    { color: Colors.textMuted, fontSize: 12, marginTop: 2, lineHeight: 17 },
+    joinBtn:     { backgroundColor: Colors.secondary, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 8, marginTop: 10, alignSelf: 'flex-start' },
     joinBtnText: { color: Colors.textDark, fontWeight: '800', fontSize: 13 },
-    sectionTitle: { color: Colors.text, fontSize: 14, fontWeight: '800' },
-    catRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-    catChip: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1 },
-    catText: { fontSize: 12, fontWeight: '700' },
-    topicCard: {
+    sectionTitle:{ color: Colors.text, fontSize: 14, fontWeight: '800' },
+    catRow:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    catChip:     { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1 },
+    catText:     { fontSize: 12, fontWeight: '700' },
+    topicCard:   {
       backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
       borderWidth: 1, borderColor: Colors.border, gap: 8,
     },
-    topicCat: { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
-    topicTitle: { color: Colors.text, fontSize: 14, fontWeight: '700', lineHeight: 20 },
+    topicCat:     { fontSize: 10, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' },
+    topicTitle:   { color: Colors.text, fontSize: 14, fontWeight: '700', lineHeight: 20 },
     topicPreview: { color: Colors.textMuted, fontSize: 12, lineHeight: 18 },
-    topicMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    topicAuthor: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    topicMeta:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    topicAuthor:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
     authorAvatar: { width: 26, height: 26, borderRadius: 13, justifyContent: 'center', alignItems: 'center' },
-    authorInitial: { color: '#FFFFFF', fontSize: 11, fontWeight: '900' },
+    authorInitial:{ color: '#FFFFFF', fontSize: 11, fontWeight: '900' },
     topicReplies: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    repliesText: { color: Colors.textMuted, fontSize: 12 },
-    lockedOverlay: {
-      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-      borderRadius: 14, backgroundColor: Colors.background + 'CC',
-      justifyContent: 'center', alignItems: 'center', gap: 4,
+    repliesText:  { color: Colors.textMuted, fontSize: 12 },
+
+    // Modal
+    modalBg:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' },
+    modalSheet:   { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
+    modalHandle:  { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16 },
+    modalCat:     { fontSize: 10, fontWeight: '800', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 6 },
+    modalTitle:   { color: Colors.text, fontSize: 18, fontWeight: '900', lineHeight: 26, marginBottom: 12 },
+    modalBody:    { color: Colors.textMuted, fontSize: 14, lineHeight: 22, marginBottom: 20 },
+    modalAuthorRow:{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+    modalAvatar:  { width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center' },
+    modalAuthorInitial: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+    modalAuthorName:    { color: Colors.text, fontSize: 14, fontWeight: '700' },
+    modalAuthorTime:    { color: Colors.textMuted, fontSize: 12, marginTop: 1 },
+    replyBanner:  {
+      backgroundColor: Colors.secondary + '18', borderRadius: 12,
+      borderWidth: 1, borderColor: Colors.secondary + '44',
+      padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10,
     },
-    lockedText: { color: Colors.textMuted, fontSize: 12, fontWeight: '700' },
+    replyBannerText:  { color: Colors.text, fontSize: 13, fontWeight: '700', flex: 1 },
+    replyBannerSub:   { color: Colors.textMuted, fontSize: 11, marginTop: 2 },
+    waitlistBtn:  { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, marginTop: 6, alignSelf: 'flex-start' },
+    waitlistBtnText:  { color: Colors.textDark, fontSize: 12, fontWeight: '800' },
   }), [Colors]);
 
-  const comingSoon = () =>
-    Alert.alert('TRAC Community', 'TRAC Community is coming soon. Join the waitlist to get early access and help shape the community.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Join Waitlist',
-        onPress: () => Linking.openURL('mailto:caschooloftruckingofficial@gmail.com?subject=TRAC%20Community%20Waitlist&body=I%20would%20like%20to%20join%20the%20TRAC%20Community%20waitlist.'),
-      },
-    ]);
+  const openWaitlist = () =>
+    Linking.openURL('mailto:caschooloftruckingofficial@gmail.com?subject=TRAC%20Community%20Waitlist&body=I%20would%20like%20to%20join%20the%20TRAC%20Community%20waitlist.');
+
+  const catColor = (label: string) => CATEGORIES.find(c => c.label === label)?.color ?? Colors.secondary;
 
   return (
     <SafeAreaView style={s.container} edges={['bottom']}>
@@ -141,35 +172,54 @@ export default function TRACCommunityScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={s.earlyTitle}>TRAC Community — Early Access</Text>
-            <Text style={s.earlySub}>Driver-to-driver knowledge network. Share tips, discuss rates, and connect with truckers across the country.</Text>
-            <TouchableOpacity style={s.joinBtn} onPress={comingSoon}>
+            <Text style={s.earlySub}>
+              Driver-to-driver knowledge network. Posting & replies open at full launch.
+              Read the preview discussions below.
+            </Text>
+            <TouchableOpacity style={s.joinBtn} onPress={openWaitlist}>
               <Text style={s.joinBtnText}>Join Waitlist</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Categories */}
-        <Text style={s.sectionTitle}>Discussion Categories</Text>
+        {/* Category filter chips */}
+        <Text style={s.sectionTitle}>Browse by Topic</Text>
         <View style={s.catRow}>
-          {CATEGORIES.map(c => (
-            <TouchableOpacity
-              key={c.label}
-              style={[s.catChip, { backgroundColor: c.color + '18', borderColor: c.color + '44' }]}
-              onPress={comingSoon}
-            >
-              <Ionicons name={c.icon as any} size={14} color={c.color} />
-              <Text style={[s.catText, { color: c.color }]}>{c.label}</Text>
-            </TouchableOpacity>
-          ))}
+          {CATEGORIES.map(c => {
+            const active = activeCategory === c.label;
+            return (
+              <TouchableOpacity
+                key={c.label}
+                style={[
+                  s.catChip,
+                  active
+                    ? { backgroundColor: c.color, borderColor: c.color }
+                    : { backgroundColor: c.color + '18', borderColor: c.color + '44' },
+                ]}
+                onPress={() => setActiveCategory(c.label)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={c.icon as any} size={14} color={active ? '#FFFFFF' : c.color} />
+                <Text style={[s.catText, { color: active ? '#FFFFFF' : c.color }]}>{c.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Preview discussions */}
-        <Text style={s.sectionTitle}>Recent Discussions (Preview)</Text>
-        {TOPICS.map((topic, i) => (
-          <TouchableOpacity key={topic.id} style={s.topicCard} onPress={comingSoon} activeOpacity={0.8}>
-            <Text style={[s.topicCat, { color: CATEGORIES.find(c => c.label === topic.category)?.color ?? Colors.secondary }]}>
-              {topic.category}
-            </Text>
+        {/* Discussions */}
+        <Text style={s.sectionTitle}>
+          {activeCategory === 'All' ? 'Recent Discussions' : activeCategory}
+          <Text style={{ color: Colors.textMuted, fontWeight: '500', fontSize: 12 }}>  {filtered.length}</Text>
+        </Text>
+
+        {filtered.map(topic => (
+          <TouchableOpacity
+            key={topic.id}
+            style={s.topicCard}
+            onPress={() => setSelectedTopic(topic)}
+            activeOpacity={0.75}
+          >
+            <Text style={[s.topicCat, { color: catColor(topic.category) }]}>{topic.category}</Text>
             <Text style={s.topicTitle}>{topic.title}</Text>
             <Text style={s.topicPreview} numberOfLines={2}>{topic.preview}</Text>
             <View style={s.topicMeta}>
@@ -184,16 +234,61 @@ export default function TRACCommunityScreen() {
                 <Text style={s.repliesText}>{topic.replies}</Text>
               </View>
             </View>
-            {i > 1 && (
-              <View style={s.lockedOverlay}>
-                <Ionicons name="lock-closed" size={18} color={Colors.textMuted} />
-                <Text style={s.lockedText}>Join to read full discussion</Text>
-              </View>
-            )}
           </TouchableOpacity>
         ))}
 
       </ScrollView>
+
+      {/* Discussion detail sheet */}
+      <Modal
+        visible={!!selectedTopic}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setSelectedTopic(null)}
+      >
+        <Pressable style={s.modalBg} onPress={() => setSelectedTopic(null)}>
+          <Pressable style={s.modalSheet} onPress={e => e.stopPropagation()}>
+            <View style={s.modalHandle} />
+
+            {selectedTopic && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={[s.modalCat, { color: catColor(selectedTopic.category) }]}>
+                  {selectedTopic.category}
+                </Text>
+                <Text style={s.modalTitle}>{selectedTopic.title}</Text>
+
+                {/* Author row */}
+                <View style={s.modalAuthorRow}>
+                  <View style={[s.modalAvatar, { backgroundColor: selectedTopic.authorColor }]}>
+                    <Text style={s.modalAuthorInitial}>{selectedTopic.authorInitial}</Text>
+                  </View>
+                  <View>
+                    <Text style={s.modalAuthorName}>{selectedTopic.authorName}</Text>
+                    <Text style={s.modalAuthorTime}>{selectedTopic.timeAgo} · {selectedTopic.replies} replies</Text>
+                  </View>
+                </View>
+
+                <Text style={s.modalBody}>{selectedTopic.body}</Text>
+
+                {/* Reply CTA */}
+                <View style={s.replyBanner}>
+                  <Ionicons name="chatbubbles-outline" size={22} color={Colors.secondary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.replyBannerText}>Want to reply or post your own?</Text>
+                    <Text style={s.replyBannerSub}>Join the waitlist to get early access when TRAC Community launches.</Text>
+                    <TouchableOpacity style={s.waitlistBtn} onPress={openWaitlist}>
+                      <Text style={s.waitlistBtnText}>Join Waitlist</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={{ height: 30 }} />
+              </ScrollView>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
     </SafeAreaView>
   );
 }

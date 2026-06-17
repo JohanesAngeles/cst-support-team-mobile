@@ -6,9 +6,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
-import BlobBackground from './BlobBackground';
+import { useColors } from '../constants/colors';
 
 const BIOMETRIC_KEY   = '@rrn_biometric_enabled';
 const BG_TIME_KEY     = '@rrn_bg_time';
@@ -20,6 +19,7 @@ interface Props { children: React.ReactNode }
 
 export default function BiometricLock({ children }: Props) {
   const { user } = useAuth();
+  const Colors   = useColors();
   const [locked,   setLocked]   = useState(false);
   const [error,    setError]    = useState('');
   const [checking, setChecking] = useState(false);
@@ -97,9 +97,9 @@ export default function BiometricLock({ children }: Props) {
   if (!locked) return <>{children}</>;
 
   return (
-    <BlobBackground style={{ ...StyleSheet.absoluteFillObject, zIndex: 9999, backgroundColor: '#0A0F1E' }}>
+    <View style={[StyleSheet.absoluteFillObject, { zIndex: 9999 }]}>
       <View style={s.overlay}>
-        <View style={s.logoPill}>
+        <View style={[s.logoPill, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
           <Image
             source={require('../../assets/road_ready_favicon.jpeg')}
             style={s.logo}
@@ -107,28 +107,27 @@ export default function BiometricLock({ children }: Props) {
           />
         </View>
 
-        <Text style={s.heading}>App Locked</Text>
-        <Text style={s.sub}>Authenticate to continue</Text>
+        <Text style={[s.heading, { color: Colors.text }]}>App Locked</Text>
+        <Text style={[s.sub, { color: Colors.textMuted }]}>Authenticate to continue</Text>
 
         {error ? <Text style={s.error}>{error}</Text> : null}
 
-        <TouchableOpacity style={s.btnWrap} onPress={authenticate} disabled={checking} activeOpacity={0.85}>
-          <LinearGradient
-            colors={['#F97316', '#6366F1']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={s.btn}
-          >
-            {checking
-              ? <ActivityIndicator color="#FFFFFF" />
-              : <>
-                  <Ionicons name="finger-print-outline" size={24} color="#FFFFFF" />
-                  <Text style={s.btnTxt}>Unlock with Biometrics</Text>
-                </>
-            }
-          </LinearGradient>
+        <TouchableOpacity
+          style={[s.btn, { backgroundColor: Colors.primary }]}
+          onPress={authenticate}
+          disabled={checking}
+          activeOpacity={0.85}
+        >
+          {checking
+            ? <ActivityIndicator color="#FFFFFF" />
+            : <>
+                <Ionicons name="finger-print-outline" size={24} color="#FFFFFF" />
+                <Text style={s.btnTxt}>Unlock with Biometrics</Text>
+              </>
+          }
         </TouchableOpacity>
       </View>
-    </BlobBackground>
+    </View>
   );
 }
 
@@ -141,21 +140,19 @@ const s = StyleSheet.create({
     padding: 40,
   },
   logoPill: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
     borderRadius: 20, paddingHorizontal: 28, paddingVertical: 16,
     marginBottom: 12,
   },
-  logo:    { width: 180, height: 64 },
-  heading: { color: '#FFFFFF', fontSize: 26, fontWeight: '900' },
-  sub:     { color: 'rgba(255,255,255,0.55)', fontSize: 14 },
-  error:   { color: '#E74C3C', fontSize: 13, textAlign: 'center' },
-  btnWrap: { marginTop: 8 },
+  logo:  { width: 180, height: 64 },
+  heading: { fontSize: 26, fontWeight: '900' },
+  sub:     { fontSize: 14 },
+  error:   { color: '#CC0000', fontSize: 13, textAlign: 'center' },
   btn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderRadius: 16,
-    paddingHorizontal: 32, paddingVertical: 16,
+    borderRadius: 28, height: 56,
+    paddingHorizontal: 32,
+    marginTop: 8,
   },
-  btnTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  btnTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
 });
