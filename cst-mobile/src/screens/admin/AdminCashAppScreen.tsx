@@ -34,7 +34,7 @@ export default function AdminCashAppScreen() {
   const handleApprove = (userId: string, name: string, plan: string) => {
     Alert.alert(
       'Approve Payment',
-      `Activate the ${plan === 'annual' ? 'Annual ($249.99)' : 'Monthly ($29.99)'} plan for ${name}?\n\nOnly approve after confirming payment received in Cash App.`,
+      `Activate the ${plan === 'annual' ? 'Annual ($100.00)' : 'Monthly ($10.00)'} plan for ${name}?\n\nOnly approve after confirming payment received in Cash App.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -116,7 +116,7 @@ function RequestCard({ request: r, approving, onApprove }: {
   onApprove: (id: string, name: string, plan: string) => void;
 }) {
   const isApproving = approving === r._id;
-  const planLabel   = r.cashAppPendingPlan === 'annual' ? 'Annual — $249.99' : 'Monthly — $29.99';
+  const planLabel   = r.cashAppPendingPlan === 'annual' ? 'Annual — $100.00' : 'Monthly — $10.00';
   const planColor   = r.cashAppPendingPlan === 'annual' ? '#8E44AD' : '#2980B9';
   const submittedAt = r.cashAppPendingAt
     ? new Date(r.cashAppPendingAt).toLocaleString('en-US', {

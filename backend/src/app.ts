@@ -207,11 +207,23 @@ if (process.env.SENTRY_DSN) {
 const PORT = process.env.PORT ?? 5000;
 const MONGO_URI = process.env.MONGODB_URI ?? 'mongodb://localhost:27017/cst_db';
 
+async function seedAdmin() {
+  const email    = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  const name     = process.env.ADMIN_NAME ?? 'Admin';
+  if (!email || !password) return;
+  const exists = await User.findOne({ role: 'admin' });
+  if (exists) return;
+  await User.create({ name, email, password, role: 'admin', isVerified: true });
+  console.log(`Admin account created: ${email}`);
+}
+
 if (process.env.NODE_ENV !== 'test') {
   mongoose
     .connect(MONGO_URI)
-    .then(() => {
+    .then(async () => {
       console.log('MongoDB connected');
+      await seedAdmin();
       initCronJobs();
       server.listen(PORT, () => console.log(`CST API running on port ${PORT}`));
     })
