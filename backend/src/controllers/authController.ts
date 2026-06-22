@@ -333,7 +333,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     EmergencyContact, PushToken, MapReport, Load, DispatchContact, ELDEntry,
     DVIREntry, Invoice, DrugTest, BrokerBlacklist, NetworkPost, ParkingReservation,
     SleepLog, ShipperReceiver, Referral, RoadReadyScore, CDLDoc, CargoClaim, ChatMessage,
-    DirectMessage,
+    DirectMessage, NewsItem,
   ] = await Promise.all([
     import('../models/Expense'),
     import('../models/IFTAEntry'),
@@ -367,6 +367,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     import('../models/CargoClaim'),
     import('../models/ChatMessage'),
     import('../models/DirectMessage'),
+    import('../models/NewsItem'),
   ]);
 
   await Promise.all([
@@ -392,7 +393,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     Invoice.default.deleteMany({ userId: uid }),
     DrugTest.default.deleteMany({ userId: uid }),
     BrokerBlacklist.default.deleteMany({ userId: uid }),
-    NetworkPost.default.deleteMany({ userId: uid }),
+    NetworkPost.default.deleteMany({ authorId: uid }),
     ParkingReservation.default.deleteMany({ userId: uid }),
     SleepLog.default.deleteMany({ userId: uid }),
     ShipperReceiver.default.deleteMany({ userId: uid }),
@@ -402,6 +403,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     CargoClaim.default.deleteMany({ userId: uid }),
     ChatMessage.default.deleteMany({ senderId: uid }),
     DirectMessage.default.deleteMany({ $or: [{ senderId: uid }, { recipientId: uid }] }),
+    NewsItem.default.deleteMany({ authorId: uid }),
     Follow.deleteMany({ $or: [{ followerId: uid }, { followingId: uid }] }),
     User.deleteOne({ _id: uid }),
   ]);
