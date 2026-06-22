@@ -1,6 +1,12 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+export const DRIVER_STATUSES = [
+  'rolling', 'loading', 'unloading', 'fuel_stop', 'parked',
+  'breakdown', 'weather', 'dot_check', 'looking_for_freight', 'looking_for_driver',
+] as const;
+export type DriverStatus = typeof DRIVER_STATUSES[number];
+
 export interface INotificationPreferences {
   pushNotifications: boolean;
   weeklyReport: boolean;
@@ -24,6 +30,15 @@ export interface IUser extends Document {
   phoneOtpExpires?: Date;
   isPhoneVerified?: boolean;
   avatarUrl?: string;
+  coverPhotoUrl?: string;
+  bio?: string;
+  truckType?: string;
+  yearsDriving?: number;
+  homeBase?: string;
+  cdlClass?: 'A' | 'B' | 'C';
+  currentStatus?: DriverStatus;
+  currentStatusAt?: Date;
+  lastActiveAt?: Date;
   stripeCustomerId?: string;
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual';
@@ -55,6 +70,15 @@ const UserSchema = new Schema<IUser>(
     phoneOtpExpires:     { type: Date,   select: false },
     isPhoneVerified:     { type: Boolean, default: false },
     avatarUrl:           { type: String },
+    coverPhotoUrl:       { type: String },
+    bio:                 { type: String, maxlength: 280, trim: true },
+    truckType:           { type: String, trim: true },
+    yearsDriving:        { type: Number, min: 0 },
+    homeBase:            { type: String, trim: true },
+    cdlClass:            { type: String, enum: ['A', 'B', 'C'] },
+    currentStatus:       { type: String, enum: DRIVER_STATUSES },
+    currentStatusAt:     { type: Date },
+    lastActiveAt:        { type: Date },
     stripeCustomerId:    { type: String },
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },
     subscriptionPlan:    { type: String, enum: ['monthly', 'annual'] },

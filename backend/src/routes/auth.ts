@@ -4,10 +4,13 @@ import {
   register, login, getMe,
   verifyEmail, resendVerification,
   forgotPassword, resetPassword,
-  updateProfile, changePassword, deleteAccount,
+  updateProfile, getPublicProfile, changePassword, deleteAccount,
   updateAvatar, updateAvatarMiddleware,
+  updateCoverPhoto, updateCoverPhotoMiddleware,
+  toggleFollow, getFollowers, getFollowing,
   sendPhoneOTP, verifyPhoneOTP,
   updatePreferences,
+  updateStatus, getActiveNow,
 } from '../controllers/authController';
 import { protect } from '../middleware/auth';
 
@@ -38,6 +41,13 @@ router.post('/resend-verification', protect, resendVerification);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.put('/update-profile', protect, updateProfile);
+router.put('/status', protect, updateStatus);
+router.get('/active-now', protect, getActiveNow);
+router.put('/cover', protect, updateCoverPhotoMiddleware, updateCoverPhoto);
+router.get('/users/:id', protect, getPublicProfile);
+router.post('/users/:id/follow', protect, toggleFollow);
+router.get('/users/:id/followers', protect, getFollowers);
+router.get('/users/:id/following', protect, getFollowing);
 router.put('/change-password', protect, changePassword);
 router.put('/avatar', protect, updateAvatarMiddleware, updateAvatar);
 router.delete('/me', protect, deleteAccount);

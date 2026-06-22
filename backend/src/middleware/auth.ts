@@ -21,6 +21,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       res.status(401).json({ message: 'User not found' });
       return;
     }
+    User.updateOne({ _id: req.user._id }, { lastActiveAt: new Date() }).catch(() => {});
     next();
   } catch {
     res.status(401).json({ message: 'Not authorized, invalid token' });

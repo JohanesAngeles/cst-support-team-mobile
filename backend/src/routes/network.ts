@@ -6,9 +6,10 @@ const router = Router();
 router.use(protect);
 
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const { category } = req.query;
+  const { category, authorId } = req.query;
   const query: Record<string, unknown> = {};
   if (category) query.category = category;
+  if (authorId) query.authorId = authorId;
   const posts = await NetworkPost.find(query).sort({ createdAt: -1 }).limit(50);
   res.json({ posts });
 });
@@ -20,14 +21,16 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { category, title, body } = req.body;
-  if (!category || !title || !body) {
-    res.status(400).json({ message: 'category, title, and body are required' }); return;
+  const { category, title, body, imageUrl } = req.body;
+  if (!title || !body) {
+    res.status(400).json({ message: 'title and body are required' }); return;
   }
   const post = await NetworkPost.create({
     authorId: req.user._id,
     authorName: req.user.name,
-    category, title, body,
+    authorAvatarUrl: req.user.avatarUrl,
+    category: category || 'general',
+    title, body, imageUrl,
     upvotes: [], replies: [],
   });
   res.status(201).json({ post });
@@ -52,7 +55,7 @@ router.post('/:id/reply', async (req: AuthRequest, res: Response) => {
   if (!body) { res.status(400).json({ message: 'body is required' }); return; }
   const post = await NetworkPost.findByIdAndUpdate(
     req.params.id,
-    { $push: { replies: { authorId: req.user._id, authorName: req.user.name, body, createdAt: new Date() } } },
+    { $push: { replies: { authorId: req.user._id, authorName: req.user.name, authorAvatarUrl: req.user.avatarUrl, body, createdAt: new Date() } } },
     { new: true }
   );
   if (!post) { res.status(404).json({ message: 'Not found' }); return; }

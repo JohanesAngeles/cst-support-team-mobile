@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { validationResult } from 'express-validator';
-import User from '../models/User';
+import User, { DRIVER_STATUSES } from '../models/User';
+import Follow from '../models/Follow';
 import { AuthRequest } from '../middleware/auth';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
 import { upload, uploadToCloudinary } from '../middleware/upload';
@@ -23,19 +24,35 @@ const signToken = (id: string) =>
 
 const makeCode = () => crypto.randomInt(100000, 999999).toString();
 
-export const safeUser = (user: any) => ({
-  _id: user._id,
-  name: user.name,
-  email: user.email,
-  phone: user.phone,
-  role: user.role ?? 'driver',
-  isVerified: user.isVerified,
-  avatarUrl: user.avatarUrl ?? null,
-  subscriptionStatus: user.subscriptionStatus ?? 'free',
-  subscriptionPlan: user.subscriptionPlan ?? null,
-  notificationPreferences: user.notificationPreferences ?? null,
-  preferredLanguage: user.preferredLanguage ?? 'en',
-});
+export const safeUser = async (user: any) => {
+  const [followersCount, followingCount] = await Promise.all([
+    Follow.countDocuments({ followingId: user._id }),
+    Follow.countDocuments({ followerId: user._id }),
+  ]);
+  return {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role ?? 'driver',
+    isVerified: user.isVerified,
+    avatarUrl: user.avatarUrl ?? null,
+    coverPhotoUrl: user.coverPhotoUrl ?? null,
+    bio: user.bio ?? null,
+    truckType: user.truckType ?? null,
+    yearsDriving: user.yearsDriving ?? null,
+    homeBase: user.homeBase ?? null,
+    cdlClass: user.cdlClass ?? null,
+    currentStatus: user.currentStatus ?? null,
+    currentStatusAt: user.currentStatusAt ?? null,
+    followersCount,
+    followingCount,
+    subscriptionStatus: user.subscriptionStatus ?? 'free',
+    subscriptionPlan: user.subscriptionPlan ?? null,
+    notificationPreferences: user.notificationPreferences ?? null,
+    preferredLanguage: user.preferredLanguage ?? 'en',
+  };
+};
 
 export const register = async (req: Request, res: Response) => {
   const errors = validationResult(req);
@@ -49,7 +66,7 @@ export const register = async (req: Request, res: Response) => {
     const user = await User.create({ name, email, password, phone, isVerified: true });
 
     const token = signToken(user._id.toString());
-    res.status(201).json({ token, user: safeUser(user) });
+    res.status(201).json({ token, user: await safeUser(user) });
   } catch {
     res.status(500).json({ message: 'Server error during registration' });
   }
@@ -66,14 +83,14 @@ export const login = async (req: Request, res: Response) => {
       res.status(401).json({ message: 'Invalid email or password' }); return;
     }
     const token = signToken(user._id.toString());
-    res.json({ token, user: safeUser(user) });
+    res.json({ token, user: await safeUser(user) });
   } catch {
     res.status(500).json({ message: 'Server error during login' });
   }
 };
 
 export const getMe = async (req: AuthRequest, res: Response) => {
-  res.json({ user: safeUser(req.user) });
+  res.json({ user: await safeUser(req.user) });
 };
 
 export const verifyEmail = async (req: AuthRequest, res: Response) => {
@@ -94,7 +111,7 @@ export const verifyEmail = async (req: AuthRequest, res: Response) => {
   user.verificationCode = undefined;
   user.verificationExpires = undefined;
   await user.save();
-  res.json({ message: 'Email verified', user: safeUser(user) });
+  res.json({ message: 'Email verified', user: await safeUser(user) });
 };
 
 export const resendVerification = async (req: AuthRequest, res: Response) => {
@@ -147,14 +164,116 @@ export const resetPassword = async (req: Request, res: Response) => {
 };
 
 export const updateProfile = async (req: AuthRequest, res: Response) => {
-  const { name, phone } = req.body;
+  const { name, phone, bio, truckType, yearsDriving, homeBase, cdlClass } = req.body;
   const user = await User.findById(req.user._id);
   if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
   if (name?.trim()) user.name = name.trim();
   if (phone !== undefined) user.phone = phone.trim() || undefined;
+  if (bio !== undefined) user.bio = bio.trim().slice(0, 280) || undefined;
+  if (truckType !== undefined) user.truckType = truckType.trim() || undefined;
+  if (homeBase !== undefined) user.homeBase = homeBase.trim() || undefined;
+  if (yearsDriving !== undefined) user.yearsDriving = yearsDriving === '' || yearsDriving === null ? undefined : Number(yearsDriving);
+  if (cdlClass !== undefined) user.cdlClass = ['A', 'B', 'C'].includes(cdlClass) ? cdlClass : undefined;
   await user.save();
-  res.json({ user: safeUser(user) });
+  res.json({ user: await safeUser(user) });
+};
+
+// Read-only profile of another driver — only public-facing fields, no email/subscription/preferences
+export const getPublicProfile = async (req: AuthRequest, res: Response) => {
+  const user = await User.findById(req.params.id);
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+  const [followersCount, followingCount, isFollowing] = await Promise.all([
+    Follow.countDocuments({ followingId: user._id }),
+    Follow.countDocuments({ followerId: user._id }),
+    Follow.exists({ followerId: req.user._id, followingId: user._id }),
+  ]);
+
+  res.json({
+    user: {
+      _id: user._id,
+      name: user.name,
+      avatarUrl: user.avatarUrl ?? null,
+      coverPhotoUrl: user.coverPhotoUrl ?? null,
+      bio: user.bio ?? null,
+      truckType: user.truckType ?? null,
+      yearsDriving: user.yearsDriving ?? null,
+      homeBase: user.homeBase ?? null,
+      cdlClass: user.cdlClass ?? null,
+      currentStatus: user.currentStatus ?? null,
+      currentStatusAt: user.currentStatusAt ?? null,
+      role: user.role ?? 'driver',
+      followersCount,
+      followingCount,
+      isFollowing: !!isFollowing,
+    },
+  });
+};
+
+export const updateStatus = async (req: AuthRequest, res: Response) => {
+  const { status } = req.body;
+  if (status !== null && !DRIVER_STATUSES.includes(status)) {
+    res.status(400).json({ message: 'Invalid status' }); return;
+  }
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+  user.currentStatus = status ?? undefined;
+  user.currentStatusAt = status ? new Date() : undefined;
+  await user.save();
+  res.json({ user: await safeUser(user) });
+};
+
+// Drivers active in the last 15 minutes, most recent first
+export const getActiveNow = async (req: AuthRequest, res: Response) => {
+  const cutoff = new Date(Date.now() - 15 * 60 * 1000);
+  const users = await User.find({ _id: { $ne: req.user._id }, lastActiveAt: { $gte: cutoff } })
+    .sort({ lastActiveAt: -1 })
+    .limit(20);
+  res.json({
+    users: users.map(u => ({
+      _id: u._id,
+      name: u.name,
+      avatarUrl: u.avatarUrl ?? null,
+      homeBase: u.homeBase ?? null,
+      currentStatus: u.currentStatus ?? null,
+      lastActiveAt: u.lastActiveAt,
+    })),
+  });
+};
+
+// Toggle following another driver
+export const toggleFollow = async (req: AuthRequest, res: Response) => {
+  const targetId = req.params.id as string;
+  if (targetId === req.user._id.toString()) { res.status(400).json({ message: "You can't follow yourself" }); return; }
+
+  const target = await User.findById(targetId);
+  if (!target) { res.status(404).json({ message: 'User not found' }); return; }
+
+  const existing = await Follow.findOne({ followerId: req.user._id, followingId: targetId });
+  if (existing) {
+    await existing.deleteOne();
+  } else {
+    await Follow.create({ followerId: req.user._id, followingId: targetId });
+  }
+
+  const [followersCount, followingCount] = await Promise.all([
+    Follow.countDocuments({ followingId: targetId }),
+    Follow.countDocuments({ followerId: targetId }),
+  ]);
+  res.json({ isFollowing: !existing, followersCount, followingCount });
+};
+
+export const getFollowers = async (req: AuthRequest, res: Response) => {
+  const follows = await Follow.find({ followingId: req.params.id }).sort({ createdAt: -1 }).limit(200);
+  const users = await User.find({ _id: { $in: follows.map(f => f.followerId) } });
+  res.json({ users: users.map(u => ({ _id: u._id, name: u.name, avatarUrl: u.avatarUrl ?? null, truckType: u.truckType ?? null })) });
+};
+
+export const getFollowing = async (req: AuthRequest, res: Response) => {
+  const follows = await Follow.find({ followerId: req.params.id }).sort({ createdAt: -1 }).limit(200);
+  const users = await User.find({ _id: { $in: follows.map(f => f.followingId) } });
+  res.json({ users: users.map(u => ({ _id: u._id, name: u.name, avatarUrl: u.avatarUrl ?? null, truckType: u.truckType ?? null })) });
 };
 
 export const updatePreferences = async (req: AuthRequest, res: Response) => {
@@ -175,7 +294,7 @@ export const updatePreferences = async (req: AuthRequest, res: Response) => {
     user.preferredLanguage = preferredLanguage;
   }
   await user.save();
-  res.json({ user: safeUser(user) });
+  res.json({ user: await safeUser(user) });
 };
 
 export const changePassword = async (req: AuthRequest, res: Response) => {
@@ -214,6 +333,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     EmergencyContact, PushToken, MapReport, Load, DispatchContact, ELDEntry,
     DVIREntry, Invoice, DrugTest, BrokerBlacklist, NetworkPost, ParkingReservation,
     SleepLog, ShipperReceiver, Referral, RoadReadyScore, CDLDoc, CargoClaim, ChatMessage,
+    DirectMessage,
   ] = await Promise.all([
     import('../models/Expense'),
     import('../models/IFTAEntry'),
@@ -246,6 +366,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     import('../models/CDLDoc'),
     import('../models/CargoClaim'),
     import('../models/ChatMessage'),
+    import('../models/DirectMessage'),
   ]);
 
   await Promise.all([
@@ -280,6 +401,8 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     CDLDoc.default.deleteMany({ userId: uid }),
     CargoClaim.default.deleteMany({ userId: uid }),
     ChatMessage.default.deleteMany({ senderId: uid }),
+    DirectMessage.default.deleteMany({ $or: [{ senderId: uid }, { recipientId: uid }] }),
+    Follow.deleteMany({ $or: [{ followerId: uid }, { followingId: uid }] }),
     User.deleteOne({ _id: uid }),
   ]);
 
@@ -340,7 +463,7 @@ export const verifyPhoneOTP = async (req: Request, res: Response) => {
     await user.save();
 
     const token = signToken(user._id.toString());
-    res.json({ token, user: safeUser(user) });
+    res.json({ token, user: await safeUser(user) });
   } catch (err: any) {
     res.status(500).json({ message: err.message ?? 'Server error' });
   }
@@ -362,7 +485,29 @@ export const updateAvatar = async (req: AuthRequest, res: Response) => {
     const result = await uploadToCloudinary(req.file.buffer, 'cst-avatars', req.file.mimetype);
     user.avatarUrl = result.url;
     await user.save();
-    res.json({ user: safeUser(user) });
+    res.json({ user: await safeUser(user) });
+  } catch {
+    res.status(500).json({ message: 'Upload failed — check Cloudinary credentials' });
+  }
+};
+
+// Cover photo upload — multipart/form-data field name "cover"
+export const updateCoverPhotoMiddleware = upload.single('cover');
+
+export const updateCoverPhoto = async (req: AuthRequest, res: Response) => {
+  if (!req.file) { res.status(400).json({ message: 'No image provided' }); return; }
+  if (!req.file.mimetype.startsWith('image/')) {
+    res.status(400).json({ message: 'Only image files are allowed' }); return;
+  }
+
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+  try {
+    const result = await uploadToCloudinary(req.file.buffer, 'cst-covers', req.file.mimetype);
+    user.coverPhotoUrl = result.url;
+    await user.save();
+    res.json({ user: await safeUser(user) });
   } catch {
     res.status(500).json({ message: 'Upload failed — check Cloudinary credentials' });
   }
