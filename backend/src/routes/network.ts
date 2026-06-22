@@ -48,7 +48,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     authorAvatarUrl: req.user.avatarUrl,
     category: category || 'general',
     title: title || (sharedPost ? `Shared: ${sharedPost.title}` : ''),
-    body: body || '',
+    body: body || (sharedPost ? `Shared a post from ${sharedPost.authorName}` : ''),
     imageUrl,
     sharedPost,
     upvotes: [], replies: [],

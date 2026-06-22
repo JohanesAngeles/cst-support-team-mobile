@@ -208,6 +208,16 @@ if (process.env.SENTRY_DSN) {
   Sentry.setupExpressErrorHandler(app);
 }
 
+// JSON fallback for any uncaught route error (e.g. Mongoose validation) instead of an HTML 500 page
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err?.name === 'ValidationError' || err?.name === 'CastError') {
+    res.status(400).json({ message: err.message });
+    return;
+  }
+  console.error(err);
+  res.status(500).json({ message: 'Internal server error' });
+});
+
 const PORT = process.env.PORT ?? 5000;
 const MONGO_URI = process.env.MONGODB_URI ?? 'mongodb://localhost:27017/cst_db';
 
