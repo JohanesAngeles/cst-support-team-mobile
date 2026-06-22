@@ -21,16 +21,36 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { category, title, body, imageUrl } = req.body;
-  if (!title || !body) {
+  const { category, title, body, imageUrl, sharedPostId } = req.body;
+
+  let sharedPost;
+  if (sharedPostId) {
+    const original = await NetworkPost.findById(sharedPostId);
+    if (!original) { res.status(404).json({ message: 'Post to share was not found' }); return; }
+    sharedPost = {
+      postId: original._id,
+      authorName: original.authorName,
+      authorAvatarUrl: original.authorAvatarUrl,
+      title: original.title,
+      body: original.body,
+      imageUrl: original.imageUrl,
+      createdAt: original.createdAt,
+    };
+  }
+
+  if (!sharedPost && (!title || !body)) {
     res.status(400).json({ message: 'title and body are required' }); return;
   }
+
   const post = await NetworkPost.create({
     authorId: req.user._id,
     authorName: req.user.name,
     authorAvatarUrl: req.user.avatarUrl,
     category: category || 'general',
-    title, body, imageUrl,
+    title: title || (sharedPost ? `Shared: ${sharedPost.title}` : ''),
+    body: body || '',
+    imageUrl,
+    sharedPost,
     upvotes: [], replies: [],
   });
   res.status(201).json({ post });

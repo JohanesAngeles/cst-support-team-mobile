@@ -1,5 +1,15 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface ISharedPostSnapshot {
+  postId: mongoose.Types.ObjectId;
+  authorName: string;
+  authorAvatarUrl?: string;
+  title: string;
+  body: string;
+  imageUrl?: string;
+  createdAt: Date;
+}
+
 export interface INetworkPost extends Document {
   authorId: mongoose.Types.ObjectId;
   authorName: string;
@@ -8,6 +18,7 @@ export interface INetworkPost extends Document {
   title: string;
   body: string;
   imageUrl?: string;
+  sharedPost?: ISharedPostSnapshot;
   upvotes: mongoose.Types.ObjectId[];
   replies: { authorId: mongoose.Types.ObjectId; authorName: string; authorAvatarUrl?: string; body: string; createdAt: Date }[];
   createdAt: Date;
@@ -22,6 +33,15 @@ const NetworkPostSchema = new Schema<INetworkPost>(
     title:           { type: String, required: true, maxlength: 120 },
     body:            { type: String, required: true, maxlength: 2000 },
     imageUrl:        { type: String },
+    sharedPost: {
+      postId:          { type: Schema.Types.ObjectId, ref: 'NetworkPost' },
+      authorName:      { type: String },
+      authorAvatarUrl: { type: String },
+      title:           { type: String },
+      body:            { type: String },
+      imageUrl:        { type: String },
+      createdAt:       { type: Date },
+    },
     upvotes:         [{ type: Schema.Types.ObjectId, ref: 'User' }],
     replies: [{
       authorId:        { type: Schema.Types.ObjectId, ref: 'User' },
