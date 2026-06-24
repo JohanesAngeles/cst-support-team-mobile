@@ -519,6 +519,11 @@ export default function FindHelpScreen() {
   const mappable  = listings.filter(l => l.latitude && l.longitude);
   const featured  = listings.filter(l => l.tier === 'featured');
 
+  // Derive chips from real data so they always match stored category values
+  const availableCategories = useMemo(() =>
+    Array.from(new Set(listings.map(l => l.category).filter(Boolean))).sort()
+  , [listings]);
+
   const styles = useMemo(() => StyleSheet.create({
     container:    { flex: 1, backgroundColor: Colors.background },
     scroll:       { paddingBottom: 40 },
@@ -642,19 +647,20 @@ export default function FindHelpScreen() {
             )}
           </View>
 
-          {/* ── Category chips ───────────────────────────────────────────────── */}
+          {/* ── Category chips — derived from real data so they always match ── */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
-            {[null, ...Object.keys(CATEGORY_ICONS)].map(cat => {
-              const isAll    = cat === null;
-              const active   = isAll ? activeCategory === null : activeCategory === cat;
-              const catInfo  = cat ? CATEGORY_ICONS[cat] : null;
+            {[null, ...availableCategories].map(cat => {
+              const isAll   = cat === null;
+              const active  = isAll ? activeCategory === null : activeCategory === cat;
+              const catInfo = cat ? (CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' }) : null;
               return (
                 <TouchableOpacity
                   key={cat ?? '__all'}
-                  style={[styles.chip, { backgroundColor: active ? '#021B3A' : Colors.surface, borderColor: active ? '#021B3A' : Colors.border }]}
+                  style={[styles.chip, { backgroundColor: active ? '#021B3A' : Colors.surface, borderColor: active ? '#021B3A' : Colors.border, flexDirection: 'row', alignItems: 'center', gap: 5 }]}
                   onPress={() => setActiveCategory(isAll ? null : cat)}
                   activeOpacity={0.8}
                 >
+                  {catInfo && <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFF' : catInfo.color} />}
                   <Text style={[styles.chipText, { color: active ? '#FFFFFF' : Colors.text }]}>
                     {isAll ? 'All' : cat}
                   </Text>

@@ -1,9 +1,21 @@
 import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
-import NetworkPost from '../models/NetworkPost';
+import NetworkPost, { INetworkPost, ReactionType, REACTION_TYPES } from '../models/NetworkPost';
 
 const router = Router();
 router.use(protect);
+
+function applyReaction(post: INetworkPost, userId: string, type: ReactionType) {
+  const existingIndex = post.reactions.findIndex(r => r.userId.toString() === userId);
+  if (existingIndex >= 0 && post.reactions[existingIndex].type === type) {
+    post.reactions.splice(existingIndex, 1);
+  } else if (existingIndex >= 0) {
+    post.reactions[existingIndex].type = type;
+  } else {
+    post.reactions.push({ userId, type } as any);
+  }
+  post.upvotes = post.reactions.map(r => r.userId) as typeof post.upvotes;
+}
 
 router.get('/', async (req: AuthRequest, res: Response) => {
   const { category, authorId } = req.query;
@@ -51,7 +63,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     body: body || (sharedPost ? `Shared a post from ${sharedPost.authorName}` : ''),
     imageUrl,
     sharedPost,
-    upvotes: [], replies: [],
+    upvotes: [], reactions: [], replies: [],
   });
   res.status(201).json({ post });
 });
@@ -59,13 +71,17 @@ router.post('/', async (req: AuthRequest, res: Response) => {
 router.post('/:id/upvote', async (req: AuthRequest, res: Response) => {
   const post = await NetworkPost.findById(req.params.id);
   if (!post) { res.status(404).json({ message: 'Not found' }); return; }
-  const uid = req.user._id.toString();
-  const already = post.upvotes.map(u => u.toString()).includes(uid);
-  if (already) {
-    post.upvotes = post.upvotes.filter(u => u.toString() !== uid) as typeof post.upvotes;
-  } else {
-    post.upvotes.push(req.user._id);
-  }
+  applyReaction(post, req.user._id.toString(), 'like');
+  await post.save();
+  res.json({ post });
+});
+
+router.post('/:id/react', async (req: AuthRequest, res: Response) => {
+  const { type } = req.body as { type: ReactionType };
+  if (!REACTION_TYPES.includes(type)) { res.status(400).json({ message: 'Invalid reaction type' }); return; }
+  const post = await NetworkPost.findById(req.params.id);
+  if (!post) { res.status(404).json({ message: 'Not found' }); return; }
+  applyReaction(post, req.user._id.toString(), type);
   await post.save();
   res.json({ post });
 });

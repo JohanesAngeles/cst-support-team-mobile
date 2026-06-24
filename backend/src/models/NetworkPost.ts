@@ -1,5 +1,9 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export type ReactionType = 'like' | 'love' | 'haha' | 'wow' | 'sad' | 'angry';
+
+export const REACTION_TYPES: ReactionType[] = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
+
 export interface ISharedPostSnapshot {
   postId: mongoose.Types.ObjectId;
   authorName: string;
@@ -8,6 +12,11 @@ export interface ISharedPostSnapshot {
   body: string;
   imageUrl?: string;
   createdAt: Date;
+}
+
+export interface IReaction {
+  userId: mongoose.Types.ObjectId;
+  type: ReactionType;
 }
 
 export interface INetworkPost extends Document {
@@ -20,6 +29,7 @@ export interface INetworkPost extends Document {
   imageUrl?: string;
   sharedPost?: ISharedPostSnapshot;
   upvotes: mongoose.Types.ObjectId[];
+  reactions: IReaction[];
   replies: { authorId: mongoose.Types.ObjectId; authorName: string; authorAvatarUrl?: string; body: string; createdAt: Date }[];
   createdAt: Date;
 }
@@ -43,6 +53,11 @@ const NetworkPostSchema = new Schema<INetworkPost>(
       createdAt:       { type: Date },
     },
     upvotes:         [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    reactions: [{
+      userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+      type:   { type: String, enum: REACTION_TYPES, required: true },
+      _id: false,
+    }],
     replies: [{
       authorId:        { type: Schema.Types.ObjectId, ref: 'User' },
       authorName:      { type: String },

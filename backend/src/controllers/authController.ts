@@ -333,7 +333,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     EmergencyContact, PushToken, MapReport, Load, DispatchContact, ELDEntry,
     DVIREntry, Invoice, DrugTest, BrokerBlacklist, NetworkPost, ParkingReservation,
     SleepLog, ShipperReceiver, Referral, RoadReadyScore, CDLDoc, CargoClaim, ChatMessage,
-    DirectMessage, NewsItem,
+    DirectMessage, NewsItem, Event,
   ] = await Promise.all([
     import('../models/Expense'),
     import('../models/IFTAEntry'),
@@ -368,6 +368,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     import('../models/ChatMessage'),
     import('../models/DirectMessage'),
     import('../models/NewsItem'),
+    import('../models/Event'),
   ]);
 
   await Promise.all([
@@ -404,6 +405,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     ChatMessage.default.deleteMany({ senderId: uid }),
     DirectMessage.default.deleteMany({ $or: [{ senderId: uid }, { recipientId: uid }] }),
     NewsItem.default.deleteMany({ authorId: uid }),
+    Event.default.deleteMany({ authorId: uid }),
     Follow.deleteMany({ $or: [{ followerId: uid }, { followingId: uid }] }),
     User.deleteOne({ _id: uid }),
   ]);

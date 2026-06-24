@@ -99,7 +99,7 @@ export default function CDLChallengeScreen() {
 
   useFocusEffect(useCallback(() => {
     getRoadReadyProfile()
-      .then(d => setBestScores((d.profile.challengesBestScores as Record<string, number>) ?? {}))
+      .then(d => setBestScores((d.profile.challengeScores as Record<string, number>) ?? {}))
       .catch(() => {});
   }, []));
 
@@ -131,7 +131,7 @@ export default function CDLChallengeScreen() {
     setSaving(true);
     try {
       const updated = await submitChallengeScore(challengeIdRef.current, scoreRef.current);
-      setBestScores((updated.profile.challengesBestScores as Record<string, number>) ?? {});
+      setBestScores((updated.profile.challengeScores as Record<string, number>) ?? {});
     } catch (_) {}
     setSaving(false);
     setView('results');

@@ -135,7 +135,7 @@ export default function OOSimScreen() {
       getRoadReadyProfile(),
       getEIADieselPrices().catch(() => null),
     ]).then(([data, eia]) => {
-      setOo(data.profile.ooStats);
+      setOo(data.profile.ooStats as OOStats);
       if (eia?.price) {
         const p = parseFloat(eia.price);
         if (!isNaN(p) && p > 0) {
@@ -179,7 +179,7 @@ export default function OOSimScreen() {
 
     try {
       const r = await updateOOStats(newStats);
-      setOo(r.profile.ooStats);
+      setOo(r.profile.ooStats as OOStats);
     } catch (_) {
       setOo(newStats);
     }

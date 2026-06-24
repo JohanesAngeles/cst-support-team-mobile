@@ -117,7 +117,7 @@ export default function FreightCareerScreen() {
       getRoadReadyProfile(),
       getEIADieselPrices().catch(() => null),
     ]).then(([profile, eia]) => {
-      setStats(profile.profile.freightCareerStats);
+      setStats(profile.profile.freightStats as CareerStats);
       setAvailableLoads(pickLoads());
       if (eia?.price) {
         const price = parseFloat(eia.price);
@@ -159,7 +159,7 @@ export default function FreightCareerScreen() {
         onTimeRate: newOnTimeRate,
         avgRatePerMile: parseFloat(newRPM.toFixed(2)),
       });
-      setStats(r.profile.freightCareerStats);
+      setStats(r.profile.freightStats as CareerStats);
     } catch (_) {}
     setSaving(false);
     setView('result');
