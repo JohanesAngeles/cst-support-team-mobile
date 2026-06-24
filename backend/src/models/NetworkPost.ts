@@ -27,6 +27,8 @@ export interface INetworkPost extends Document {
   title: string;
   body: string;
   imageUrl?: string;
+  groupId?: mongoose.Types.ObjectId;
+  groupName?: string;
   sharedPost?: ISharedPostSnapshot;
   upvotes: mongoose.Types.ObjectId[];
   reactions: IReaction[];
@@ -43,6 +45,8 @@ const NetworkPostSchema = new Schema<INetworkPost>(
     title:           { type: String, required: true, maxlength: 120 },
     body:            { type: String, required: true, maxlength: 2000 },
     imageUrl:        { type: String },
+    groupId:         { type: Schema.Types.ObjectId, ref: 'Group', index: true },
+    groupName:       { type: String },
     sharedPost: {
       postId:          { type: Schema.Types.ObjectId, ref: 'NetworkPost' },
       authorName:      { type: String },

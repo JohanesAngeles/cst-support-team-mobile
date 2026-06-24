@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import NetworkPost, { INetworkPost, ReactionType, REACTION_TYPES } from '../models/NetworkPost';
+import Group from '../models/Group';
 
 const router = Router();
 router.use(protect);
@@ -18,10 +19,12 @@ function applyReaction(post: INetworkPost, userId: string, type: ReactionType) {
 }
 
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const { category, authorId } = req.query;
+  const { category, authorId, groupId } = req.query;
   const query: Record<string, unknown> = {};
   if (category) query.category = category;
   if (authorId) query.authorId = authorId;
+  // Main feed excludes crew/convoy posts unless a specific group is requested
+  query.groupId = groupId ? groupId : { $exists: false };
   const posts = await NetworkPost.find(query).sort({ createdAt: -1 }).limit(50);
   res.json({ posts });
 });
@@ -33,7 +36,13 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { category, title, body, imageUrl, sharedPostId } = req.body;
+  const { category, title, body, imageUrl, sharedPostId, groupId } = req.body;
+
+  let group;
+  if (groupId) {
+    group = await Group.findOne({ _id: groupId, members: req.user._id });
+    if (!group) { res.status(403).json({ message: 'You must join this crew to post' }); return; }
+  }
 
   let sharedPost;
   if (sharedPostId) {
@@ -62,6 +71,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     title: title || (sharedPost ? `Shared: ${sharedPost.title}` : ''),
     body: body || (sharedPost ? `Shared a post from ${sharedPost.authorName}` : ''),
     imageUrl,
+    groupId: group?._id,
+    groupName: group?.name,
     sharedPost,
     upvotes: [], reactions: [], replies: [],
   });
