@@ -397,7 +397,7 @@ export default function TruckerMapScreen() {
       setReports(prev => [newReport, ...prev]);
       send({ action: 'addMarker', report: newReport });
       setAddVisible(false);
-      Alert.alert('Posted!', 'Your report is now visible to all CST truckers nearby.');
+      Alert.alert('Posted!', 'Your report is now visible to all Road Ready truckers nearby.');
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message ?? 'Could not post report.');
     } finally { setFormSaving(false); }

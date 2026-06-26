@@ -2,15 +2,18 @@ import { Response } from 'express';
 import OpenAI from 'openai';
 import { AuthRequest } from '../middleware/auth';
 
-let _xai: OpenAI | null = null;
-function getXai(): OpenAI {
-  if (!_xai) {
-    _xai = new OpenAI({
-      baseURL: 'https://api.x.ai/v1',
-      apiKey: process.env.GROK_API_KEY ?? 'missing',
+const AI_MODEL = 'llama-3.3-70b-versatile';
+
+let _groq: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_groq) {
+    if (!process.env.GROQ_API_KEY) throw new Error('GROQ_API_KEY is not set');
+    _groq = new OpenAI({
+      baseURL: 'https://api.groq.com/openai/v1',
+      apiKey: process.env.GROQ_API_KEY,
     });
   }
-  return _xai;
+  return _groq;
 }
 
 const SYSTEM_PROMPT = `You are an AI Legal Assistant specializing in commercial trucking law, FMCSA regulations, and driver rights in the United States. You work for Commercial Support Technologies (CST), a platform built for truckers.
@@ -94,8 +97,8 @@ Evaluate this load offer for a commercial truck driver (dry van assumed unless l
 }`;
 
   try {
-    const response = await getXai().chat.completions.create({
-      model: 'grok-3',
+    const response = await getOpenAI().chat.completions.create({
+      model: AI_MODEL,
       max_tokens: 300,
       messages: [
         { role: 'system', content: 'You are a trucking industry rate analyst with expert knowledge of US freight market rates by lane and truck type. Always respond with valid JSON only.' },
@@ -162,8 +165,8 @@ Respond in this EXACT JSON format with no extra text:
 }`;
 
   try {
-    const response = await getXai().chat.completions.create({
-      model: 'grok-3',
+    const response = await getOpenAI().chat.completions.create({
+      model: AI_MODEL,
       max_tokens: 300,
       messages: [
         { role: 'system', content: 'You are a freight market analyst with deep knowledge of US trucking lane rates. Provide realistic, current market rate benchmarks. Always respond with valid JSON only.' },
@@ -223,8 +226,8 @@ export const legalChat = async (req: AuthRequest, res: Response) => {
   const maxTokens = isPremium ? 1024 : 300;
 
   try {
-    const response = await getXai().chat.completions.create({
-      model: 'grok-3',
+    const response = await getOpenAI().chat.completions.create({
+      model: AI_MODEL,
       max_tokens: maxTokens,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT + (isPremium ? '' : '\n\nNote: This is a free preview. Give a concise but helpful answer (2-3 sentences max).') },

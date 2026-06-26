@@ -6,7 +6,10 @@ const router = Router();
 router.use(protect);
 
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const groups = await Group.find().sort({ createdAt: -1 }).limit(100);
+  const { type } = req.query;
+  const query: Record<string, unknown> = {};
+  if (type) query.type = type;
+  const groups = await Group.find(query).sort({ createdAt: -1 }).limit(100);
   const result = groups.map(g => ({
     _id: g._id,
     name: g.name,
@@ -15,13 +18,17 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     creatorName: g.creatorName,
     memberCount: g.members.length,
     isMember: g.members.some(m => m.toString() === req.user._id.toString()),
+    type: g.type,
+    originCity: g.originCity,
+    destinationCity: g.destinationCity,
+    departureAt: g.departureAt,
     createdAt: g.createdAt,
   }));
   res.json({ groups: result });
 });
 
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { name, description, avatarUrl } = req.body;
+  const { name, description, avatarUrl, type, originCity, destinationCity, departureAt } = req.body;
   if (!name?.trim()) { res.status(400).json({ message: 'name is required' }); return; }
   const group = await Group.create({
     name: name.trim(),
@@ -30,6 +37,10 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     creatorId: req.user._id,
     creatorName: req.user.name,
     members: [req.user._id],
+    type: type === 'convoy' ? 'convoy' : 'crew',
+    originCity,
+    destinationCity,
+    departureAt,
   });
   res.status(201).json({ group });
 });
@@ -46,6 +57,10 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       creatorName: group.creatorName,
       memberCount: group.members.length,
       isMember: group.members.some(m => m.toString() === req.user._id.toString()),
+      type: group.type,
+      originCity: group.originCity,
+      destinationCity: group.destinationCity,
+      departureAt: group.departureAt,
       createdAt: group.createdAt,
     },
   });

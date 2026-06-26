@@ -550,6 +550,7 @@ export default function DashboardScreen() {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -562,7 +563,7 @@ export default function DashboardScreen() {
 
         {/* ── Quick Tools ───────────────────────────────────────────────────── */}
         <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EBEBEF', backgroundColor: '#FFFFFF' }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} removeClippedSubviews={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
             {QUICK_TOOLS.map(tool => (
               <TouchableOpacity
                 key={tool.screen}

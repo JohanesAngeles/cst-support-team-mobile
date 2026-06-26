@@ -89,6 +89,9 @@ function CategorySection({
         keyExtractor={f => f.label}
         horizontal
         showsHorizontalScrollIndicator={false}
+        nestedScrollEnabled
+        directionalLockEnabled
+        disableIntervalMomentum
         contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
         renderItem={({ item }) => (
           <FeatureCard item={item} onPress={() => onPress(item)} isDark={isDark} />
@@ -211,7 +214,11 @@ export default function FeaturesScreen() {
 
       {/* ── Content ── */}
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           {isFiltered ? (
             <View>
               <View style={s.filterHeader}>

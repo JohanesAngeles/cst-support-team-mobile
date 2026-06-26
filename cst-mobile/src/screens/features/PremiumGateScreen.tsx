@@ -23,7 +23,7 @@ const FREE_FEATURES = [
 ];
 
 const PREMIUM_FEATURES = [
-  { icon: 'shield-checkmark-outline', label: 'AI Legal Assistant', desc: 'Unlimited legal Q&A powered by Grok AI' },
+  { icon: 'shield-checkmark-outline', label: 'AI Legal Assistant', desc: 'Unlimited legal Q&A powered by AI' },
   { icon: 'folder-outline', label: 'Document Vault', desc: 'Unlimited cloud document storage' },
   { icon: 'chatbubbles-outline', label: 'Driver-to-Driver Chat', desc: 'Community channels & private messaging' },
   { icon: 'warning-outline', label: 'Broker Blacklist', desc: 'Access & submit community broker warnings' },
@@ -98,20 +98,20 @@ export default function PremiumGateScreen() {
           <View style={styles.crownContainer}>
             <Ionicons name="star" size={36} color={Colors.secondary} />
           </View>
-          <Text style={styles.heroTitle}>Upgrade to CST Pro</Text>
+          <Text style={styles.heroTitle}>Upgrade to Road Ready Pro</Text>
           <Text style={styles.heroSub}>Everything a professional truck driver needs in one app. No hidden fees, no per-feature charges.</Text>
 
           <View style={styles.priceRow}>
             <View style={styles.priceBox}>
-              <Text style={styles.priceAmount}>$14.99</Text>
+              <Text style={styles.priceAmount}>$10.00</Text>
               <Text style={styles.pricePeriod}>per month</Text>
             </View>
             <View style={styles.priceSep} />
             <View style={styles.priceBox}>
-              <Text style={styles.priceAmount}>$119.99</Text>
+              <Text style={styles.priceAmount}>$100.00</Text>
               <Text style={styles.pricePeriod}>per year</Text>
               <View style={styles.saveBadge}>
-                <Text style={styles.saveText}>Save 33%</Text>
+                <Text style={styles.saveText}>Save 17%</Text>
               </View>
             </View>
           </View>

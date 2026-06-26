@@ -2,6 +2,7 @@ import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, Share, ScrollView,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -306,11 +307,11 @@ export default function TripLogScreen() {
       </TouchableOpacity>
 
       <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>{editTarget ? t('tripLog.editTrip') : t('tripLog.logTrip')}</Text>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {formFields.map(({ label, value, set, placeholder, keyboard }) => (
                 <View key={label}>
                   <Text style={styles.modalLabel}>{label}</Text>
@@ -343,7 +344,7 @@ export default function TripLogScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

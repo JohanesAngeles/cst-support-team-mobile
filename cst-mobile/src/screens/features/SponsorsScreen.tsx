@@ -30,7 +30,7 @@ const PARTNERS: Partner[] = [
     category: 'Media & Industry News',
     tagline: 'The Voice of the Trucking Industry',
     description:
-      'CST proudly partners with Trucklop Magazine — the go-to publication for trucking professionals. Otis Cooper contributes monthly articles on compliance, business strategy, and driver advocacy. New issues featured here each month.',
+      'Road Ready Network proudly partners with Trucklop Magazine — the go-to publication for trucking professionals. Otis Cooper contributes monthly articles on compliance, business strategy, and driver advocacy. New issues featured here each month.',
     website: 'https://truckclopmagazine.com',
     icon: 'newspaper-outline',
     iconColor: '#021B3A',
@@ -43,7 +43,7 @@ const PARTNERS: Partner[] = [
     category: 'Media & Trucking Culture',
     tagline: 'Where Trucking Culture Lives',
     description:
-      'Truck Club Magazine celebrates the lifestyle, culture, and community behind the wheel. From custom rigs and road stories to industry news and driver spotlights — this is the magazine built for truckers who take pride in the craft. CST is proud to have them as our first official sponsor.',
+      'Truck Club Magazine celebrates the lifestyle, culture, and community behind the wheel. From custom rigs and road stories to industry news and driver spotlights — this is the magazine built for truckers who take pride in the craft. Road Ready Network is proud to have them as our first official sponsor.',
     website: 'https://truckclubmagazine.com',
     icon: 'journal-outline',
     iconColor: '#C0392B',
@@ -56,7 +56,7 @@ const PARTNERS: Partner[] = [
     category: 'Veterans Media & Entertainment',
     tagline: 'Built by Veterans. Powered by Purpose.',
     description:
-      'Digital Studios Network is a veteran-owned media platform delivering content that matters — from business and entrepreneurship to community storytelling. CST is proud to stand alongside fellow veteran-led organizations building something greater.',
+      'Digital Studios Network is a veteran-owned media platform delivering content that matters — from business and entrepreneurship to community storytelling. Road Ready Network is proud to stand alongside fellow veteran-led organizations building something greater.',
     website: 'https://www.digitalstudios.tv',
     icon: 'tv-outline',
     iconColor: '#E67E22',
@@ -77,7 +77,7 @@ const PARTNERS: Partner[] = [
   },
   {
     id: 'slot-services',
-    name: 'Become a CST Partner',
+    name: 'Become a Road Ready Network Partner',
     category: 'Truck Services & Fuel',
     tagline: 'Target your ideal trucking audience',
     description:
@@ -189,9 +189,9 @@ export default function SponsorsScreen() {
         {/* Hero */}
         <View style={styles.hero}>
           <Ionicons name="ribbon-outline" size={38} color="#F4C430" />
-          <Text style={styles.heroTitle}>CST Partners & Sponsors</Text>
+          <Text style={styles.heroTitle}>Road Ready Network Partners & Sponsors</Text>
           <Text style={styles.heroSub}>
-            Industry businesses vetted and trusted by Commercial Support Technologies.
+            Industry businesses vetted and trusted by Road Ready Network — proudly built in collaboration with the California School of Trucking (CST).
           </Text>
         </View>
 

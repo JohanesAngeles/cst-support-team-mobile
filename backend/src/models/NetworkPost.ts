@@ -23,12 +23,14 @@ export interface INetworkPost extends Document {
   authorId: mongoose.Types.ObjectId;
   authorName: string;
   authorAvatarUrl?: string;
+  authorIsTopDriver?: boolean;
   category: 'general' | 'advice' | 'load-opportunity' | 'route-tip' | 'question' | 'vent';
   title: string;
   body: string;
   imageUrl?: string;
   groupId?: mongoose.Types.ObjectId;
   groupName?: string;
+  groupCreatorId?: mongoose.Types.ObjectId;
   sharedPost?: ISharedPostSnapshot;
   upvotes: mongoose.Types.ObjectId[];
   reactions: IReaction[];
@@ -41,12 +43,14 @@ const NetworkPostSchema = new Schema<INetworkPost>(
     authorId:        { type: Schema.Types.ObjectId, ref: 'User', required: true },
     authorName:      { type: String, required: true },
     authorAvatarUrl: { type: String },
+    authorIsTopDriver: { type: Boolean },
     category:        { type: String, enum: ['general', 'advice', 'load-opportunity', 'route-tip', 'question', 'vent'], default: 'general' },
     title:           { type: String, required: true, maxlength: 120 },
     body:            { type: String, required: true, maxlength: 2000 },
     imageUrl:        { type: String },
     groupId:         { type: Schema.Types.ObjectId, ref: 'Group', index: true },
     groupName:       { type: String },
+    groupCreatorId:  { type: Schema.Types.ObjectId, ref: 'User' },
     sharedPost: {
       postId:          { type: Schema.Types.ObjectId, ref: 'NetworkPost' },
       authorName:      { type: String },

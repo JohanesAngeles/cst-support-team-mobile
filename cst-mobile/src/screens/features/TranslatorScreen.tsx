@@ -14,7 +14,7 @@ import client from '../../api/client';
 // ─── Supported languages ──────────────────────────────────────────────────────
 const LANGUAGES = [
   { code: 'en', label: 'English',    native: 'English',    flag: '🇺🇸' },
-  { code: 'tl', label: 'Tagalog',    native: 'Tagalog',    flag: '🇵🇭' },
+  { code: 'tl', label: 'Filipino',   native: 'Filipino',   flag: '🇵🇭' },
   { code: 'es', label: 'Spanish',    native: 'Español',    flag: '🇪🇸' },
   { code: 'fr', label: 'French',     native: 'Français',   flag: '🇫🇷' },
   { code: 'de', label: 'German',     native: 'Deutsch',    flag: '🇩🇪' },

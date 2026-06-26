@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -333,8 +334,8 @@ export default function FuelLogScreen() {
       </TouchableOpacity>
 
       <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <ScrollView>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView keyboardShouldPersistTaps="handled">
             <View style={styles.modalBox}>
               <Text style={styles.modalTitle}>{editTarget ? t('fuelLog.editFillUp') : t('fuelLog.logFillUp')}</Text>
 
@@ -380,7 +381,7 @@ export default function FuelLogScreen() {
               </View>
             </View>
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

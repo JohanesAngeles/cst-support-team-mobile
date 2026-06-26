@@ -138,7 +138,7 @@ export default function EmergencySOSScreen() {
   const buildSMSBody = (loc: LocationData | null) =>
     loc
       ? `🚨 EMERGENCY — I need help! My location: https://maps.google.com/?q=${loc.latitude},${loc.longitude} (±${Math.round(loc.accuracy ?? 0)}m)`
-      : '🚨 EMERGENCY — I need help! I am sending this from the CST app. Please call me immediately.';
+      : '🚨 EMERGENCY — I need help! I am sending this from the Road Ready Network app. Please call me immediately.';
 
   const textContactWithLocation = (contact: Contact, loc: LocationData | null) => {
     const body = buildSMSBody(loc);

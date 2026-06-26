@@ -36,6 +36,7 @@ export const safeUser = async (user: any) => {
     phone: user.phone,
     role: user.role ?? 'driver',
     isVerified: user.isVerified,
+    isTopDriver: !!user.isTopDriver,
     avatarUrl: user.avatarUrl ?? null,
     coverPhotoUrl: user.coverPhotoUrl ?? null,
     bio: user.bio ?? null,
@@ -204,6 +205,7 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
       currentStatus: user.currentStatus ?? null,
       currentStatusAt: user.currentStatusAt ?? null,
       role: user.role ?? 'driver',
+      isTopDriver: !!user.isTopDriver,
       followersCount,
       followingCount,
       isFollowing: !!isFollowing,
@@ -237,6 +239,7 @@ export const getActiveNow = async (req: AuthRequest, res: Response) => {
       avatarUrl: u.avatarUrl ?? null,
       homeBase: u.homeBase ?? null,
       currentStatus: u.currentStatus ?? null,
+      isTopDriver: !!u.isTopDriver,
       lastActiveAt: u.lastActiveAt,
     })),
   });

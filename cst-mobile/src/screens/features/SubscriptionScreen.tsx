@@ -172,7 +172,7 @@ export default function SubscriptionScreen() {
 
         {/* Hero */}
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>CST Full Access</Text>
+          <Text style={styles.heroTitle}>Road Ready Full Access</Text>
           <Text style={styles.heroSub}>Every tool. Total protection. Built for truckers.</Text>
         </View>
 
@@ -200,7 +200,7 @@ export default function SubscriptionScreen() {
                 <Text style={styles.planDesc}>Billed monthly, cancel anytime</Text>
               </View>
               <View style={styles.planRight}>
-                <Text style={styles.planPrice}>$29.99</Text>
+                <Text style={styles.planPrice}>$10.00</Text>
                 <Text style={styles.planPer}>/month</Text>
               </View>
               {checkoutLoading === 'monthly'
@@ -215,14 +215,14 @@ export default function SubscriptionScreen() {
               disabled={checkoutLoading !== null}
             >
               <View style={styles.saveBadge}>
-                <Text style={styles.saveBadgeText}>SAVE 30%</Text>
+                <Text style={styles.saveBadgeText}>SAVE 17%</Text>
               </View>
               <View style={styles.planLeft}>
                 <Text style={[styles.planName, { color: Colors.textDark }]}>Annual</Text>
-                <Text style={[styles.planDesc, { color: Colors.textDark + 'BB' }]}>$20.83/mo — billed annually</Text>
+                <Text style={[styles.planDesc, { color: Colors.textDark + 'BB' }]}>$8.33/mo — billed annually</Text>
               </View>
               <View style={styles.planRight}>
-                <Text style={[styles.planPrice, { color: Colors.textDark }]}>$249.99</Text>
+                <Text style={[styles.planPrice, { color: Colors.textDark }]}>$100.00</Text>
                 <Text style={[styles.planPer, { color: Colors.textDark }]}>/year</Text>
               </View>
               {checkoutLoading === 'annual'

@@ -22,6 +22,7 @@ export interface IUser extends Document {
   phone?: string;
   role: 'driver' | 'admin' | 'partner';
   isVerified: boolean;
+  isTopDriver?: boolean;
   verificationCode?: string;
   verificationExpires?: Date;
   resetCode?: string;
@@ -62,6 +63,7 @@ const UserSchema = new Schema<IUser>(
     phone:    { type: String, trim: true },
     role:     { type: String, enum: ['driver', 'admin', 'partner'], default: 'driver' },
     isVerified:          { type: Boolean, default: false },
+    isTopDriver:         { type: Boolean, default: false },
     verificationCode:    { type: String, select: false },
     verificationExpires: { type: Date,   select: false },
     resetCode:           { type: String, select: false },

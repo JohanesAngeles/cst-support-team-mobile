@@ -23,8 +23,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const query: Record<string, unknown> = {};
   if (category) query.category = category;
   if (authorId) query.authorId = authorId;
-  // Main feed excludes crew/convoy posts unless a specific group is requested
-  query.groupId = groupId ? groupId : { $exists: false };
+  if (groupId) query.groupId = groupId;
   const posts = await NetworkPost.find(query).sort({ createdAt: -1 }).limit(50);
   res.json({ posts });
 });
@@ -67,12 +66,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     authorId: req.user._id,
     authorName: req.user.name,
     authorAvatarUrl: req.user.avatarUrl,
+    authorIsTopDriver: req.user.isTopDriver,
     category: category || 'general',
     title: title || (sharedPost ? `Shared: ${sharedPost.title}` : ''),
     body: body || (sharedPost ? `Shared a post from ${sharedPost.authorName}` : ''),
     imageUrl,
     groupId: group?._id,
     groupName: group?.name,
+    groupCreatorId: group?.creatorId,
     sharedPost,
     upvotes: [], reactions: [], replies: [],
   });

@@ -2,6 +2,7 @@
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -336,7 +337,7 @@ export default function LoadBoardScreen() {
 
       {/* Add/Edit Modal */}
       <Modal visible={modal} transparent animationType="slide">
-        <View style={s.overlay}>
+        <KeyboardAvoidingView style={s.overlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <View style={s.modalBox}>
               <Text style={s.modalTitle}>{editTarget ? t('loadBoard.editLoad') : t('loadBoard.addLoad')}</Text>
@@ -415,7 +416,7 @@ export default function LoadBoardScreen() {
               </View>
             </View>
           </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

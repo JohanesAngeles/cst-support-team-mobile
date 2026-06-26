@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "99255359060",
+    "project_id": "road-ready-network-8ea39",
+    "storage_bucket": "road-ready-network-8ea39.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:99255359060:android:62b17fff856d2ff50fffc1",
+        "android_client_info": {
+          "package_name": "com.cst.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqxESBEj4TLNZzp7CcrumUFiH8oAn2Ipk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -95,5 +95,5 @@ export const FEATURES: Feature[] = [
   { icon: 'school-outline',           label: 'Student Driver',     color: '#1ABC9C', desc: 'CDL lessons & quizzes',   screen: 'StudentDriver',    cat: 'career'     },
   { icon: 'cube-outline',             label: 'Freight Career',     color: '#F39C12', desc: 'Accept loads, earn',      screen: 'FreightCareer',    cat: 'career'     },
   { icon: 'business-outline',         label: 'O/O Simulator',      color: '#9B59B6', desc: 'Run your own business',   screen: 'OOSim',            cat: 'career'     },
-  { icon: 'star-outline',             label: 'CST Pro',            color: '#2C6EBD', desc: 'Upgrade your account',    screen: 'PremiumGate',      cat: 'career'     },
+  { icon: 'star-outline',             label: 'Road Ready Pro',     color: '#2C6EBD', desc: 'Upgrade your account',    screen: 'PremiumGate',      cat: 'career'     },
 ];

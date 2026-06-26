@@ -141,9 +141,9 @@ export default function AILegalScreen() {
           <View style={styles.premiumIcon}>
             <Ionicons name="star" size={36} color={Colors.secondary} />
           </View>
-          <Text style={styles.premiumTitle}>CST Pro Required</Text>
+          <Text style={styles.premiumTitle}>Road Ready Pro Required</Text>
           <Text style={styles.premiumSub}>
-            The AI Legal Assistant is included in your CST Pro subscription. Upgrade to get unlimited access to trucking law guidance, FMCSA regulations, and driver rights advice.
+            The AI Legal Assistant is included in your Road Ready Pro subscription. Upgrade to get unlimited access to trucking law guidance, FMCSA regulations, and driver rights advice.
           </Text>
           <TouchableOpacity
             style={styles.upgradeBtn}

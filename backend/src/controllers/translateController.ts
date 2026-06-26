@@ -32,6 +32,10 @@ const LANG_MAP: Record<string, deepl.TargetLanguageCode> = {
   'lv': 'lv',
   'et': 'et',
   'id': 'id',
+  'ar': 'ar',
+  'hi': 'hi',
+  'vi': 'vi',
+  'tl': 'tl',
 };
 
 const SOURCE_MAP: Record<string, deepl.SourceLanguageCode> = {
@@ -47,6 +51,10 @@ const SOURCE_MAP: Record<string, deepl.SourceLanguageCode> = {
   'nl': 'nl',
   'ja': 'ja',
   'ko': 'ko',
+  'ar': 'ar',
+  'hi': 'hi',
+  'vi': 'vi',
+  'tl': 'tl',
 };
 
 let _translator: deepl.Translator | null = null;

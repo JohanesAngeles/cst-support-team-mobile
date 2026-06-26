@@ -10,7 +10,7 @@ const SECTIONS = [
   },
   {
     title: '2. How We Use Your Information',
-    body: "We use your data to provide and improve the Road Ready Network app, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant and AI Rate Advisor (your messages are sent to xAI's Grok API), and respond to support requests.",
+    body: "We use your data to provide and improve the Road Ready Network app, calculate IFTA, tax, and HOS estimates, send deadline reminders and push notifications you have opted into, power the AI Legal Assistant and AI Rate Advisor (your messages are sent to Groq's API), and respond to support requests.",
   },
   {
     title: '3. Data Storage & Security',
@@ -18,7 +18,7 @@ const SECTIONS = [
   },
   {
     title: '4. AI Legal Assistant & Third Parties',
-    body: "When you use the AI Legal Assistant or AI Rate Advisor, your messages are processed by xAI's Grok API. xAI's privacy policy applies to this processing. We do not share your personal identity with xAI — only the message content is transmitted.",
+    body: "When you use the AI Legal Assistant or AI Rate Advisor, your messages are processed by Groq's API. Groq's privacy policy applies to this processing. We do not share your personal identity with Groq — only the message content is transmitted.",
   },
   {
     title: '5. Document Vault',

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -378,41 +379,46 @@ export default function HOSTrackerScreen() {
 
       {/* Log Modal */}
       <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{editEntry ? t('hos.editHoursTitle') : t('hos.logTodayTitle')}</Text>
-            <Text style={styles.modalDate}>{editEntry ? fmtDate(editEntry.date) : fmtDate(todayStr())}</Text>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>{editEntry ? t('hos.editHoursTitle') : t('hos.logTodayTitle')}</Text>
+              <Text style={styles.modalDate}>{editEntry ? fmtDate(editEntry.date) : fmtDate(todayStr())}</Text>
 
-            <Text style={styles.modalLabel}>{t('hos.drivingHoursLabel')}</Text>
-            <TextInput
-              style={styles.modalInput} value={drivingHours} onChangeText={setDrivingHours}
-              keyboardType="decimal-pad" placeholder="0–11" placeholderTextColor={Colors.textMuted}
-            />
+              <Text style={styles.modalLabel}>{t('hos.drivingHoursLabel')}</Text>
+              <TextInput
+                style={styles.modalInput} value={drivingHours} onChangeText={setDrivingHours}
+                keyboardType="decimal-pad" placeholder="0–11" placeholderTextColor={Colors.textMuted}
+              />
 
-            <Text style={styles.modalLabel}>{t('hos.onDutyHoursLabel')}</Text>
-            <TextInput
-              style={styles.modalInput} value={onDutyHours} onChangeText={setOnDutyHours}
-              keyboardType="decimal-pad" placeholder="0–14" placeholderTextColor={Colors.textMuted}
-            />
+              <Text style={styles.modalLabel}>{t('hos.onDutyHoursLabel')}</Text>
+              <TextInput
+                style={styles.modalInput} value={onDutyHours} onChangeText={setOnDutyHours}
+                keyboardType="decimal-pad" placeholder="0–14" placeholderTextColor={Colors.textMuted}
+              />
 
-            <Text style={styles.modalLabel}>{t('hos.notesOptional')}</Text>
-            <TextInput
-              style={styles.modalInput} value={notes} onChangeText={setNotes}
-              placeholder="Rest area, weather, etc." placeholderTextColor={Colors.textMuted}
-            />
+              <Text style={styles.modalLabel}>{t('hos.notesOptional')}</Text>
+              <TextInput
+                style={styles.modalInput} value={notes} onChangeText={setNotes}
+                placeholder="Rest area, weather, etc." placeholderTextColor={Colors.textMuted}
+              />
 
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
-                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
-                {saving
-                  ? <ActivityIndicator size="small" color={Colors.textDark} />
-                  : <Text style={styles.saveText}>{editEntry ? t('tripLog.update') : t('common.save')}</Text>}
-              </TouchableOpacity>
+              <View style={styles.modalBtns}>
+                <TouchableOpacity style={styles.cancelBtn} onPress={() => setModal(false)}>
+                  <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.saveBtn, saving && { opacity: 0.6 }]} onPress={handleSave} disabled={saving}>
+                  {saving
+                    ? <ActivityIndicator size="small" color={Colors.textDark} />
+                    : <Text style={styles.saveText}>{editEntry ? t('tripLog.update') : t('common.save')}</Text>}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

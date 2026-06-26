@@ -2,6 +2,7 @@
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, Linking, RefreshControl,
+  KeyboardAvoidingView, Platform, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -424,7 +425,8 @@ export default function DocumentVaultScreen() {
       </TouchableOpacity>
 
       <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>Upload Document</Text>
 
@@ -492,7 +494,8 @@ export default function DocumentVaultScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

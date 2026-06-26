@@ -32,10 +32,16 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A3A5C"
       },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyDDejKfy4sA8IR3UQ0R2xDUUDQi8ApNYK0"
+        }
+      },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.cst.driver",
-      "versionCode": 2,
+      "versionCode": 5,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION",

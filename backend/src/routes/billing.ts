@@ -18,13 +18,13 @@ function getStripe(): InstanceType<typeof Stripe> {
 const PLANS: Record<string, { priceId: string; name: string; amount: number }> = {
   monthly: {
     priceId: process.env.STRIPE_PRICE_MONTHLY ?? '',
-    name: 'CST Monthly',
-    amount: 2999,
+    name: 'Road Ready Monthly',
+    amount: 1000,
   },
   annual: {
     priceId: process.env.STRIPE_PRICE_ANNUAL ?? '',
-    name: 'CST Annual',
-    amount: 24999,
+    name: 'Road Ready Annual',
+    amount: 10000,
   },
 };
 
@@ -149,7 +149,7 @@ router.post('/cashapp-request', protect, async (req: AuthRequest, res: Response)
 
     // Notify all admins so they don't have to manually check
     const partnerName = req.user.name ?? req.user.email;
-    const planLabel   = plan === 'annual' ? 'Annual ($249.99)' : 'Monthly ($29.99)';
+    const planLabel   = plan === 'annual' ? 'Annual ($100.00)' : 'Monthly ($10.00)';
     const admins = await User.find({ role: 'admin' }).select('_id');
     await Promise.all(
       admins.map(a =>

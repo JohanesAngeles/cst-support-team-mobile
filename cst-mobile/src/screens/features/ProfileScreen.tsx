@@ -275,7 +275,7 @@ export default function ProfileScreen() {
 
             const { uri } = await Print.printToFileAsync({ html, base64: false });
             if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Save or share your CST data' });
+              await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Save or share your Road Ready data' });
             } else {
               Alert.alert('Saved', `PDF saved to: ${uri}`);
             }
@@ -434,7 +434,7 @@ export default function ProfileScreen() {
                   borderColor:      isPro ? '#F97316'               : 'rgba(255,255,255,0.3)' }]}>
                 {isPro && <Ionicons name="star" size={10} color="#F97316" style={{ marginRight: 3 }} />}
                 <Text style={[s.badgeText, { color: isPro ? '#F97316' : 'rgba(255,255,255,0.75)' }]}>
-                  {isPro ? `CST PRO` : t('profile.freePlan')}
+                  {isPro ? `ROAD READY PRO` : t('profile.freePlan')}
                 </Text>
               </View>
             </View>

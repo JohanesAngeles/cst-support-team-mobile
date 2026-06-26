@@ -210,7 +210,7 @@ export default function MainStack() {
       <Stack.Screen name="TruckProfile" component={TruckProfileScreen} options={{ title: 'My Truck' }} />
       <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.danger }, contentStyle: { backgroundColor: Colors.danger } }} />
       <Stack.Screen name="FindHelp" component={FindHelpScreen} options={{ title: 'Find Help Near Me' }} />
-      <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'CST Subscription' }} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Road Ready Subscription' }} />
       <Stack.Screen name="TruckerMap" component={TruckerMapScreen} options={{ headerShown: false }} />
       <Stack.Screen name="LoadBoard" component={LoadBoardScreen} options={{ title: 'Load Board' }} />
       <Stack.Screen name="DispatchContacts" component={DispatchContactsScreen} options={{ title: 'Dispatch Contacts' }} />
@@ -237,7 +237,7 @@ export default function MainStack() {
       <Stack.Screen name="ShipperDirectory" component={ShipperDirectoryScreen} options={{ title: 'Shipper Directory' }} />
       <Stack.Screen name="Referral" component={ReferralScreen} options={{ title: 'Referral Program' }} />
       <Stack.Screen name="HOSAlerts" component={HOSAlertsScreen} options={{ title: 'HOS Alerts' }} />
-      <Stack.Screen name="PremiumGate" component={PremiumGateScreen} options={{ title: 'CST Pro' }} />
+      <Stack.Screen name="PremiumGate" component={PremiumGateScreen} options={{ title: 'Road Ready Pro' }} />
       <Stack.Screen name="RoadReady" component={RoadReadyScreen} options={{ title: "Road Ready Score" }} />
       <Stack.Screen name="StudentDriver" component={StudentDriverScreen} options={{ title: 'Student Driver' }} />
       <Stack.Screen name="CDLChallenge" component={CDLChallengeScreen} options={{ title: 'CDL Skill Challenge' }} />

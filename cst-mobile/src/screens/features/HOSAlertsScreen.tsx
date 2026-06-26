@@ -246,7 +246,7 @@ export default function HOSAlertsScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>How Alerts Work</Text>
           <Text style={styles.infoText}>
-            Tap "Check HOS Status Now" after logging your hours in the HOS Tracker. CST reads your most recent log entry and sends push notifications based on your alert settings above.
+            Tap "Check HOS Status Now" after logging your hours in the HOS Tracker. Road Ready reads your most recent log entry and sends push notifications based on your alert settings above.
             {'\n\n'}
             For best results, log your hours in the HOS Tracker at the end of each shift, then check your status here.
           </Text>

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useLayoutEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   Modal, TextInput, Alert, ActivityIndicator, RefreshControl, ScrollView, Share,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -296,7 +297,8 @@ export default function ExpensesScreen() {
       </TouchableOpacity>
 
       <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <ScrollView keyboardShouldPersistTaps="handled">
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>{editTarget ? t('expenses.editExpense') : t('expenses.addExpense')}</Text>
 
@@ -375,7 +377,8 @@ export default function ExpensesScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
