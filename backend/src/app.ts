@@ -60,6 +60,7 @@ import uploadsRoutes from './routes/uploads';
 import translateRoutes from './routes/translate';
 import liveRoutes from './routes/live';
 import groupsRoutes from './routes/groups';
+import marketplaceRoutes from './routes/marketplace';
 import { initCronJobs } from './cron/notificationCron';
 
 if (process.env.SENTRY_DSN) {
@@ -206,6 +207,7 @@ app.use('/api/partner', partnerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/groups', groupsRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });
