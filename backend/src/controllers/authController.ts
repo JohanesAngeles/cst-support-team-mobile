@@ -279,6 +279,64 @@ export const getFollowing = async (req: AuthRequest, res: Response) => {
   res.json({ users: users.map(u => ({ _id: u._id, name: u.name, avatarUrl: u.avatarUrl ?? null, truckType: u.truckType ?? null })) });
 };
 
+// Search/browse drivers. With no `q`, returns a directory sorted with people you
+// follow or who follow you first — used by "Find Drivers" and the share-to-message picker.
+export const searchUsers = async (req: AuthRequest, res: Response) => {
+  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+  const meId = req.user._id.toString();
+
+  const query: Record<string, unknown> = { _id: { $ne: req.user._id } };
+  if (q) {
+    query.$or = [
+      { name: { $regex: q, $options: 'i' } },
+      { homeBase: { $regex: q, $options: 'i' } },
+    ];
+  }
+
+  const [users, myFollowing, myFollowers] = await Promise.all([
+    User.find(query).limit(100),
+    Follow.find({ followerId: meId }).select('followingId'),
+    Follow.find({ followingId: meId }).select('followerId'),
+  ]);
+
+  const followingSet = new Set(myFollowing.map(f => f.followingId.toString()));
+  const followerSet = new Set(myFollowers.map(f => f.followerId.toString()));
+
+  const relationshipOf = (id: string): 'mutual' | 'following' | 'follower' | null => {
+    const isFollowing = followingSet.has(id);
+    const isFollower = followerSet.has(id);
+    if (isFollowing && isFollower) return 'mutual';
+    if (isFollowing) return 'following';
+    if (isFollower) return 'follower';
+    return null;
+  };
+
+  const rank = { mutual: 0, following: 1, follower: 1, none: 2 } as const;
+
+  const results = users
+    .map(u => ({ user: u, relationship: relationshipOf(u._id.toString()) }))
+    .sort((a, b) => {
+      const ra = rank[a.relationship ?? 'none'];
+      const rb = rank[b.relationship ?? 'none'];
+      if (ra !== rb) return ra - rb;
+      return a.user.name.localeCompare(b.user.name);
+    })
+    .slice(0, 50);
+
+  res.json({
+    users: results.map(({ user: u, relationship }) => ({
+      _id: u._id,
+      name: u.name,
+      avatarUrl: u.avatarUrl ?? null,
+      truckType: u.truckType ?? null,
+      homeBase: u.homeBase ?? null,
+      currentStatus: u.currentStatus ?? null,
+      isTopDriver: !!u.isTopDriver,
+      relationship,
+    })),
+  });
+};
+
 export const updatePreferences = async (req: AuthRequest, res: Response) => {
   const { notificationPreferences, preferredLanguage } = req.body;
   const user = await User.findById(req.user._id);

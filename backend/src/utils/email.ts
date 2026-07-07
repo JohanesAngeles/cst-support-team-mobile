@@ -72,6 +72,63 @@ export const sendPasswordResetEmail = (to: string, name: string, code: string) =
     <p style="color:#999;font-size:12px">If you didn't request a reset, ignore this email.</p>
   `));
 
+export const sendPartnerWelcomeEmail = (
+  to: string,
+  contactName: string,
+  businessName: string,
+  tempPassword: string,
+) =>
+  send(to, 'Welcome to Road Ready Network — Your Partner Account is Ready', layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">Welcome, ${contactName}!</h2>
+    <p style="color:#444">Congratulations — <strong>${businessName}</strong> has been approved as a Founding Partner on the Road Ready Network. Your business listing is now live and visible to drivers across the country.</p>
+    <p style="color:#444">Sign in to the Road Ready Network app using these credentials:</p>
+    <div style="background:#f4f6f8;border-radius:10px;padding:20px;margin:16px 0">
+      <p style="margin:0 0 4px;color:#888;font-size:11px;font-weight:700;letter-spacing:1px">EMAIL</p>
+      <p style="margin:0 0 16px;color:#1A3A5C;font-weight:700;font-size:15px">${to}</p>
+      <p style="margin:0 0 4px;color:#888;font-size:11px;font-weight:700;letter-spacing:1px">TEMPORARY PASSWORD</p>
+      <p style="margin:0;color:#1A3A5C;font-weight:900;font-size:22px;letter-spacing:3px;font-family:monospace">${tempPassword}</p>
+    </div>
+    <p style="color:#c0392b;font-size:13px;font-weight:600">⚠️ Please change your password after your first login.</p>
+    <p style="color:#444">You have <strong>30 days free</strong> to explore the platform. After that, visit the <strong>Billing</strong> tab in your Partner dashboard to subscribe ($10/mo or $100/yr).</p>
+    <p style="color:#999;font-size:12px;margin-top:20px">Questions? Email us at support@roadreadynetwork.com</p>
+  `));
+
+export const sendPartnerRejectedEmail = (
+  to: string,
+  contactName: string,
+  businessName: string,
+) =>
+  send(to, 'Road Ready Network — Application Update', layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">Application Update</h2>
+    <p style="color:#444">Hi ${contactName}, thank you for applying to list <strong>${businessName}</strong> on the Road Ready Network.</p>
+    <p style="color:#444">After review, we're unable to approve your application at this time. This may be because we already have coverage in your area or your category isn't currently available.</p>
+    <p style="color:#444">You're welcome to reapply in 30 days or email us at <a href="mailto:support@roadreadynetwork.com" style="color:#1A3A5C">support@roadreadynetwork.com</a> if you have questions.</p>
+    <p style="color:#999;font-size:12px;margin-top:20px">Thank you for your interest in the Road Ready Network.</p>
+  `));
+
+export const sendUniversityApplicationApprovedEmail = (
+  to: string,
+  name: string,
+) =>
+  send(to, 'Road Ready Network — Owner Operator University Application Approved', layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">You're in, ${name}!</h2>
+    <p style="color:#444">Great news — your application to Owner Operator University has been approved.</p>
+    <p style="color:#444">Sign in to the Road Ready Network app and head to <strong>Owner Operator University</strong> to see what's next.</p>
+    <p style="color:#999;font-size:12px;margin-top:20px">Questions? Email us at support@roadreadynetwork.com</p>
+  `));
+
+export const sendUniversityApplicationRejectedEmail = (
+  to: string,
+  name: string,
+) =>
+  send(to, 'Road Ready Network — Owner Operator University Application Update', layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">Application Update</h2>
+    <p style="color:#444">Hi ${name}, thank you for applying to Owner Operator University.</p>
+    <p style="color:#444">After review, we're unable to approve your application at this time.</p>
+    <p style="color:#444">You're welcome to reapply in the future or email us at <a href="mailto:support@roadreadynetwork.com" style="color:#1A3A5C">support@roadreadynetwork.com</a> if you have questions.</p>
+    <p style="color:#999;font-size:12px;margin-top:20px">Thank you for your interest in the Road Ready Network.</p>
+  `));
+
 export const sendInvoiceEmail = (
   to: string,
   inv: {

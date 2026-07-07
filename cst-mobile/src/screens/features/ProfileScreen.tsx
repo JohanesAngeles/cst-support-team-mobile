@@ -342,6 +342,7 @@ export default function ProfileScreen() {
   const LEGAL_ITEMS = [
     { icon: 'document-text-outline', label: t('profile.terms'),   onPress: () => navigation.navigate('Terms') },
     { icon: 'shield-outline',        label: t('profile.privacy'), onPress: () => navigation.navigate('Privacy') },
+    { icon: 'person-circle-outline', label: 'Meet the Developer', onPress: () => navigation.navigate('Developer') },
     {
       icon: 'play-circle-outline',
       label: t('profile.replayTour'),

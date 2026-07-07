@@ -35,7 +35,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/', async (req: AuthRequest, res: Response) => {
-  const { category, title, body, imageUrl, sharedPostId, groupId } = req.body;
+  const { category, title, body, imageUrl, location, sharedPostId, groupId } = req.body;
 
   let group;
   if (groupId) {
@@ -56,6 +56,8 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       imageUrl: original.imageUrl,
       createdAt: original.createdAt,
     };
+    original.shareCount = (original.shareCount ?? 0) + 1;
+    await original.save();
   }
 
   if (!sharedPost && (!title || !body)) {
@@ -71,10 +73,12 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     title: title || (sharedPost ? `Shared: ${sharedPost.title}` : ''),
     body: body || (sharedPost ? `Shared a post from ${sharedPost.authorName}` : ''),
     imageUrl,
+    location: location || req.user.homeBase,
     groupId: group?._id,
     groupName: group?.name,
     groupCreatorId: group?.creatorId,
     sharedPost,
+    shareCount: 0,
     upvotes: [], reactions: [], replies: [],
   });
   res.status(201).json({ post });
@@ -99,14 +103,42 @@ router.post('/:id/react', async (req: AuthRequest, res: Response) => {
 });
 
 router.post('/:id/reply', async (req: AuthRequest, res: Response) => {
-  const { body } = req.body;
+  const { body, parentReplyId } = req.body;
   if (!body) { res.status(400).json({ message: 'body is required' }); return; }
-  const post = await NetworkPost.findByIdAndUpdate(
-    req.params.id,
-    { $push: { replies: { authorId: req.user._id, authorName: req.user.name, authorAvatarUrl: req.user.avatarUrl, body, createdAt: new Date() } } },
-    { new: true }
-  );
+
+  const post = await NetworkPost.findById(req.params.id);
   if (!post) { res.status(404).json({ message: 'Not found' }); return; }
+
+  if (parentReplyId && !post.replies.some(r => r._id.toString() === parentReplyId)) {
+    res.status(400).json({ message: 'Parent reply not found' }); return;
+  }
+
+  post.replies.push({
+    authorId: req.user._id,
+    authorName: req.user.name,
+    authorAvatarUrl: req.user.avatarUrl,
+    body,
+    parentReplyId: parentReplyId || undefined,
+    createdAt: new Date(),
+  } as any);
+  await post.save();
+  res.json({ post });
+});
+
+router.put('/:id', async (req: AuthRequest, res: Response) => {
+  const { title, body, imageUrl, location } = req.body;
+  const post = await NetworkPost.findOne({ _id: req.params.id, authorId: req.user._id });
+  if (!post) { res.status(404).json({ message: 'Not found' }); return; }
+  if (post.sharedPost) { res.status(400).json({ message: 'Shared posts cannot be edited' }); return; }
+
+  if (body !== undefined) post.body = body;
+  if (title !== undefined) post.title = title;
+  if (imageUrl !== undefined) post.imageUrl = imageUrl;
+  if (location !== undefined) post.location = location;
+  if (!post.body?.trim()) { res.status(400).json({ message: 'body is required' }); return; }
+
+  post.editedAt = new Date();
+  await post.save();
   res.json({ post });
 });
 

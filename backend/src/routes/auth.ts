@@ -7,7 +7,7 @@ import {
   updateProfile, getPublicProfile, changePassword, deleteAccount,
   updateAvatar, updateAvatarMiddleware,
   updateCoverPhoto, updateCoverPhotoMiddleware,
-  toggleFollow, getFollowers, getFollowing,
+  toggleFollow, getFollowers, getFollowing, searchUsers,
   sendPhoneOTP, verifyPhoneOTP,
   updatePreferences,
   updateStatus, getActiveNow,
@@ -43,6 +43,7 @@ router.post('/reset-password', resetPassword);
 router.put('/update-profile', protect, updateProfile);
 router.put('/status', protect, updateStatus);
 router.get('/active-now', protect, getActiveNow);
+router.get('/users', protect, searchUsers);
 router.put('/cover', protect, updateCoverPhotoMiddleware, updateCoverPhoto);
 router.get('/users/:id', protect, getPublicProfile);
 router.post('/users/:id/follow', protect, toggleFollow);

@@ -1,9 +1,15 @@
+import crypto from 'crypto';
 import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import BusinessListing from '../models/BusinessListing';
 import PartnerApplication from '../models/PartnerApplication';
+import UniversityApplication from '../models/UniversityApplication';
 import User from '../models/User';
 import { geocodeAddress } from '../utils/geocode';
+import {
+  sendPartnerWelcomeEmail, sendPartnerRejectedEmail,
+  sendUniversityApplicationApprovedEmail, sendUniversityApplicationRejectedEmail,
+} from '../utils/email';
 
 const router = Router();
 
@@ -112,7 +118,9 @@ router.get('/applications', protect, adminOnly, async (_req: AuthRequest, res: R
 });
 
 // ── PATCH /api/admin/applications/:id ────────────────────────────────────────
-// Approve or reject a partner application
+// Approve or reject a partner application.
+// On approval: creates a partner User + BusinessListing and emails credentials.
+// Idempotent — re-approving an already-approved email is a no-op.
 router.patch('/applications/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.body;
@@ -120,12 +128,101 @@ router.patch('/applications/:id', protect, adminOnly, async (req: AuthRequest, r
       res.status(400).json({ message: 'status must be "approved" or "rejected".' });
       return;
     }
+
     const app = await PartnerApplication.findByIdAndUpdate(
       req.params.id,
       { status },
       { new: true }
     );
     if (!app) { res.status(404).json({ message: 'Application not found.' }); return; }
+
+    if (status === 'approved') {
+      const existing = await User.findOne({ email: app.email });
+      if (!existing) {
+        // Generate a readable temp password: e.g. "RoadA3F7B2C1"
+        const tempPassword = 'Road' + crypto.randomBytes(4).toString('hex').toUpperCase();
+
+        const user = await User.create({
+          name:               app.contactName,
+          email:              app.email,
+          phone:              app.phone,
+          password:           tempPassword,
+          role:               'partner',
+          isVerified:         true,
+          subscriptionStatus: 'free',
+        });
+
+        // Pre-create their listing so it's ready when they log in
+        const coords = await geocodeAddress(`${app.city}, ${app.state}, USA`).catch(() => null);
+        await BusinessListing.create({
+          ownerId:      user._id,
+          businessName: app.businessName,
+          category:     app.category,
+          phone:        app.phone,
+          city:         app.city,
+          state:        app.state,
+          website:      app.website,
+          description:  app.description,
+          isActive:     true,
+          latitude:     coords?.latitude,
+          longitude:    coords?.longitude,
+        });
+
+        // Email them their credentials (fire-and-forget — don't block the response)
+        sendPartnerWelcomeEmail(app.email, app.contactName, app.businessName, tempPassword)
+          .catch(err => console.error('[partner-welcome-email]', err));
+      }
+    }
+
+    if (status === 'rejected') {
+      sendPartnerRejectedEmail(app.email, app.contactName, app.businessName)
+        .catch(err => console.error('[partner-rejected-email]', err));
+    }
+
+    res.json(app);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/university-applications ───────────────────────────────────
+// Get all Owner Operator University applications
+router.get('/university-applications', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const apps = await UniversityApplication.find().sort({ createdAt: -1 });
+    res.json(apps);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── PATCH /api/admin/university-applications/:id ─────────────────────────────
+// Approve or reject an Owner Operator University application and email the applicant.
+router.patch('/university-applications/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { status } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+      res.status(400).json({ message: 'status must be "approved" or "rejected".' });
+      return;
+    }
+
+    const app = await UniversityApplication.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!app) { res.status(404).json({ message: 'Application not found.' }); return; }
+
+    if (status === 'approved') {
+      sendUniversityApplicationApprovedEmail(app.email, app.name)
+        .catch(err => console.error('[university-approved-email]', err));
+    }
+
+    if (status === 'rejected') {
+      sendUniversityApplicationRejectedEmail(app.email, app.name)
+        .catch(err => console.error('[university-rejected-email]', err));
+    }
+
     res.json(app);
   } catch {
     res.status(500).json({ message: 'Server error.' });

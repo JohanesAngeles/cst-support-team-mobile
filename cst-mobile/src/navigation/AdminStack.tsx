@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import AdminApplicationsScreen from '../screens/admin/AdminApplicationsScreen';
+import AdminUniversityApplicationsScreen from '../screens/admin/AdminUniversityApplicationsScreen';
 import AdminListingsScreen from '../screens/admin/AdminListingsScreen';
 import AdminCashAppScreen from '../screens/admin/AdminCashAppScreen';
 import { useAuth } from '../context/AuthContext';
@@ -52,6 +53,7 @@ function AdminTabs() {
         tabBarIcon: ({ color, focused }) => {
           const icons: Record<string, any> = {
             Applications: focused ? 'document-text' : 'document-text-outline',
+            University:   focused ? 'school'         : 'school-outline',
             Listings:     focused ? 'business'      : 'business-outline',
             CashApp:      focused ? 'cash'           : 'cash-outline',
             Logout:       'log-out-outline',
@@ -61,6 +63,7 @@ function AdminTabs() {
       })}
     >
       <Tab.Screen name="Applications" component={AdminApplicationsScreen} />
+      <Tab.Screen name="University"   component={AdminUniversityApplicationsScreen} />
       <Tab.Screen name="Listings"     component={AdminListingsScreen} />
       <Tab.Screen
         name="CashApp"

@@ -60,6 +60,7 @@ import FreightCareerScreen from '../screens/features/FreightCareerScreen';
 import OOSimScreen from '../screens/features/OOSimScreen';
 import TermsScreen from '../screens/legal/TermsScreen';
 import PrivacyScreen from '../screens/legal/PrivacyScreen';
+import DeveloperScreen from '../screens/legal/DeveloperScreen';
 import CDLTrackerScreen from '../screens/features/CDLTrackerScreen';
 import LoadCompareScreen from '../screens/features/LoadCompareScreen';
 import PerDiemScreen from '../screens/features/PerDiemScreen';
@@ -125,6 +126,7 @@ export type MainStackParamList = {
   TruckingTrivia: undefined;
   Terms: undefined;
   Privacy: undefined;
+  Developer: undefined;
   DVIR: undefined;
   Invoice: undefined;
   DrugTest: undefined;
@@ -226,6 +228,7 @@ export default function MainStack() {
       <Stack.Screen name="TruckingTrivia" component={TruckingTriviaScreen} options={{ title: 'Trucking Trivia' }} />
       <Stack.Screen name="Terms" component={TermsScreen} options={{ title: 'Terms of Service' }} />
       <Stack.Screen name="Privacy" component={PrivacyScreen} options={{ title: 'Privacy Policy' }} />
+      <Stack.Screen name="Developer" component={DeveloperScreen} options={{ title: 'Meet the Developer' }} />
       <Stack.Screen name="DVIR" component={DVIRScreen} options={{ title: 'DVIR Inspection' }} />
       <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ title: 'Invoice Generator' }} />
       <Stack.Screen name="DrugTest" component={DrugTestScreen} options={{ title: 'Drug & Alcohol Log' }} />

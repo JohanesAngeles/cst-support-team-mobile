@@ -28,13 +28,24 @@ export interface INetworkPost extends Document {
   title: string;
   body: string;
   imageUrl?: string;
+  location?: string;
   groupId?: mongoose.Types.ObjectId;
   groupName?: string;
   groupCreatorId?: mongoose.Types.ObjectId;
   sharedPost?: ISharedPostSnapshot;
+  shareCount: number;
   upvotes: mongoose.Types.ObjectId[];
   reactions: IReaction[];
-  replies: { authorId: mongoose.Types.ObjectId; authorName: string; authorAvatarUrl?: string; body: string; createdAt: Date }[];
+  replies: mongoose.Types.DocumentArray<{
+    _id: mongoose.Types.ObjectId;
+    authorId: mongoose.Types.ObjectId;
+    authorName: string;
+    authorAvatarUrl?: string;
+    body: string;
+    parentReplyId?: mongoose.Types.ObjectId;
+    createdAt: Date;
+  }>;
+  editedAt?: Date;
   createdAt: Date;
 }
 
@@ -48,9 +59,12 @@ const NetworkPostSchema = new Schema<INetworkPost>(
     title:           { type: String, required: true, maxlength: 120 },
     body:            { type: String, required: true, maxlength: 2000 },
     imageUrl:        { type: String },
+    location:        { type: String, maxlength: 120 },
     groupId:         { type: Schema.Types.ObjectId, ref: 'Group', index: true },
     groupName:       { type: String },
     groupCreatorId:  { type: Schema.Types.ObjectId, ref: 'User' },
+    shareCount:      { type: Number, default: 0 },
+    editedAt:        { type: Date },
     sharedPost: {
       postId:          { type: Schema.Types.ObjectId, ref: 'NetworkPost' },
       authorName:      { type: String },
@@ -71,6 +85,7 @@ const NetworkPostSchema = new Schema<INetworkPost>(
       authorName:      { type: String },
       authorAvatarUrl: { type: String },
       body:            { type: String, maxlength: 1000 },
+      parentReplyId:   { type: Schema.Types.ObjectId },
       createdAt:       { type: Date, default: Date.now },
     }],
   },
