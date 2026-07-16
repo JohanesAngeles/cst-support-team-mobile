@@ -21,6 +21,16 @@ export const upload = multer({
   },
 });
 
+export const uploadVideo = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['video/mp4', 'video/quicktime', 'video/webm'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Only MP4, MOV, and WebM video files are allowed'));
+  },
+});
+
 export interface CloudinaryResult {
   url: string;
   publicId: string;

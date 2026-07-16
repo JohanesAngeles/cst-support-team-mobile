@@ -1,10 +1,20 @@
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import BusinessListing from '../models/BusinessListing';
 import PartnerApplication from '../models/PartnerApplication';
 import UniversityApplication from '../models/UniversityApplication';
 import User from '../models/User';
+import UserStatusLog from '../models/UserStatusLog';
+import { getOrCreateConfig } from '../models/AppConfig';
+import Sponsor from '../models/Sponsor';
+import SponsoredPost from '../models/SponsoredPost';
+import NewsItem from '../models/NewsItem';
+import MapReport from '../models/MapReport';
+import Report from '../models/Report';
+import NetworkPost from '../models/NetworkPost';
+import CDLDoc from '../models/CDLDoc';
 import { geocodeAddress } from '../utils/geocode';
 import {
   sendPartnerWelcomeEmail, sendPartnerRejectedEmail,
@@ -319,6 +329,385 @@ router.post('/cashapp-approve/:userId', protect, adminOnly, async (req: AuthRequ
       cashAppPendingPlan: null,
     });
     res.json({ ok: true });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/config ─────────────────────────────────────────────────────
+// Read the current app config (maintenance mode, min version, feature flags).
+router.get('/config', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const config = await getOrCreateConfig();
+    res.json(config);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── PATCH /api/admin/config ───────────────────────────────────────────────────
+// Update maintenance mode, min version, store URLs, or feature flags.
+router.patch('/config', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const config = await getOrCreateConfig();
+    const { maintenanceMode, maintenanceMessage, minVersion, storeUrls, featureFlags } = req.body;
+    if (maintenanceMode !== undefined) config.maintenanceMode = maintenanceMode;
+    if (maintenanceMessage !== undefined) config.maintenanceMessage = maintenanceMessage;
+    if (minVersion !== undefined) config.minVersion = { ...config.minVersion, ...minVersion };
+    if (storeUrls !== undefined) config.storeUrls = { ...config.storeUrls, ...storeUrls };
+    if (featureFlags !== undefined) {
+      for (const [key, value] of Object.entries(featureFlags)) {
+        config.featureFlags.set(key, Boolean(value));
+      }
+    }
+    await config.save();
+    res.json(config);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── DELETE /api/admin/config/feature-flags/:key ───────────────────────────────
+// Remove a feature flag entirely.
+router.delete('/config/feature-flags/:key', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const config = await getOrCreateConfig();
+    config.featureFlags.delete(String(req.params.key));
+    await config.save();
+    res.json(config);
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Sponsors (ticker) CRUD ─────────────────────────────────────────────────────
+router.get('/sponsors', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const sponsors = await Sponsor.find().sort({ order: 1 });
+    res.json({ sponsors });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.post('/sponsors', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { name, logoUrl, linkUrl, active, order } = req.body;
+    if (!name) { res.status(400).json({ message: 'name is required.' }); return; }
+    const sponsor = await Sponsor.create({ name, logoUrl, linkUrl, active, order });
+    res.status(201).json({ sponsor });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.patch('/sponsors/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const sponsor = await Sponsor.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true });
+    if (!sponsor) { res.status(404).json({ message: 'Sponsor not found.' }); return; }
+    res.json({ sponsor });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/sponsors/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await Sponsor.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Sponsor deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Sponsored / boosted posts CRUD ──────────────────────────────────────────────
+router.get('/sponsored-posts', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const posts = await SponsoredPost.find().sort({ createdAt: -1 });
+    res.json({ posts });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.post('/sponsored-posts', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { sponsorName, sponsorLogoUrl, imageUrl, body, ctaLabel, ctaUrl, active } = req.body;
+    if (!sponsorName || !body || !ctaLabel || !ctaUrl) {
+      res.status(400).json({ message: 'sponsorName, body, ctaLabel, and ctaUrl are required.' }); return;
+    }
+    const post = await SponsoredPost.create({ sponsorName, sponsorLogoUrl, imageUrl, body, ctaLabel, ctaUrl, active });
+    res.status(201).json({ post });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.patch('/sponsored-posts/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const post = await SponsoredPost.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true, runValidators: true });
+    if (!post) { res.status(404).json({ message: 'Sponsored post not found.' }); return; }
+    res.json({ post });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/sponsored-posts/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await SponsoredPost.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Sponsored post deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/users ───────────────────────────────────────────────────────
+// Search/list users for account management.
+router.get('/users', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const search = String(req.query.search ?? '').trim();
+    const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? '25'), 10) || 25));
+
+    const filter = search
+      ? { $or: [{ name: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }] }
+      : {};
+
+    const [users, total] = await Promise.all([
+      User.find(filter)
+        .select('name email role status statusReason subscriptionStatus lastActiveAt createdAt')
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      User.countDocuments(filter),
+    ]);
+
+    res.json({ users, total, page, limit });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/users/:id ───────────────────────────────────────────────────
+// Full profile detail for a single user (admin view).
+router.get('/users/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      'name email phone role status statusReason statusUpdatedAt isVerified isTopDriver cdlVerified ' +
+      'truckType yearsDriving homeBase cdlClass subscriptionStatus subscriptionPlan subscriptionEnd ' +
+      'lastActiveAt createdAt'
+    );
+    if (!user) { res.status(404).json({ message: 'User not found.' }); return; }
+    res.json({ user });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/users/:id/status-log ───────────────────────────────────────
+// Audit trail of every suspend/ban/reactivate action taken on this user.
+router.get('/users/:id/status-log', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const log = await UserStatusLog.find({ userId: String(req.params.id) }).sort({ createdAt: -1 }).limit(100);
+    res.json({ log });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── PATCH /api/admin/users/:id/status ─────────────────────────────────────────
+// Suspend, ban, or reactivate a user account. Every change is written to
+// UserStatusLog so admins can see who did what to an account, and when.
+router.patch('/users/:id/status', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { status, reason } = req.body as { status: 'active' | 'suspended' | 'banned'; reason?: string };
+    if (!['active', 'suspended', 'banned'].includes(status)) {
+      res.status(400).json({ message: 'status must be active, suspended, or banned.' }); return;
+    }
+    const before = await User.findById(req.params.id).select('status');
+    if (!before) { res.status(404).json({ message: 'User not found.' }); return; }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { status, statusReason: reason ?? undefined, statusUpdatedAt: new Date() },
+      { new: true }
+    ).select('name email role status statusReason');
+
+    await UserStatusLog.create({
+      userId: String(req.params.id),
+      fromStatus: before.status ?? 'active',
+      toStatus: status,
+      reason,
+      changedById: req.user._id,
+      changedByName: req.user.name,
+    });
+
+    res.json({ user });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/users/:id/cdl-docs ─────────────────────────────────────────
+// The driver's self-submitted CDL/company documents, for an admin to review
+// before granting the CDL-verified badge.
+router.get('/users/:id/cdl-docs', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const docs = await CDLDoc.find({ userId: req.params.id }).sort({ expirationDate: 1 });
+    res.json({ docs });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── PATCH /api/admin/users/:id/cdl-verify ─────────────────────────────────────
+// Toggle the CDL-verified badge after an admin reviews the driver's submitted
+// CDL/company documents (see cdl-docs.ts) — this is a manual trust signal, not
+// an automated check.
+router.patch('/users/:id/cdl-verify', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { verified } = req.body as { verified: boolean };
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { cdlVerified: !!verified, cdlVerifiedAt: verified ? new Date() : undefined },
+      { new: true }
+    ).select('name email cdlVerified cdlVerifiedAt');
+    if (!user) { res.status(404).json({ message: 'User not found.' }); return; }
+    res.json({ user });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/news ─────────────────────────────────────────────────────────
+router.get('/news', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const news = await NewsItem.find().sort({ createdAt: -1 }).limit(100);
+    res.json({ news });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/admin/news ────────────────────────────────────────────────────────
+// Admin-authored News post (in addition to the regular user-facing POST /api/news).
+router.post('/news', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, body, imageUrl } = req.body;
+    if (!title || !body) { res.status(400).json({ message: 'title and body are required.' }); return; }
+    const item = await NewsItem.create({
+      authorId: req.user._id, authorName: req.user.name, authorAvatarUrl: req.user.avatarUrl,
+      title, body, imageUrl, upvotes: [],
+    });
+    res.status(201).json({ news: item });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── PATCH /api/admin/news/:id ─────────────────────────────────────────────────
+// Edit a Trucking News post directly (no ownership restriction, unlike the public route).
+router.patch('/news/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, body, imageUrl } = req.body;
+    const item = await NewsItem.findByIdAndUpdate(
+      req.params.id,
+      { $set: { title, body, imageUrl } },
+      { new: true, runValidators: true }
+    );
+    if (!item) { res.status(404).json({ message: 'News item not found.' }); return; }
+    res.json({ news: item });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── DELETE /api/admin/news/:id ─────────────────────────────────────────────────
+// Moderate a Trucking News post directly (no prior user report required).
+router.delete('/news/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await NewsItem.findByIdAndDelete(req.params.id);
+    res.json({ message: 'News item deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/map-reports ────────────────────────────────────────────────
+router.get('/map-reports', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const reports = await MapReport.find().sort({ createdAt: -1 }).limit(100);
+    res.json({ reports });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/admin/map-reports ───────────────────────────────────────────────
+// Admin-authored Road Intel alert (in addition to the regular user-facing POST /api/map/reports).
+router.post('/map-reports', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { type, lat, lng, title, description, hazardType } = req.body;
+    if (!type || lat == null || lng == null || !title) {
+      res.status(400).json({ message: 'type, lat, lng and title are required.' }); return;
+    }
+    const report = await MapReport.create({
+      userId: req.user._id, userName: req.user.name,
+      type, lat, lng, title, description, hazardType,
+      upvotes: 0, upvotedBy: [],
+    });
+    res.status(201).json({ report });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── PATCH /api/admin/map-reports/:id ──────────────────────────────────────────
+// Edit a Road Intel report directly (no ownership restriction).
+router.patch('/map-reports/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, description, type, hazardType } = req.body;
+    const report = await MapReport.findByIdAndUpdate(
+      req.params.id,
+      { $set: { title, description, type, hazardType } },
+      { new: true, runValidators: true }
+    );
+    if (!report) { res.status(404).json({ message: 'Road Intel report not found.' }); return; }
+    res.json({ report });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── DELETE /api/admin/map-reports/:id ─────────────────────────────────────────
+// Moderate a Road Intel report directly (no prior user report required).
+router.delete('/map-reports/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await MapReport.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Road Intel report deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── GET /api/admin/health ──────────────────────────────────────────────────────
+// Basic system health/uptime snapshot for the admin dashboard.
+router.get('/health', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [users, posts, openReports, activeToday] = await Promise.all([
+      User.countDocuments(),
+      NetworkPost.countDocuments(),
+      Report.countDocuments({ status: 'open' }),
+      User.countDocuments({ lastActiveAt: { $gte: dayAgo } }),
+    ]);
+    res.json({
+      uptimeSeconds: process.uptime(),
+      dbConnected: mongoose.connection.readyState === 1,
+      memoryMB: Math.round(process.memoryUsage().rss / 1024 / 1024),
+      counts: { users, posts, openReports, activeToday },
+    });
   } catch {
     res.status(500).json({ message: 'Server error.' });
   }

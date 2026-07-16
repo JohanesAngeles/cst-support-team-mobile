@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import appleSignin from 'apple-signin-auth';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User';
 
 const signToken = (userId: string) =>
@@ -9,22 +10,26 @@ const signToken = (userId: string) =>
   } as jwt.SignOptions);
 
 // ─── Google ───────────────────────────────────────────────────────────────────
-// Receives an access token from expo-auth-session and fetches user info
-// from Google's userinfo endpoint — no extra packages needed.
+// Receives an ID token from @react-native-google-signin/google-signin (native
+// Credential Manager / Google Sign-In SDK) and verifies it directly against
+// Google's public keys — no network round-trip to a userinfo endpoint needed.
+const googleClient = new OAuth2Client();
+
 export const googleSignIn = async (req: Request, res: Response) => {
-  const { accessToken } = req.body;
-  if (!accessToken) { res.status(400).json({ message: 'accessToken is required' }); return; }
+  const { idToken } = req.body;
+  if (!idToken) { res.status(400).json({ message: 'idToken is required' }); return; }
 
   try {
-    const infoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    if (!infoRes.ok) { res.status(401).json({ message: 'Invalid Google token' }); return; }
+    const audience = [process.env.GOOGLE_WEB_CLIENT_ID, process.env.GOOGLE_IOS_CLIENT_ID]
+      .filter((id): id is string => !!id);
+    const ticket = await googleClient.verifyIdToken({ idToken, audience });
+    const payload = ticket.getPayload();
 
-    const info = await infoRes.json() as { id: string; email: string; name: string };
-    const { id: googleId, email, name } = info;
+    const googleId = payload?.sub;
+    const email = payload?.email;
+    const name = payload?.name;
 
-    if (!email) { res.status(400).json({ message: 'Could not retrieve email from Google' }); return; }
+    if (!googleId || !email) { res.status(400).json({ message: 'Could not retrieve email from Google' }); return; }
 
     // Find existing user or create one
     let user = await User.findOne({ email: email.toLowerCase() });
@@ -33,6 +38,7 @@ export const googleSignIn = async (req: Request, res: Response) => {
         name: name ?? email.split('@')[0],
         email: email.toLowerCase(),
         password: `google_${googleId}_${Date.now()}`, // unusable password for social accounts
+        hasPassword: false,
         isVerified: true,
       });
     } else if (!user.isVerified) {
@@ -72,6 +78,7 @@ export const appleSignIn = async (req: Request, res: Response) => {
         name,
         email: email.toLowerCase(),
         password: `apple_${appleId}_${Date.now()}`,
+        hasPassword: false,
         isVerified: true,
       });
     } else if (!user.isVerified) {

@@ -32,9 +32,9 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   const cycleLimit = 70; // default 70/8-day; conservative
   const remaining = cycleLimit - cycleTotal;
   if (remaining <= 0) {
-    sendPushToUser(req.user._id.toString(), '🚨 34-Hour Restart Required', 'Your 70-hr cycle is exhausted. Take a 34-hr consecutive off-duty break before driving.');
+    sendPushToUser(req.user._id.toString(), '🚨 34-Hour Restart Required', 'Your 70-hr cycle is exhausted. Take a 34-hr consecutive off-duty break before driving.', 'hosReminders');
   } else if (remaining <= 10) {
-    sendPushToUser(req.user._id.toString(), '⚠️ Low Cycle Hours', `Only ${remaining.toFixed(1)} hrs left in your 70-hr cycle.`);
+    sendPushToUser(req.user._id.toString(), '⚠️ Low Cycle Hours', `Only ${remaining.toFixed(1)} hrs left in your 70-hr cycle.`, 'hosReminders');
   }
 
   res.json({ entry });

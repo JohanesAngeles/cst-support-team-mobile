@@ -4,6 +4,7 @@ import { protect, AuthRequest } from '../middleware/auth';
 import DirectMessage from '../models/DirectMessage';
 import User from '../models/User';
 import NetworkPost from '../models/NetworkPost';
+import Block from '../models/Block';
 
 const router = Router();
 router.use(protect);
@@ -84,6 +85,15 @@ router.post('/:userId', async (req: AuthRequest, res: Response) => {
 
   const recipient = await User.findById(otherId);
   if (!recipient) { res.status(404).json({ message: 'User not found' }); return; }
+
+  const blocked = await Block.exists({
+    type: 'block',
+    $or: [
+      { actorId: req.user._id, targetId: otherId },
+      { actorId: otherId, targetId: req.user._id },
+    ],
+  });
+  if (blocked) { res.status(403).json({ message: 'You cannot message this user' }); return; }
 
   let sharedPost;
   if (sharedPostId) {

@@ -4,6 +4,12 @@ import PushToken from '../models/PushToken';
 import Deadline from '../models/Deadline';
 import MaintenanceRecord from '../models/MaintenanceRecord';
 import UserDocument from '../models/UserDocument';
+import User from '../models/User';
+
+// Categories a user can individually opt out of via PUT /auth/preferences.
+// Pass one when the push is skippable; omit it for pushes that should always go through
+// (e.g. admin operational alerts).
+export type PushCategory = 'weeklyReport' | 'dailyAlerts' | 'hosReminders' | 'fuelUpdates';
 
 const router = Router();
 router.use(protect);
@@ -73,7 +79,13 @@ router.get('/alerts', async (req: AuthRequest, res: Response) => {
 
 // Internal: send a push notification to all tokens of a user
 // Called by other routes when important events occur (not exposed to client directly in prod)
-export async function sendPushToUser(userId: string, title: string, body: string) {
+export async function sendPushToUser(userId: string, title: string, body: string, category?: PushCategory) {
+  if (category) {
+    const user = await User.findById(userId).select('notificationPreferences');
+    const prefs = user?.notificationPreferences;
+    if (prefs && (prefs.pushNotifications === false || prefs[category] === false)) return;
+  }
+
   const tokens = await PushToken.find({ userId });
   if (tokens.length === 0) return;
 

@@ -19,10 +19,16 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
+  hasPassword?: boolean;
   phone?: string;
   role: 'driver' | 'admin' | 'partner';
+  status?: 'active' | 'suspended' | 'banned';
+  statusReason?: string;
+  statusUpdatedAt?: Date;
   isVerified: boolean;
   isTopDriver?: boolean;
+  cdlVerified?: boolean;
+  cdlVerifiedAt?: Date;
   verificationCode?: string;
   verificationExpires?: Date;
   resetCode?: string;
@@ -60,10 +66,19 @@ const UserSchema = new Schema<IUser>(
     name:     { type: String, required: true, trim: true },
     email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 8, select: false },
+    // false for accounts created via Google/Apple/phone sign-in, where the password
+    // is an unusable placeholder the user never sees — lets deleteAccount skip the
+    // password challenge for those users instead of locking them out of deletion.
+    hasPassword: { type: Boolean, default: true },
     phone:    { type: String, trim: true },
     role:     { type: String, enum: ['driver', 'admin', 'partner'], default: 'driver' },
+    status:          { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
+    statusReason:    { type: String, trim: true },
+    statusUpdatedAt: { type: Date },
     isVerified:          { type: Boolean, default: false },
     isTopDriver:         { type: Boolean, default: false },
+    cdlVerified:         { type: Boolean, default: false },
+    cdlVerifiedAt:       { type: Date },
     verificationCode:    { type: String, select: false },
     verificationExpires: { type: Date,   select: false },
     resetCode:           { type: String, select: false },

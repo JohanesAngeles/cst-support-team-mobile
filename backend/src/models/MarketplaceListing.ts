@@ -33,6 +33,8 @@ export interface IMarketplaceListing extends Document {
   state: string;
   contactPhone?: string;
   status: 'active' | 'sold';
+  rating: number;
+  reviewCount: number;
   createdAt: Date;
 }
 
@@ -57,6 +59,8 @@ const MarketplaceListingSchema = new Schema<IMarketplaceListing>(
     state:         { type: String, required: true, trim: true },
     contactPhone:  { type: String, trim: true },
     status:        { type: String, enum: ['active', 'sold'], default: 'active' },
+    rating:        { type: Number, default: 0 },
+    reviewCount:   { type: Number, default: 0 },
   },
   { timestamps: true }
 );

@@ -21,6 +21,15 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       res.status(401).json({ message: 'User not found' });
       return;
     }
+    if (req.user.status === 'banned' || req.user.status === 'suspended') {
+      res.status(403).json({
+        message: req.user.status === 'banned'
+          ? 'This account has been banned.'
+          : 'This account has been suspended.',
+        code: req.user.status === 'banned' ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+      });
+      return;
+    }
     User.updateOne({ _id: req.user._id }, { lastActiveAt: new Date() }).catch(() => {});
     next();
   } catch {

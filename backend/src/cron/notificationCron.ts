@@ -25,7 +25,7 @@ async function checkDeadlines(userIds: string[]) {
     for (const d of upcoming) {
       const days = daysUntil(d.date);
       const when = days <= 0 ? 'TODAY' : days === 1 ? 'tomorrow' : `in ${days} days`;
-      await sendPushToUser(userId, `⚠️ Deadline ${when}`, `${d.title} is due ${when}`);
+      await sendPushToUser(userId, `⚠️ Deadline ${when}`, `${d.title} is due ${when}`, 'dailyAlerts');
     }
   }
 }
@@ -43,7 +43,7 @@ async function checkMaintenance(userIds: string[]) {
     for (const m of due) {
       const days = daysUntil(m.nextDate);
       const when = days <= 0 ? 'OVERDUE' : days === 1 ? 'tomorrow' : `in ${days} days`;
-      await sendPushToUser(userId, `🔧 Maintenance Due`, `${m.name} is due ${when}`);
+      await sendPushToUser(userId, `🔧 Maintenance Due`, `${m.name} is due ${when}`, 'dailyAlerts');
     }
   }
 }
@@ -60,13 +60,15 @@ async function checkHOS(userIds: string[]) {
       await sendPushToUser(
         userId,
         '⏱ HOS Warning',
-        `You have ${total.toFixed(1)} on-duty hours this week. Limit is 70 hrs.`
+        `You have ${total.toFixed(1)} on-duty hours this week. Limit is 70 hrs.`,
+        'hosReminders'
       );
     } else if (total >= 70) {
       await sendPushToUser(
         userId,
         '🚨 HOS Limit Reached',
-        `You have ${total.toFixed(1)} on-duty hours. You must take a 34-hr restart.`
+        `You have ${total.toFixed(1)} on-duty hours. You must take a 34-hr restart.`,
+        'hosReminders'
       );
     }
   }

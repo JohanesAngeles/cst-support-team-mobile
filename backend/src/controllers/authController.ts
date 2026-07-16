@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import { validationResult } from 'express-validator';
 import User, { DRIVER_STATUSES } from '../models/User';
 import Follow from '../models/Follow';
+import Block from '../models/Block';
+import RoadReadyScore from '../models/RoadReadyScore';
 import { AuthRequest } from '../middleware/auth';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
 import { upload, uploadToCloudinary } from '../middleware/upload';
@@ -25,18 +27,22 @@ const signToken = (id: string) =>
 const makeCode = () => crypto.randomInt(100000, 999999).toString();
 
 export const safeUser = async (user: any) => {
-  const [followersCount, followingCount] = await Promise.all([
+  const [followersCount, followingCount, roadReady] = await Promise.all([
     Follow.countDocuments({ followingId: user._id }),
     Follow.countDocuments({ followerId: user._id }),
+    RoadReadyScore.findOne({ userId: user._id }).select('badges'),
   ]);
   return {
     _id: user._id,
     name: user.name,
     email: user.email,
     phone: user.phone,
+    hasPassword: user.hasPassword ?? true,
     role: user.role ?? 'driver',
     isVerified: user.isVerified,
     isTopDriver: !!user.isTopDriver,
+    cdlVerified: !!user.cdlVerified,
+    badges: roadReady?.badges ?? [],
     avatarUrl: user.avatarUrl ?? null,
     coverPhotoUrl: user.coverPhotoUrl ?? null,
     bio: user.bio ?? null,
@@ -82,6 +88,13 @@ export const login = async (req: Request, res: Response) => {
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.comparePassword(password))) {
       res.status(401).json({ message: 'Invalid email or password' }); return;
+    }
+    if (user.status === 'banned' || user.status === 'suspended') {
+      res.status(403).json({
+        message: user.status === 'banned' ? 'This account has been banned.' : 'This account has been suspended.',
+        code: user.status === 'banned' ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+      });
+      return;
     }
     const token = signToken(user._id.toString());
     res.json({ token, user: await safeUser(user) });
@@ -185,10 +198,13 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
   const user = await User.findById(req.params.id);
   if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
-  const [followersCount, followingCount, isFollowing] = await Promise.all([
+  const [followersCount, followingCount, isFollowing, myBlockRecord, theirBlockRecord, roadReady] = await Promise.all([
     Follow.countDocuments({ followingId: user._id }),
     Follow.countDocuments({ followerId: user._id }),
     Follow.exists({ followerId: req.user._id, followingId: user._id }),
+    Block.findOne({ actorId: req.user._id, targetId: user._id }),
+    Block.findOne({ actorId: user._id, targetId: req.user._id, type: 'block' }),
+    RoadReadyScore.findOne({ userId: user._id }).select('badges'),
   ]);
 
   res.json({
@@ -206,9 +222,14 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
       currentStatusAt: user.currentStatusAt ?? null,
       role: user.role ?? 'driver',
       isTopDriver: !!user.isTopDriver,
+      cdlVerified: !!user.cdlVerified,
+      badges: roadReady?.badges ?? [],
       followersCount,
       followingCount,
       isFollowing: !!isFollowing,
+      isBlocked: myBlockRecord?.type === 'block',
+      isMuted: myBlockRecord?.type === 'mute',
+      isBlockedByThem: !!theirBlockRecord,
     },
   });
 };
@@ -240,6 +261,7 @@ export const getActiveNow = async (req: AuthRequest, res: Response) => {
       homeBase: u.homeBase ?? null,
       currentStatus: u.currentStatus ?? null,
       isTopDriver: !!u.isTopDriver,
+      cdlVerified: !!u.cdlVerified,
       lastActiveAt: u.lastActiveAt,
     })),
   });
@@ -252,6 +274,15 @@ export const toggleFollow = async (req: AuthRequest, res: Response) => {
 
   const target = await User.findById(targetId);
   if (!target) { res.status(404).json({ message: 'User not found' }); return; }
+
+  const blocked = await Block.exists({
+    type: 'block',
+    $or: [
+      { actorId: req.user._id, targetId },
+      { actorId: targetId, targetId: req.user._id },
+    ],
+  });
+  if (blocked) { res.status(403).json({ message: 'Unavailable' }); return; }
 
   const existing = await Follow.findOne({ followerId: req.user._id, followingId: targetId });
   if (existing) {
@@ -285,7 +316,13 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
   const meId = req.user._id.toString();
 
-  const query: Record<string, unknown> = { _id: { $ne: req.user._id } };
+  const blockRelations = await Block.find({
+    type: 'block',
+    $or: [{ actorId: meId }, { targetId: meId }],
+  });
+  const blockedIds = [...new Set(blockRelations.map(r => (r.actorId.toString() === meId ? r.targetId : r.actorId).toString()))];
+
+  const query: Record<string, unknown> = { _id: { $ne: req.user._id, $nin: blockedIds } };
   if (q) {
     query.$or = [
       { name: { $regex: q, $options: 'i' } },
@@ -332,6 +369,7 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
       homeBase: u.homeBase ?? null,
       currentStatus: u.currentStatus ?? null,
       isTopDriver: !!u.isTopDriver,
+      cdlVerified: !!u.cdlVerified,
       relationship,
     })),
   });
@@ -376,14 +414,18 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
 
 export const deleteAccount = async (req: AuthRequest, res: Response) => {
   const { password } = req.body;
-  if (!password) { res.status(400).json({ message: 'Password is required to delete your account' }); return; }
 
   const user = await User.findById(req.user._id).select('+password');
   if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
-  // Verify password before destructive action
-  const valid = await user.comparePassword(password);
-  if (!valid) { res.status(400).json({ message: 'Incorrect password' }); return; }
+  // Google/Apple/phone sign-ins get an unusable placeholder password the user
+  // never sees, so they can't provide it — the JWT auth on this route is
+  // already proof of ownership for them. Only challenge users who actually set one.
+  if (user.hasPassword ?? true) {
+    if (!password) { res.status(400).json({ message: 'Password is required to delete your account' }); return; }
+    const valid = await user.comparePassword(password);
+    if (!valid) { res.status(400).json({ message: 'Incorrect password' }); return; }
+  }
 
   const uid = req.user._id;
 
@@ -394,7 +436,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     EmergencyContact, PushToken, MapReport, Load, DispatchContact, ELDEntry,
     DVIREntry, Invoice, DrugTest, BrokerBlacklist, NetworkPost, ParkingReservation,
     SleepLog, ShipperReceiver, Referral, RoadReadyScore, CDLDoc, CargoClaim, ChatMessage,
-    DirectMessage, NewsItem, Event,
+    DirectMessage, NewsItem, Event, SavedPost, MarketplaceReview, Block2,
   ] = await Promise.all([
     import('../models/Expense'),
     import('../models/IFTAEntry'),
@@ -430,6 +472,9 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     import('../models/DirectMessage'),
     import('../models/NewsItem'),
     import('../models/Event'),
+    import('../models/SavedPost'),
+    import('../models/MarketplaceReview'),
+    import('../models/Block'),
   ]);
 
   await Promise.all([
@@ -467,6 +512,9 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     DirectMessage.default.deleteMany({ $or: [{ senderId: uid }, { recipientId: uid }] }),
     NewsItem.default.deleteMany({ authorId: uid }),
     Event.default.deleteMany({ authorId: uid }),
+    SavedPost.default.deleteMany({ userId: uid }),
+    MarketplaceReview.default.deleteMany({ reviewerId: uid }),
+    Block2.default.deleteMany({ $or: [{ actorId: uid }, { targetId: uid }] }),
     Follow.deleteMany({ $or: [{ followerId: uid }, { followingId: uid }] }),
     User.deleteOne({ _id: uid }),
   ]);
@@ -494,12 +542,29 @@ export const sendPhoneOTP = async (req: Request, res: Response) => {
       to: phone,
     });
 
-    // Upsert by phone — create a placeholder user if one doesn't exist yet
-    await User.findOneAndUpdate(
-      { phone },
-      { phone, phoneOtp: otp, phoneOtpExpires: expires },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
+    // Find existing user by phone, or create a new one. Using .create()/.save()
+    // here (not findOneAndUpdate) so Mongoose's required-field validators and the
+    // password-hashing pre-save hook actually run — findOneAndUpdate skips both,
+    // which used to leave brand-new phone signups with no name/email/password and
+    // crash later in verifyPhoneOTP's user.save().
+    const existing = await User.findOne({ phone });
+    if (existing) {
+      existing.phoneOtp = otp;
+      existing.phoneOtpExpires = expires;
+      await existing.save();
+    } else {
+      const digits = phone.replace(/\D/g, '');
+      await User.create({
+        name: 'Driver',
+        email: `phone_${digits}@phone.roadreadynetwork.local`,
+        password: `phone_${digits}_${Date.now()}`, // unusable placeholder, like social sign-in
+        hasPassword: false,
+        phone,
+        phoneOtp: otp,
+        phoneOtpExpires: expires,
+        isVerified: true,
+      });
+    }
 
     res.json({ message: 'OTP sent' });
   } catch (err: any) {

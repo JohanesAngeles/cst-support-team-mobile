@@ -62,7 +62,14 @@ import uploadsRoutes from './routes/uploads';
 import translateRoutes from './routes/translate';
 import liveRoutes from './routes/live';
 import groupsRoutes from './routes/groups';
+import convoyLocationRoutes from './routes/convoy-location';
+import analyticsRoutes from './routes/analytics';
+import sponsoredPostsRoutes from './routes/sponsored-posts';
 import marketplaceRoutes from './routes/marketplace';
+import blocksRoutes from './routes/blocks';
+import storiesRoutes from './routes/stories';
+import configRoutes from './routes/config';
+import sponsorsRoutes from './routes/sponsors';
 import { initCronJobs } from './cron/notificationCron';
 
 if (process.env.SENTRY_DSN) {
@@ -211,7 +218,14 @@ app.use('/api/partner', partnerRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/live', liveRoutes);
 app.use('/api/groups', groupsRoutes);
+app.use('/api/convoy-location', convoyLocationRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/sponsored-posts', sponsoredPostsRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/blocks', blocksRoutes);
+app.use('/api/stories', storiesRoutes);
+app.use('/api/config', configRoutes);
+app.use('/api/sponsors', sponsorsRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });

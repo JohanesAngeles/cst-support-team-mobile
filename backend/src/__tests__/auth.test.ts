@@ -1,7 +1,9 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../app';
+import User from '../models/User';
 
 // Silence socket.io / Sentry noise in test output
 jest.mock('@sentry/node', () => ({
@@ -122,5 +124,44 @@ describe('GET /api/auth/me', () => {
       .get('/api/auth/me')
       .set('Authorization', 'Bearer bad.token.here');
     expect(res.status).toBe(401);
+  });
+});
+
+// ─── Suspended / banned accounts ────────────────────────────────────────────────
+// User setup goes straight through the model (not the rate-limited /register
+// endpoint) — these tests are about `status` gating, not registration.
+
+describe('Account status gating', () => {
+  const makeUser = (email: string, status: 'active' | 'suspended' | 'banned') =>
+    User.create({ name: 'Gated User', email, password: 'Secret99!', status });
+
+  const tokenFor = (id: string) => jwt.sign({ id }, process.env.JWT_SECRET!, { expiresIn: '1d' });
+
+  it('rejects login for a banned account with code ACCOUNT_BANNED', async () => {
+    await makeUser('banned@test.com', 'banned');
+    const res = await request(app).post('/api/auth/login').send({ email: 'banned@test.com', password: 'Secret99!' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('ACCOUNT_BANNED');
+  });
+
+  it('rejects login for a suspended account with code ACCOUNT_SUSPENDED', async () => {
+    await makeUser('suspended@test.com', 'suspended');
+    const res = await request(app).post('/api/auth/login').send({ email: 'suspended@test.com', password: 'Secret99!' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('ACCOUNT_SUSPENDED');
+  });
+
+  it('allows an active account through GET /api/auth/me, then rejects once banned mid-session', async () => {
+    const user = await makeUser('midsession@test.com', 'active');
+    const token = tokenFor(user._id.toString());
+
+    const before = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+    expect(before.status).toBe(200);
+
+    await User.updateOne({ _id: user._id }, { status: 'banned' });
+
+    const after = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${token}`);
+    expect(after.status).toBe(403);
+    expect(after.body.code).toBe('ACCOUNT_BANNED');
   });
 });

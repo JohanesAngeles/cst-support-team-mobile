@@ -6,9 +6,26 @@ import DVIREntry from '../models/DVIREntry';
 import TripLog from '../models/TripLog';
 import BrokerNote from '../models/BrokerNote';
 import Deadline from '../models/Deadline';
+import NetworkPost from '../models/NetworkPost';
 
 const router = Router();
 router.use(protect);
+
+// Fixed milestones below 1M miles, then every 500k beyond that.
+function crossedMileMilestones(prevMiles: number, nextMiles: number): number[] {
+  const crossed: number[] = [];
+  for (const m of [100000, 250000, 500000, 750000]) {
+    if (prevMiles < m && nextMiles >= m) crossed.push(m);
+  }
+  for (let m = 1000000; m <= nextMiles; m += 500000) {
+    if (prevMiles < m) crossed.push(m);
+  }
+  return crossed;
+}
+
+function mileMilestoneBadge(miles: number): string {
+  return miles >= 1000000 ? `${miles / 1000000}m-miles` : `${miles / 1000}k-miles`;
+}
 
 // GET my Road Ready profile
 router.get('/', async (req: AuthRequest, res: Response) => {
@@ -65,6 +82,8 @@ router.patch('/freight', async (req: AuthRequest, res: Response) => {
   let profile = await RoadReadyScore.findOne({ userId: req.user._id });
   if (!profile) profile = await RoadReadyScore.create({ userId: req.user._id });
 
+  const prevMiles = profile.freightCareerStats.totalMiles;
+
   profile.freightCareerStats = {
     loadsCompleted: loadsCompleted ?? profile.freightCareerStats.loadsCompleted,
     totalMiles: totalMiles ?? profile.freightCareerStats.totalMiles,
@@ -90,8 +109,34 @@ router.patch('/freight', async (req: AuthRequest, res: Response) => {
   if (loads >= 10 && !profile.badges.includes('freight-veteran')) profile.badges.push('freight-veteran');
   if (rpm >= 3.5 && !profile.badges.includes('rate-master')) profile.badges.push('rate-master');
 
+  // Mileage milestones — auto-post a celebratory feed post for each threshold crossed
+  const milestonesReached = crossedMileMilestones(prevMiles, profile.freightCareerStats.totalMiles);
+  for (const milestone of milestonesReached) {
+    const badge = mileMilestoneBadge(milestone);
+    if (!profile.badges.includes(badge)) profile.badges.push(badge);
+  }
+
   await profile.save();
-  res.json({ profile });
+
+  for (const milestone of milestonesReached) {
+    const milesLabel = milestone.toLocaleString('en-US');
+    await NetworkPost.create({
+      authorId: req.user._id,
+      authorName: req.user.name,
+      authorAvatarUrl: req.user.avatarUrl,
+      authorIsTopDriver: req.user.isTopDriver,
+      category: 'general',
+      title: `🎉 ${milesLabel} Miles Milestone!`,
+      body: `${req.user.name} just crossed ${milesLabel} career miles. 🚛`,
+      milestoneMiles: milestone,
+      location: req.user.homeBase,
+      hashtags: ['milestone', 'roadready'],
+      shareCount: 0,
+      upvotes: [], reactions: [], replies: [],
+    });
+  }
+
+  res.json({ profile, milestonesReached });
 });
 
 // PATCH — recompute safety score from real HOS + DVIR data
