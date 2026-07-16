@@ -41,7 +41,7 @@
     "production": {
       "ios": {
         "appleId": "Otiscooper1@icloud.com",
-        "ascAppId": "your-app-store-connect-app-id",
+        "ascAppId": "6791781842",
         "appleTeamId": "F79A69A2M5"
       },
       "android": {
