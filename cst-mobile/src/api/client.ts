@@ -21,7 +21,8 @@ client.interceptors.request.use(async (config) => {
 client.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401 && _logoutHandler) {
+    const code = err.response?.data?.code;
+    if ((err.response?.status === 401 || code === 'ACCOUNT_BANNED' || code === 'ACCOUNT_SUSPENDED') && _logoutHandler) {
       _logoutHandler();
     }
     const message = err.response?.data?.message || 'Something went wrong';

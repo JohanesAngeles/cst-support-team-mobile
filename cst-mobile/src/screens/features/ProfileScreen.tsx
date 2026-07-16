@@ -163,11 +163,14 @@ export default function ProfileScreen() {
   };
 
   // ── Delete account ─────────────────────────────────────────────────────────
+  // Google/Apple/phone sign-ins never set a real password, so there's nothing
+  // for them to type here — being logged in is confirmation enough for those accounts.
+  const requiresPwToDelete = user?.hasPassword ?? true;
   const handleDeleteAccount = async () => {
-    if (!deletePw) { Alert.alert('Error', 'Enter your password to confirm deletion'); return; }
+    if (requiresPwToDelete && !deletePw) { Alert.alert('Error', 'Enter your password to confirm deletion'); return; }
     setDeleting(true);
     try {
-      await authAPI.deleteAccount(deletePw);
+      await authAPI.deleteAccount(requiresPwToDelete ? deletePw : undefined);
       setDeleteModal(false);
       await logout();
     } catch (err: any) {
@@ -617,21 +620,25 @@ export default function ProfileScreen() {
             </TouchableOpacity>
             <View style={[s.modalDivider, { backgroundColor: border }]} />
 
-            <Text style={[s.modalLabel, { color: muted }]}>{t('profile.enterPwToConfirm')}</Text>
-            <View style={[s.modalInput, { backgroundColor: surfL, borderColor: '#CC000055', flexDirection: 'row', alignItems: 'center', paddingRight: 8 }]}>
-              <TextInput
-                style={{ flex: 1, color: text, fontSize: 15 }}
-                value={deletePw}
-                onChangeText={setDeletePw}
-                placeholder={t('profile.passwordPlaceholder')}
-                placeholderTextColor={muted}
-                secureTextEntry={!showDeletePw}
-                autoCapitalize="none"
-              />
-              <TouchableOpacity onPress={() => setShowDeletePw(v => !v)}>
-                <Ionicons name={showDeletePw ? 'eye-outline' : 'eye-off-outline'} size={18} color={muted} />
-              </TouchableOpacity>
-            </View>
+            {requiresPwToDelete && (
+              <>
+                <Text style={[s.modalLabel, { color: muted }]}>{t('profile.enterPwToConfirm')}</Text>
+                <View style={[s.modalInput, { backgroundColor: surfL, borderColor: '#CC000055', flexDirection: 'row', alignItems: 'center', paddingRight: 8 }]}>
+                  <TextInput
+                    style={{ flex: 1, color: text, fontSize: 15 }}
+                    value={deletePw}
+                    onChangeText={setDeletePw}
+                    placeholder={t('profile.passwordPlaceholder')}
+                    placeholderTextColor={muted}
+                    secureTextEntry={!showDeletePw}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setShowDeletePw(v => !v)}>
+                    <Ionicons name={showDeletePw ? 'eye-outline' : 'eye-off-outline'} size={18} color={muted} />
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
             <View style={s.modalBtns}>
               <TouchableOpacity
                 style={[s.cancelBtn, { backgroundColor: surfL }]}

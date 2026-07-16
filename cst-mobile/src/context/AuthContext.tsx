@@ -10,6 +10,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
+  hasPassword?: boolean;
   role?: 'driver' | 'admin' | 'partner';
   isVerified: boolean;
   avatarUrl?: string | null;

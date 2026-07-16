@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
@@ -6,17 +6,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { googleAuth, appleAuth } from '../../api/socialAuth';
-import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID } from '../../constants/googleAuth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
-WebBrowser.maybeCompleteAuthSession();
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'> };
 
@@ -40,27 +37,23 @@ export default function LoginScreen({ navigation }: Props) {
   const [loading,    setLoading]    = useState(false);
   const [socialBusy, setSocialBusy] = useState<'google' | 'apple' | null>(null);
 
-  const [, googleResponse, googlePrompt] = Google.useAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID, iosClientId: GOOGLE_IOS_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID, scopes: ['profile', 'email'],
-  });
-
-  useEffect(() => {
-    if (googleResponse?.type !== 'success') return;
-    const { authentication } = googleResponse;
-    if (!authentication?.accessToken) return;
-    setSocialBusy('google');
-    googleAuth(authentication.accessToken)
-      .then(({ token, user }) => loginWithSocial(token, user))
-      .catch(err => Alert.alert('Google Sign-In Failed', err?.response?.data?.message ?? err.message))
-      .finally(() => setSocialBusy(null));
-  }, [googleResponse]);
-
-  const handleGoogleSignIn = () => {
-    if (GOOGLE_WEB_CLIENT_ID.startsWith('YOUR_')) {
-      Alert.alert('Not Configured', 'Add your Google Client IDs to src/constants/googleAuth.ts first.'); return;
+  const handleGoogleSignIn = async () => {
+    try {
+      setSocialBusy('google');
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      if (response.type !== 'success') return; // user cancelled
+      const idToken = response.data.idToken;
+      if (!idToken) throw new Error('No ID token returned from Google');
+      const { token, user } = await googleAuth(idToken);
+      await loginWithSocial(token, user);
+    } catch (err: any) {
+      if (err.code !== statusCodes.SIGN_IN_CANCELLED) {
+        Alert.alert('Google Sign-In Failed', err?.response?.data?.message ?? err.message);
+      }
+    } finally {
+      setSocialBusy(null);
     }
-    googlePrompt();
   };
 
   const handleAppleSignIn = async () => {

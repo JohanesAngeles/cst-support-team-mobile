@@ -32,7 +32,7 @@ export const authAPI = {
     });
   },
 
-  deleteAccount: (password: string) =>
+  deleteAccount: (password?: string) =>
     client.delete('/auth/me', { data: { password } }),
 
   sendPhoneOTP: (phone: string) =>

@@ -18,6 +18,7 @@
       "bundleIdentifier": "com.cst.driver",
       "buildNumber": "1",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Road Ready Network uses your location to find nearby fuel stops, truck stops, rest areas, and emergency services.",
         "NSDocumentPickerUsageDescription": "Road Ready Network needs access to your files to store documents in your Document Vault.",
         "NSPhotoLibraryUsageDescription": "Road Ready Network needs access to your photos to attach images to documents and update your profile picture.",
@@ -62,6 +63,12 @@
       "expo-apple-authentication",
       "expo-local-authentication",
       [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.663100579676-4epb15balm8ehefu2s8cuqd2d2v05djd"
+        }
+      ],
+      [
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
@@ -81,7 +88,6 @@
           "iCloudContainerEnvironment": "Production"
         }
       ],
-      "expo-web-browser",
       [
         "expo-image-picker",
         {
