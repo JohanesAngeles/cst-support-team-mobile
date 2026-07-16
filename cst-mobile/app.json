@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cst.driver",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Road Ready Network uses your location to find nearby fuel stops, truck stops, rest areas, and emergency services.",
@@ -60,6 +60,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withModularHeaders",
       "expo-apple-authentication",
       "expo-local-authentication",
       [
