@@ -42,7 +42,7 @@
       "ios": {
         "appleId": "your-apple-id@email.com",
         "ascAppId": "your-app-store-connect-app-id",
-        "appleTeamId": "your-apple-team-id"
+        "appleTeamId": "F79A69A2M5"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-key.json",
