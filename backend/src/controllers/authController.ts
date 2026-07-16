@@ -137,7 +137,13 @@ export const resendVerification = async (req: AuthRequest, res: Response) => {
   user.verificationCode = code;
   user.verificationExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
-  await sendVerificationEmail(user.email, user.name, code);
+  try {
+    await sendVerificationEmail(user.email, user.name, code);
+  } catch (err: any) {
+    console.error('Failed to send verification email:', err.message);
+    res.status(500).json({ message: 'Could not send verification email. Please try again later.' });
+    return;
+  }
   res.json({ message: 'Verification code sent' });
 };
 
@@ -153,7 +159,13 @@ export const forgotPassword = async (req: Request, res: Response) => {
   user.resetCode = code;
   user.resetExpires = new Date(Date.now() + 10 * 60 * 1000);
   await user.save();
-  await sendPasswordResetEmail(user.email, user.name, code);
+  try {
+    await sendPasswordResetEmail(user.email, user.name, code);
+  } catch (err: any) {
+    console.error('Failed to send password reset email:', err.message);
+    res.status(500).json({ message: 'Could not send reset email. Please try again later.' });
+    return;
+  }
   res.json({ message: 'If that email exists, a code was sent.' });
 };
 

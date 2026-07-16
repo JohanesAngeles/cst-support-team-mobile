@@ -20,7 +20,12 @@ const getTransport = () =>
 
 async function send(to: string, subject: string, html: string) {
   if (resendClient) {
-    await resendClient.emails.send({ from: FROM, to, subject, html });
+    // Resend's SDK does not throw on delivery failure (e.g. unverified sending
+    // domain) — it returns { error } instead. Left unchecked, callers like
+    // forgotPassword/verifyEmail would report success to the user even though
+    // no email was ever delivered, which is exactly what happened here.
+    const result = await resendClient.emails.send({ from: FROM, to, subject, html });
+    if (result.error) throw new Error(`Resend: ${result.error.message}`);
     return;
   }
   if (smtpReady()) {
