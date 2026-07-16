@@ -75,6 +75,15 @@ const DELETE_ACCOUNT_SECTIONS = [
   { h: 'Retention period', p: 'Account deletion is processed immediately when requested in-app. Email requests are processed within 30 days. Some anonymized records may be retained as required by law.' },
 ];
 
+const CHILD_SAFETY_SECTIONS = [
+  { h: 'Zero-tolerance policy', p: 'Road Ready Network has a zero-tolerance policy toward child sexual abuse and exploitation (CSAE) and child sexual abuse material (CSAM) of any kind. Any account found creating, uploading, sharing, or soliciting such content will be immediately and permanently banned, and reported to the National Center for Missing & Exploited Children (NCMEC) and relevant law enforcement, as legally required.' },
+  { h: 'Age requirement', p: 'Road Ready Network is intended for commercial trucking professionals aged 18 and older, per our Terms of Service. We do not knowingly permit use of the app by minors.' },
+  { h: 'In-app reporting tools', p: 'Every post and user profile in the app includes a "Report" option, allowing any user to flag content — including CSAE concerns — for review by our moderation team. Reports are reviewed and actioned promptly, including content removal and account suspension or termination when warranted.' },
+  { h: 'Blocking tools', p: 'Users can block any other account at any time, immediately preventing that account from contacting them or viewing their content.' },
+  { h: 'Moderation & enforcement', p: 'Reported content and accounts are reviewed by our moderation team through an admin review queue. Content or accounts that violate this policy are removed, and violations involving CSAM are escalated to NCMEC\'s CyberTipline and law enforcement.' },
+  { h: 'Designated safety contact', p: 'Our designated point of contact for child safety standards and CSAM prevention compliance is reachable at caschooloftruckingofficial@gmail.com.' },
+];
+
 router.get('/terms', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(HTML('Terms of Service', TERMS_SECTIONS, 'June 1, 2026'));
@@ -88,6 +97,11 @@ router.get('/privacy', (_req: Request, res: Response) => {
 router.get('/delete-account', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(HTML('Account Deletion', DELETE_ACCOUNT_SECTIONS));
+});
+
+router.get('/child-safety', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'text/html');
+  res.send(HTML('Child Safety Standards', CHILD_SAFETY_SECTIONS, 'July 16, 2026'));
 });
 
 export default router;
