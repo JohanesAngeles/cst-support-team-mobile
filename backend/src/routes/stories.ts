@@ -3,6 +3,7 @@ import { protect, AuthRequest } from '../middleware/auth';
 import Story from '../models/Story';
 import Follow from '../models/Follow';
 import { hiddenAuthorIds } from '../utils/visibility';
+import { getFriendIds } from '../utils/friendStatus';
 
 const STORY_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
@@ -11,12 +12,13 @@ router.use(protect);
 
 // Active stories from people the user follows + their own, grouped by author.
 router.get('/', async (req: AuthRequest, res: Response) => {
-  const [follows, hidden] = await Promise.all([
+  const [follows, hidden, friendIds] = await Promise.all([
     Follow.find({ followerId: req.user._id }).select('followingId'),
     hiddenAuthorIds(req.user._id.toString()),
+    getFriendIds(req.user._id.toString()),
   ]);
   const followingIds = follows.map(f => f.followingId.toString());
-  const authorIds = [...new Set([...followingIds, req.user._id.toString()])].filter(id => !hidden.includes(id));
+  const authorIds = [...new Set([...followingIds, ...friendIds, req.user._id.toString()])].filter(id => !hidden.includes(id));
 
   const stories = await Story.find({ authorId: { $in: authorIds } }).sort({ createdAt: -1 });
 

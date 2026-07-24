@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { ReactionType, REACTION_TYPES } from './NetworkPost';
 
 export interface ISharedPostSnapshot {
   postId: mongoose.Types.ObjectId;
@@ -10,11 +11,17 @@ export interface ISharedPostSnapshot {
   createdAt: Date;
 }
 
+export interface IMessageReaction {
+  userId: mongoose.Types.ObjectId;
+  type: ReactionType;
+}
+
 export interface IDirectMessage extends Document {
   senderId: mongoose.Types.ObjectId;
   recipientId: mongoose.Types.ObjectId;
   message: string;
   sharedPost?: ISharedPostSnapshot;
+  reactions: IMessageReaction[];
   readAt?: Date;
   createdAt: Date;
 }
@@ -33,6 +40,11 @@ const DirectMessageSchema = new Schema<IDirectMessage>(
       imageUrl:        { type: String },
       createdAt:       { type: Date },
     },
+    reactions: [{
+      userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+      type:   { type: String, enum: REACTION_TYPES, required: true },
+      _id: false,
+    }],
     readAt:      { type: Date },
   },
   { timestamps: { createdAt: true, updatedAt: false } }

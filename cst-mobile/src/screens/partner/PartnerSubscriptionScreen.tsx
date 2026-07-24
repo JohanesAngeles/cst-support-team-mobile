@@ -1,16 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Linking, Alert, ActivityIndicator,
+  Linking, Alert, ActivityIndicator, TextInput, Image, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
+import { useIAP, ErrorCode } from 'react-native-iap';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
+import { billingAPI } from '../../api/billing';
 
 const CASHTAG   = '$roadreadyapp';
 const CASHAPP_URL = 'https://cash.app/$roadreadyapp';
+
+const APPLE_SKUS: Record<'monthly' | 'annual', string> = {
+  monthly: 'com.cst.driver.partner.monthly',
+  annual:  'com.cst.driver.partner.annual',
+};
 
 const PLANS = [
   {
@@ -43,7 +51,8 @@ const FEATURES = [
 ];
 
 export default function PartnerSubscriptionScreen() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
+  const isIOS = Platform.OS === 'ios';
 
   const status      = (user as any)?.subscriptionStatus ?? 'free';
   const activePlan  = (user as any)?.subscriptionPlan   ?? null;
@@ -54,6 +63,63 @@ export default function PartnerSubscriptionScreen() {
   const [selectedPlan, setSelectedPlan]   = useState<'monthly' | 'annual' | null>(null);
   const [submitted, setSubmitted]         = useState(cashPending);
   const [submitting, setSubmitting]       = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [senderCashtag, setSenderCashtag]     = useState('');
+  const [screenshotUri, setScreenshotUri]     = useState<string | null>(null);
+  const [applePurchasing, setApplePurchasing] = useState(false);
+
+  const {
+    connected: iapConnected,
+    subscriptions: appleSubscriptions,
+    fetchProducts,
+    requestPurchase,
+    finishTransaction,
+    restorePurchases,
+  } = useIAP({
+    onPurchaseSuccess: async (purchase) => {
+      try {
+        if (!purchase.purchaseToken) throw new Error('Missing purchase token');
+        await billingAPI.verifyApplePurchase(purchase.purchaseToken);
+        const plan = purchase.productId === APPLE_SKUS.annual ? 'annual' : 'monthly';
+        updateUser({ subscriptionStatus: 'active', subscriptionPlan: plan });
+        await finishTransaction({ purchase, isConsumable: false });
+        Alert.alert('Success', 'Your subscription is now active.');
+      } catch (err: any) {
+        Alert.alert('Error', 'Could not verify your purchase. Please contact support if you were charged.');
+      } finally {
+        setApplePurchasing(false);
+      }
+    },
+    onPurchaseError: (error) => {
+      setApplePurchasing(false);
+      if (error.code !== ErrorCode.UserCancelled) {
+        Alert.alert('Error', error.message ?? 'Purchase failed. Please try again.');
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (isIOS && iapConnected) {
+      fetchProducts({ skus: Object.values(APPLE_SKUS), type: 'subs' });
+    }
+  }, [isIOS, iapConnected, fetchProducts]);
+
+  const handleApplePurchase = async (plan: 'monthly' | 'annual') => {
+    setApplePurchasing(true);
+    try {
+      await requestPurchase({ request: { apple: { sku: APPLE_SKUS[plan] } }, type: 'subs' });
+    } catch {
+      setApplePurchasing(false);
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    try {
+      await restorePurchases();
+    } catch {
+      Alert.alert('Error', 'Could not restore purchases. Please try again.');
+    }
+  };
 
   // Pre-select plan if already pending
   useEffect(() => {
@@ -67,11 +133,38 @@ export default function PartnerSubscriptionScreen() {
     );
   };
 
+  const pickScreenshot = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Needed', 'We need photo library access to attach your payment screenshot.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+    if (!result.canceled && result.assets?.length) setScreenshotUri(result.assets[0].uri);
+  };
+
   const handleSubmitPayment = async () => {
     if (!selectedPlan) return;
+    if (!referenceNumber.trim()) {
+      Alert.alert('Missing Info', 'Enter the Cash App reference number from your payment confirmation.'); return;
+    }
+    if (!senderCashtag.trim()) {
+      Alert.alert('Missing Info', 'Enter your Cash App $cashtag so we can match your payment.'); return;
+    }
+    if (!screenshotUri) {
+      Alert.alert('Missing Info', 'Attach a screenshot of your Cash App payment confirmation.'); return;
+    }
     setSubmitting(true);
     try {
-      await client.post('/billing/cashapp-request', { plan: selectedPlan });
+      const ext = screenshotUri.split('.').pop() ?? 'jpg';
+      const form = new FormData();
+      form.append('plan', selectedPlan);
+      form.append('referenceNumber', referenceNumber.trim());
+      form.append('senderCashtag', senderCashtag.trim());
+      form.append('screenshot', { uri: screenshotUri, type: `image/${ext}`, name: `cashapp.${ext}` } as any);
+      await client.post('/billing/cashapp-request', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setSubmitted(true);
     } catch (err: any) {
       Alert.alert('Error', err?.response?.data?.message ?? 'Could not submit. Please try again.');
@@ -186,8 +279,8 @@ export default function PartnerSubscriptionScreen() {
                 );
               })}
 
-              {/* ── Cash App payment section ─────────────────────────── */}
-              {selectedPlan && !submitted && (
+              {/* ── Cash App payment section (Android only — iOS must use Apple IAP) ── */}
+              {selectedPlan && !submitted && !isIOS && (
                 <View style={s.cashAppCard}>
                   {/* Green Cash App header */}
                   <View style={s.cashAppHeader}>
@@ -232,9 +325,48 @@ export default function PartnerSubscriptionScreen() {
 
                   <View style={s.divider} />
 
+                  {/* Reference number + cashtag + screenshot — required so admin can verify */}
+                  <View style={{ paddingHorizontal: 16, gap: 10, marginBottom: 4 }}>
+                    <Text style={s.confirmInstruction}>
+                      After sending payment, fill in the details below exactly as shown in your Cash App confirmation.
+                    </Text>
+                    <View style={s.fieldGroup}>
+                      <Text style={s.fieldLabel}>Cash App Reference Number *</Text>
+                      <TextInput
+                        style={s.textInput}
+                        placeholder="e.g. 8F3KDX92"
+                        placeholderTextColor="#AEAEB2"
+                        value={referenceNumber}
+                        onChangeText={setReferenceNumber}
+                        autoCapitalize="characters"
+                      />
+                    </View>
+                    <View style={s.fieldGroup}>
+                      <Text style={s.fieldLabel}>Your Cash App $cashtag *</Text>
+                      <TextInput
+                        style={s.textInput}
+                        placeholder="$yourcashtag"
+                        placeholderTextColor="#AEAEB2"
+                        value={senderCashtag}
+                        onChangeText={setSenderCashtag}
+                        autoCapitalize="none"
+                      />
+                    </View>
+                    <TouchableOpacity style={s.screenshotBtn} onPress={pickScreenshot} activeOpacity={0.85}>
+                      {screenshotUri ? (
+                        <Image source={{ uri: screenshotUri }} style={s.screenshotThumb} />
+                      ) : (
+                        <Ionicons name="image-outline" size={18} color="#8E8E93" />
+                      )}
+                      <Text style={s.screenshotBtnText}>
+                        {screenshotUri ? 'Screenshot attached — tap to change' : 'Attach Payment Screenshot *'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
                   {/* I've sent payment */}
                   <Text style={s.confirmInstruction}>
-                    After sending payment in Cash App, tap below so our team knows to activate your listing.
+                    Once the details above are filled in, tap below so our team knows to verify and activate your listing.
                   </Text>
                   <TouchableOpacity
                     style={[s.sentBtn, submitting && { opacity: 0.6 }]}
@@ -253,8 +385,37 @@ export default function PartnerSubscriptionScreen() {
                 </View>
               )}
 
+              {/* ── Apple In-App Purchase section (iOS only) ────────────── */}
+              {selectedPlan && isIOS && (
+                <View style={s.appleCard}>
+                  <View style={s.appleHeader}>
+                    <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
+                    <Text style={s.appleHeaderTitle}>Subscribe with Apple</Text>
+                  </View>
+                  <Text style={s.confirmInstruction}>
+                    You'll be charged {chosenPlan?.price}{chosenPlan?.per} through your Apple ID. Your listing activates immediately after purchase.
+                  </Text>
+                  <TouchableOpacity
+                    style={[s.sentBtn, applePurchasing && { opacity: 0.6 }]}
+                    onPress={() => handleApplePurchase(selectedPlan)}
+                    disabled={applePurchasing || !iapConnected}
+                    activeOpacity={0.85}
+                  >
+                    {applePurchasing
+                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      : <Text style={s.sentBtnTxt}>
+                          Subscribe — {appleSubscriptions.find(p => p.id === APPLE_SKUS[selectedPlan])?.displayPrice ?? chosenPlan?.price}
+                        </Text>
+                    }
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleRestorePurchases} style={{ paddingVertical: 12, alignItems: 'center' }}>
+                    <Text style={s.restoreLink}>Restore Purchases</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {/* Already submitted state */}
-              {submitted && (
+              {submitted && !isIOS && (
                 <View style={s.pendingCard}>
                   <Ionicons name="time-outline" size={24} color="#27AE60" />
                   <View style={{ flex: 1 }}>
@@ -340,6 +501,19 @@ const s = StyleSheet.create({
   radioOuterSelected: { borderColor: '#021B3A' },
   radioInner:   { width: 11, height: 11, borderRadius: 6, backgroundColor: '#021B3A' },
 
+  // ── Apple IAP card ───────────────────────────────────────────────────────────
+  appleCard: {
+    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#EBEBEF',
+    backgroundColor: '#F8F8FA', overflow: 'hidden', marginBottom: 16, padding: 16,
+  },
+  appleHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
+    backgroundColor: '#000000', alignSelf: 'flex-start', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
+  },
+  appleHeaderTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  restoreLink: { color: '#021B3A', fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+
   // ── Cash App card ────────────────────────────────────────────────────────────
   cashAppCard: {
     marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#C8F7D9',
@@ -382,6 +556,21 @@ const s = StyleSheet.create({
   openCashAppTxt: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
 
   divider: { height: 1, backgroundColor: '#D4F5E0', marginHorizontal: 16, marginBottom: 16 },
+
+  fieldGroup: { gap: 6 },
+  fieldLabel: { fontSize: 12, fontWeight: '700', color: '#1A1A2E' },
+  textInput: {
+    height: 46, borderRadius: 12, paddingHorizontal: 14,
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D4F5E0',
+    fontSize: 14, color: '#1A1A2E',
+  },
+  screenshotBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    height: 48, borderRadius: 12, paddingHorizontal: 14,
+    backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D4F5E0', borderStyle: 'dashed',
+  },
+  screenshotThumb: { width: 28, height: 28, borderRadius: 6 },
+  screenshotBtnText: { fontSize: 13, fontWeight: '600', color: '#1A1A2E', flexShrink: 1 },
 
   confirmInstruction: {
     fontSize: 13, color: '#8E8E93', textAlign: 'center',

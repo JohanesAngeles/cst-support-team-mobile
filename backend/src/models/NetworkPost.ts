@@ -35,7 +35,7 @@ export interface INetworkPost extends Document {
   authorAvatarUrl?: string;
   authorIsTopDriver?: boolean;
   category: 'general' | 'advice' | 'load-opportunity' | 'route-tip' | 'question' | 'vent';
-  visibility: 'public' | 'followers' | 'convoy';
+  visibility: 'public' | 'followers' | 'friends' | 'convoy';
   title: string;
   body: string;
   imageUrl?: string;
@@ -75,7 +75,7 @@ const NetworkPostSchema = new Schema<INetworkPost>(
     authorAvatarUrl: { type: String },
     authorIsTopDriver: { type: Boolean },
     category:        { type: String, enum: ['general', 'advice', 'load-opportunity', 'route-tip', 'question', 'vent'], default: 'general' },
-    visibility:      { type: String, enum: ['public', 'followers', 'convoy'], default: 'public', index: true },
+    visibility:      { type: String, enum: ['public', 'followers', 'friends', 'convoy'], default: 'public', index: true },
     title:           { type: String, required: true, maxlength: 120 },
     body:            { type: String, required: true, maxlength: 2000 },
     imageUrl:        { type: String },

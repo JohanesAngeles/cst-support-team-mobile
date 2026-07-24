@@ -5,11 +5,12 @@ import Deadline from '../models/Deadline';
 import MaintenanceRecord from '../models/MaintenanceRecord';
 import UserDocument from '../models/UserDocument';
 import User from '../models/User';
+import Notification from '../models/Notification';
 
 // Categories a user can individually opt out of via PUT /auth/preferences.
 // Pass one when the push is skippable; omit it for pushes that should always go through
 // (e.g. admin operational alerts).
-export type PushCategory = 'weeklyReport' | 'dailyAlerts' | 'hosReminders' | 'fuelUpdates';
+export type PushCategory = 'weeklyReport' | 'dailyAlerts' | 'hosReminders' | 'fuelUpdates' | 'social' | 'directMessages';
 
 const router = Router();
 router.use(protect);
@@ -34,6 +35,33 @@ router.delete('/token', async (req: AuthRequest, res: Response) => {
   const { token } = req.body;
   if (token) await PushToken.deleteOne({ token, userId: req.user._id });
   res.json({ message: 'Token removed' });
+});
+
+// List notifications, newest first. Cursor-paginate on createdAt via ?before=<ISO date>.
+router.get('/', async (req: AuthRequest, res: Response) => {
+  const { before } = req.query;
+  const query: Record<string, unknown> = { recipientId: req.user._id };
+  if (before) query.createdAt = { $lt: new Date(before as string) };
+  const notifications = await Notification.find(query).sort({ createdAt: -1 }).limit(30);
+  res.json({ notifications });
+});
+
+router.get('/unread-count', async (req: AuthRequest, res: Response) => {
+  const count = await Notification.countDocuments({ recipientId: req.user._id, readAt: { $exists: false } });
+  res.json({ count });
+});
+
+router.put('/:id/read', async (req: AuthRequest, res: Response) => {
+  await Notification.updateOne({ _id: req.params.id, recipientId: req.user._id }, { readAt: new Date() });
+  res.json({ message: 'Marked as read' });
+});
+
+router.put('/read-all', async (req: AuthRequest, res: Response) => {
+  await Notification.updateMany(
+    { recipientId: req.user._id, readAt: { $exists: false } },
+    { readAt: new Date() }
+  );
+  res.json({ message: 'All marked as read' });
 });
 
 // Get upcoming alerts for the current user (deadlines + maintenance due soon)
@@ -79,7 +107,13 @@ router.get('/alerts', async (req: AuthRequest, res: Response) => {
 
 // Internal: send a push notification to all tokens of a user
 // Called by other routes when important events occur (not exposed to client directly in prod)
-export async function sendPushToUser(userId: string, title: string, body: string, category?: PushCategory) {
+export async function sendPushToUser(
+  userId: string,
+  title: string,
+  body: string,
+  category?: PushCategory,
+  data?: Record<string, unknown>
+) {
   if (category) {
     const user = await User.findById(userId).select('notificationPreferences');
     const prefs = user?.notificationPreferences;
@@ -94,7 +128,7 @@ export async function sendPushToUser(userId: string, title: string, body: string
     sound: 'default' as const,
     title,
     body,
-    data: {},
+    data: data ?? {},
   }));
 
   try {

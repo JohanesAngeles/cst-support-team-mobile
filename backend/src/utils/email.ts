@@ -3,6 +3,10 @@ import nodemailer from 'nodemailer';
 
 const FROM = process.env.FROM_EMAIL ?? 'CST App <onboarding@resend.dev>';
 
+// Where new Founding Partner applications/payments get flagged for review —
+// the admin's Outlook inbox, checked separately from in-app push notifications.
+export const FOUNDING_PARTNER_ADMIN_EMAIL = process.env.FOUNDING_PARTNER_ADMIN_EMAIL ?? 'register@roadreadynetwork.com';
+
 // ── Resend (preferred) ────────────────────────────────────────────────────────
 const resendClient = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -178,3 +182,40 @@ export const sendInvoiceEmail = (
     <p style="color:#999;font-size:12px;margin-top:20px">Please remit payment by ${inv.dueDate}. Thank you for your business.</p>
   `));
 };
+
+// ── Admin notifications — Founding Partner applications & Cash App payments ────
+
+export const sendAdminNewApplicationEmail = (app: {
+  businessName: string; contactName: string; email: string; phone: string;
+  category: string; city: string; state: string;
+}) =>
+  send(FOUNDING_PARTNER_ADMIN_EMAIL, `New Founding Partner Application — ${app.businessName}`, layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">New Founding Partner Application</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#444">
+      <tr><td style="padding:6px 0;font-weight:bold">Business:</td><td>${app.businessName}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Contact:</td><td>${app.contactName}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Email:</td><td>${app.email}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Phone:</td><td>${app.phone}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Category:</td><td>${app.category}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Location:</td><td>${app.city}, ${app.state}</td></tr>
+    </table>
+    <p style="color:#999;font-size:12px;margin-top:20px">Open the Road Ready Network app → Admin → Applications to review and approve or reject.</p>
+  `));
+
+export const sendAdminCashAppSubmittedEmail = (payment: {
+  partnerName: string; partnerEmail: string; plan: 'monthly' | 'annual'; amount: number;
+  referenceNumber: string; senderCashtag: string; screenshotUrl: string; paymentId: string;
+}) =>
+  send(FOUNDING_PARTNER_ADMIN_EMAIL, `New Founding Partner Payment — verify Cash App ($${payment.amount.toFixed(2)})`, layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">New Cash App Payment to Verify</h2>
+    <p style="color:#444">A Founding Partner submitted a payment that needs Cash App verification.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;color:#444">
+      <tr><td style="padding:6px 0;font-weight:bold">Partner:</td><td>${payment.partnerName} (${payment.partnerEmail})</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Amount:</td><td>$${payment.amount.toFixed(2)} — ${payment.plan === 'annual' ? 'Annual' : 'Monthly'}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Reference #:</td><td>${payment.referenceNumber}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Sender $cashtag:</td><td>${payment.senderCashtag}</td></tr>
+      <tr><td style="padding:6px 0;font-weight:bold">Screenshot:</td><td><a href="${payment.screenshotUrl}">${payment.screenshotUrl}</a></td></tr>
+    </table>
+    <p style="color:#444;font-size:13px">Verify against your own Cash App activity feed before approving — check the sender name, exact amount, and timestamp match, don't rely on the screenshot alone.</p>
+    <p style="color:#999;font-size:12px;margin-top:20px">Open the Road Ready Network app → Admin → Cash App Requests to approve or reject.</p>
+  `));

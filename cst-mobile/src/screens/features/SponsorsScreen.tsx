@@ -191,7 +191,7 @@ export default function SponsorsScreen() {
           <Ionicons name="ribbon-outline" size={38} color="#F4C430" />
           <Text style={styles.heroTitle}>Road Ready Network Partners & Sponsors</Text>
           <Text style={styles.heroSub}>
-            Industry businesses vetted and trusted by Road Ready Network — proudly built in collaboration with the California School of Trucking (CST).
+            Industry businesses vetted and trusted by Road Ready Network — proudly built in collaboration with the California School of Trucking.
           </Text>
         </View>
 

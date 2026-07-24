@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { protect, AuthRequest } from '../middleware/auth';
 import Block from '../models/Block';
 import Follow from '../models/Follow';
+import FriendRequest from '../models/FriendRequest';
 import User from '../models/User';
 
 const router = Router();
@@ -48,6 +49,13 @@ router.post('/:id/block', async (req: AuthRequest, res: Response) => {
     $or: [
       { followerId: req.user._id, followingId: targetId },
       { followerId: targetId, followingId: req.user._id },
+    ],
+  });
+  // ...and any friendship or pending friend request between them
+  await FriendRequest.deleteMany({
+    $or: [
+      { senderId: req.user._id, recipientId: targetId },
+      { senderId: targetId, recipientId: req.user._id },
     ],
   });
   res.json({ isBlocked: true });

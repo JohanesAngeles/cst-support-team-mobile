@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { validationResult } from 'express-validator';
@@ -6,9 +7,13 @@ import User, { DRIVER_STATUSES } from '../models/User';
 import Follow from '../models/Follow';
 import Block from '../models/Block';
 import RoadReadyScore from '../models/RoadReadyScore';
+import LoginSession from '../models/LoginSession';
 import { AuthRequest } from '../middleware/auth';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/email';
 import { upload, uploadToCloudinary } from '../middleware/upload';
+import { createNotification } from '../utils/notify';
+import { getFriendStatus, countFriends, getFriendStatusMap } from '../utils/friendStatus';
+import { generateUsername } from '../utils/username';
 
 // Lazy-init Twilio client so missing credentials don't crash the server
 function getTwilioClient() {
@@ -19,14 +24,30 @@ function getTwilioClient() {
   return require('twilio')(sid, token);
 }
 
-const signToken = (id: string) =>
-  jwt.sign({ id }, process.env.JWT_SECRET!, {
+const signToken = (id: string, sid: string) =>
+  jwt.sign({ id, sid }, process.env.JWT_SECRET!, {
     expiresIn: process.env.JWT_EXPIRES_IN ?? '30d',
   } as jwt.SignOptions);
 
 const makeCode = () => crypto.randomInt(100000, 999999).toString();
 
+// Records a new device/browser login so it can be listed and individually
+// revoked from Settings → Security & Login, and returns the session id to
+// embed in that login's JWT.
+const createSession = async (userId: string, req: Request): Promise<string> => {
+  const sessionId = crypto.randomUUID();
+  const device = (req.headers['x-device-name'] as string) || (req.headers['user-agent'] as string) || 'Unknown device';
+  const ip = req.ip;
+  await LoginSession.create({ userId, sessionId, device, ip });
+  return sessionId;
+};
+
 export const safeUser = async (user: any) => {
+  // Backfills accounts created before @usernames existed, on next read.
+  if (!user.username) {
+    user.username = await generateUsername(user.name);
+    await user.save();
+  }
   const [followersCount, followingCount, roadReady] = await Promise.all([
     Follow.countDocuments({ followingId: user._id }),
     Follow.countDocuments({ followerId: user._id }),
@@ -35,6 +56,7 @@ export const safeUser = async (user: any) => {
   return {
     _id: user._id,
     name: user.name,
+    username: user.username,
     email: user.email,
     phone: user.phone,
     hasPassword: user.hasPassword ?? true,
@@ -72,7 +94,8 @@ export const register = async (req: Request, res: Response) => {
 
     const user = await User.create({ name, email, password, phone, isVerified: true });
 
-    const token = signToken(user._id.toString());
+    const sid = await createSession(user._id.toString(), req);
+    const token = signToken(user._id.toString(), sid);
     res.status(201).json({ token, user: await safeUser(user) });
   } catch {
     res.status(500).json({ message: 'Server error during registration' });
@@ -96,7 +119,8 @@ export const login = async (req: Request, res: Response) => {
       });
       return;
     }
-    const token = signToken(user._id.toString());
+    const sid = await createSession(user._id.toString(), req);
+    const token = signToken(user._id.toString(), sid);
     res.json({ token, user: await safeUser(user) });
   } catch {
     res.status(500).json({ message: 'Server error during login' });
@@ -205,24 +229,47 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
   res.json({ user: await safeUser(user) });
 };
 
-// Read-only profile of another driver — only public-facing fields, no email/subscription/preferences
+export const updateUsername = async (req: AuthRequest, res: Response) => {
+  const raw = typeof req.body.username === 'string' ? req.body.username.trim().toLowerCase() : '';
+  if (!/^[a-z0-9_]{3,24}$/.test(raw)) {
+    res.status(400).json({ message: 'Username must be 3-24 characters: letters, numbers, and underscores only' });
+    return;
+  }
+  const taken = await User.exists({ username: raw, _id: { $ne: req.user._id } });
+  if (taken) { res.status(400).json({ message: 'That username is already taken' }); return; }
+
+  const user = await User.findById(req.user._id);
+  if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+  user.username = raw;
+  await user.save();
+  res.json({ user: await safeUser(user) });
+};
+
+// Read-only profile of another driver — only public-facing fields, no email/subscription/preferences.
+// :id may be either a Mongo _id or an @username, so a tapped mention can resolve either way.
 export const getPublicProfile = async (req: AuthRequest, res: Response) => {
-  const user = await User.findById(req.params.id);
+  const idOrUsername = req.params.id as string;
+  const user = mongoose.isValidObjectId(idOrUsername)
+    ? await User.findById(idOrUsername)
+    : await User.findOne({ username: idOrUsername.toLowerCase() });
   if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
-  const [followersCount, followingCount, isFollowing, myBlockRecord, theirBlockRecord, roadReady] = await Promise.all([
+  const [followersCount, followingCount, isFollowing, myBlockRecord, theirBlockRecord, roadReady, friendsCount, friendStatus] = await Promise.all([
     Follow.countDocuments({ followingId: user._id }),
     Follow.countDocuments({ followerId: user._id }),
     Follow.exists({ followerId: req.user._id, followingId: user._id }),
     Block.findOne({ actorId: req.user._id, targetId: user._id }),
     Block.findOne({ actorId: user._id, targetId: req.user._id, type: 'block' }),
     RoadReadyScore.findOne({ userId: user._id }).select('badges'),
+    countFriends(user._id.toString()),
+    getFriendStatus(req.user._id.toString(), user._id.toString()),
   ]);
 
   res.json({
     user: {
       _id: user._id,
       name: user.name,
+      username: user.username ?? null,
       avatarUrl: user.avatarUrl ?? null,
       coverPhotoUrl: user.coverPhotoUrl ?? null,
       bio: user.bio ?? null,
@@ -242,6 +289,8 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
       isBlocked: myBlockRecord?.type === 'block',
       isMuted: myBlockRecord?.type === 'mute',
       isBlockedByThem: !!theirBlockRecord,
+      friendsCount,
+      friendStatus,
     },
   });
 };
@@ -261,21 +310,46 @@ export const updateStatus = async (req: AuthRequest, res: Response) => {
 
 // Drivers active in the last 15 minutes, most recent first
 export const getActiveNow = async (req: AuthRequest, res: Response) => {
+  const meId = req.user._id.toString();
   const cutoff = new Date(Date.now() - 15 * 60 * 1000);
   const users = await User.find({ _id: { $ne: req.user._id }, lastActiveAt: { $gte: cutoff } })
     .sort({ lastActiveAt: -1 })
     .limit(20);
+
+  const otherIds = users.map(u => u._id.toString());
+  const [myFollowing, myFollowers, friendStatusMap] = await Promise.all([
+    Follow.find({ followerId: meId, followingId: { $in: otherIds } }).select('followingId'),
+    Follow.find({ followingId: meId, followerId: { $in: otherIds } }).select('followerId'),
+    getFriendStatusMap(meId, otherIds),
+  ]);
+  const followingSet = new Set(myFollowing.map(f => f.followingId.toString()));
+  const followerSet = new Set(myFollowers.map(f => f.followerId.toString()));
+  const relationshipOf = (id: string): 'mutual' | 'following' | 'follower' | null => {
+    const isFollowing = followingSet.has(id);
+    const isFollower = followerSet.has(id);
+    if (isFollowing && isFollower) return 'mutual';
+    if (isFollowing) return 'following';
+    if (isFollower) return 'follower';
+    return null;
+  };
+
   res.json({
-    users: users.map(u => ({
-      _id: u._id,
-      name: u.name,
-      avatarUrl: u.avatarUrl ?? null,
-      homeBase: u.homeBase ?? null,
-      currentStatus: u.currentStatus ?? null,
-      isTopDriver: !!u.isTopDriver,
-      cdlVerified: !!u.cdlVerified,
-      lastActiveAt: u.lastActiveAt,
-    })),
+    users: users.map(u => {
+      const id = u._id.toString();
+      return {
+        _id: u._id,
+        name: u.name,
+        avatarUrl: u.avatarUrl ?? null,
+        homeBase: u.homeBase ?? null,
+        currentStatus: u.currentStatus ?? null,
+        isTopDriver: !!u.isTopDriver,
+        cdlVerified: !!u.cdlVerified,
+        lastActiveAt: u.lastActiveAt,
+        relationship: relationshipOf(id),
+        isFollowing: followingSet.has(id),
+        friendStatus: friendStatusMap.get(id) ?? 'none',
+      };
+    }),
   });
 };
 
@@ -301,6 +375,13 @@ export const toggleFollow = async (req: AuthRequest, res: Response) => {
     await existing.deleteOne();
   } else {
     await Follow.create({ followerId: req.user._id, followingId: targetId });
+    createNotification({
+      recipientId: targetId,
+      actorId: req.user._id.toString(),
+      actorName: req.user.name,
+      actorAvatarUrl: req.user.avatarUrl,
+      type: 'follow',
+    }).catch(() => {});
   }
 
   const [followersCount, followingCount] = await Promise.all([
@@ -338,6 +419,7 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
   if (q) {
     query.$or = [
       { name: { $regex: q, $options: 'i' } },
+      { username: { $regex: q, $options: 'i' } },
       { homeBase: { $regex: q, $options: 'i' } },
     ];
   }
@@ -372,10 +454,13 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
     })
     .slice(0, 50);
 
+  const friendStatusMap = await getFriendStatusMap(meId, results.map(r => r.user._id.toString()));
+
   res.json({
     users: results.map(({ user: u, relationship }) => ({
       _id: u._id,
       name: u.name,
+      username: u.username ?? null,
       avatarUrl: u.avatarUrl ?? null,
       truckType: u.truckType ?? null,
       homeBase: u.homeBase ?? null,
@@ -383,6 +468,8 @@ export const searchUsers = async (req: AuthRequest, res: Response) => {
       isTopDriver: !!u.isTopDriver,
       cdlVerified: !!u.cdlVerified,
       relationship,
+      isFollowing: followingSet.has(u._id.toString()),
+      friendStatus: friendStatusMap.get(u._id.toString()) ?? 'none',
     })),
   });
 };
@@ -399,6 +486,8 @@ export const updatePreferences = async (req: AuthRequest, res: Response) => {
       dailyAlerts:       notificationPreferences.dailyAlerts       ?? false,
       hosReminders:      notificationPreferences.hosReminders      ?? true,
       fuelUpdates:       notificationPreferences.fuelUpdates       ?? false,
+      social:            notificationPreferences.social            ?? true,
+      directMessages:    notificationPreferences.directMessages    ?? true,
     };
   }
   if (typeof preferredLanguage === 'string' && preferredLanguage.length === 2) {
@@ -604,7 +693,8 @@ export const verifyPhoneOTP = async (req: Request, res: Response) => {
     if (!user.isVerified) user.isVerified = true;
     await user.save();
 
-    const token = signToken(user._id.toString());
+    const sid = await createSession(user._id.toString(), req);
+    const token = signToken(user._id.toString(), sid);
     res.json({ token, user: await safeUser(user) });
   } catch (err: any) {
     res.status(500).json({ message: err.message ?? 'Server error' });

@@ -27,6 +27,7 @@ import brokernotesRoutes from './routes/brokernotes';
 import emergencyContactsRoutes from './routes/emergencycontacts';
 import notificationsRoutes from './routes/notifications';
 import billingRoutes from './routes/billing';
+import appleBillingRoutes from './routes/appleBilling';
 import mapRoutes from './routes/map';
 import loadsRoutes from './routes/loads';
 import dispatchContactsRoutes from './routes/dispatchcontacts';
@@ -43,6 +44,7 @@ import newsRoutes from './routes/news';
 import eventsRoutes from './routes/events';
 import loadBoardRoutes from './routes/load-board';
 import messagesRoutes from './routes/messages';
+import groupMessagesRoutes from './routes/group-messages';
 import parkingRoutes from './routes/parking';
 import sleepLogRoutes from './routes/sleep-log';
 import shippersRoutes from './routes/shippers';
@@ -68,8 +70,12 @@ import sponsoredPostsRoutes from './routes/sponsored-posts';
 import marketplaceRoutes from './routes/marketplace';
 import blocksRoutes from './routes/blocks';
 import storiesRoutes from './routes/stories';
+import storyHighlightsRoutes from './routes/storyHighlights';
+import friendsRoutes from './routes/friends';
 import configRoutes from './routes/config';
 import sponsorsRoutes from './routes/sponsors';
+import sessionsRoutes from './routes/sessions';
+import supportRoutes from './routes/support';
 import { initCronJobs } from './cron/notificationCron';
 
 if (process.env.SENTRY_DSN) {
@@ -81,6 +87,7 @@ if (process.env.SENTRY_DSN) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 export const io = new Server(server, {
@@ -104,6 +111,9 @@ io.use((socket, next) => {
 const VALID_CHANNELS = new Set(['general', 'northeast', 'southeast', 'midwest', 'west', 'south']);
 
 io.on('connection', (socket) => {
+  // Personal room for targeted server-push events (notifications, DM/group nudges).
+  socket.join(`user:${socket.data.userId}`);
+
   socket.on('join_channel', (channelId: string) => {
     if (!VALID_CHANNELS.has(channelId)) return;
     // Leave previous channel room first
@@ -140,6 +150,28 @@ io.on('connection', (socket) => {
   socket.on('leave_channel', (channelId: string) => {
     socket.leave(channelId);
     if (socket.data.channelId === channelId) socket.data.channelId = undefined;
+  });
+
+  // Regional channel typing presence — ephemeral, so the client-sent name is trusted
+  // rather than re-fetched from the DB (unlike send_message, nothing here is persisted).
+  socket.on('typing', ({ channelId, name }: { channelId: string; name: string }) => {
+    if (!VALID_CHANNELS.has(channelId)) return;
+    socket.to(channelId).emit('user_typing', { userId: socket.data.userId, name });
+  });
+
+  // DM/group typing presence. Room id is a deterministic sorted-participant string for
+  // 1:1 DMs, or `group:<conversationId>` for group chats (see routes/group-messages.ts).
+  socket.on('dm:join', (roomId: string) => {
+    if (typeof roomId === 'string') socket.join(roomId);
+  });
+
+  socket.on('dm:leave', (roomId: string) => {
+    if (typeof roomId === 'string') socket.leave(roomId);
+  });
+
+  socket.on('dm:typing', ({ roomId, name }: { roomId: string; name: string }) => {
+    if (typeof roomId !== 'string') return;
+    socket.to(roomId).emit('dm:user_typing', { userId: socket.data.userId, name });
   });
 });
 
@@ -184,6 +216,7 @@ app.use('/api/brokernotes', brokernotesRoutes);
 app.use('/api/emergency-contacts', emergencyContactsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
+app.use('/api/billing/apple', appleBillingRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/loads', loadsRoutes);
 app.use('/api/dispatch-contacts', dispatchContactsRoutes);
@@ -200,6 +233,7 @@ app.use('/api/news', newsRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/load-board', loadBoardRoutes);
 app.use('/api/messages', messagesRoutes);
+app.use('/api/group-messages', groupMessagesRoutes);
 app.use('/api/parking', parkingRoutes);
 app.use('/api/sleep-log', sleepLogRoutes);
 app.use('/api/shippers', shippersRoutes);
@@ -224,8 +258,12 @@ app.use('/api/sponsored-posts', sponsoredPostsRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/blocks', blocksRoutes);
 app.use('/api/stories', storiesRoutes);
+app.use('/api/story-highlights', storyHighlightsRoutes);
+app.use('/api/friends', friendsRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/sponsors', sponsorsRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/support', supportRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import PartnerApplication from '../models/PartnerApplication';
+import { sendAdminNewApplicationEmail } from '../utils/email';
 
 const router = Router();
 
@@ -35,6 +36,10 @@ router.post('/', applyLimiter, async (req: Request, res: Response) => {
     });
 
     res.status(201).json({ message: 'Application submitted successfully.', id: application._id });
+
+    sendAdminNewApplicationEmail({
+      businessName, contactName, email, phone, category, city, state,
+    }).catch(err => console.error('[application-admin-email]', err));
   } catch (err: any) {
     res.status(500).json({ message: 'Server error. Please try again.' });
   }

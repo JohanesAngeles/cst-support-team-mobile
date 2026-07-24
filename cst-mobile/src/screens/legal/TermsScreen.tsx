@@ -58,7 +58,7 @@ const SECTIONS = [
   },
   {
     title: '14. California School of Trucking Endorsement',
-    body: 'The Road Ready Network app is endorsed by the California School of Trucking (CST). CST\'s endorsement does not constitute ownership or operational responsibility for the app. The Road Ready Network app is an independent product operated separately from CST\'s educational programs.',
+    body: 'The Road Ready Network app is endorsed by the California School of Trucking. The school\'s endorsement does not constitute ownership or operational responsibility for the app. The Road Ready Network app is an independent product operated separately from the school\'s educational programs.',
   },
   {
     title: '15. Changes to Terms',

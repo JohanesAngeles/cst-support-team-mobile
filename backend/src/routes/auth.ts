@@ -4,7 +4,7 @@ import {
   register, login, getMe,
   verifyEmail, resendVerification,
   forgotPassword, resetPassword,
-  updateProfile, getPublicProfile, changePassword, deleteAccount,
+  updateProfile, updateUsername, getPublicProfile, changePassword, deleteAccount,
   updateAvatar, updateAvatarMiddleware,
   updateCoverPhoto, updateCoverPhotoMiddleware,
   toggleFollow, getFollowers, getFollowing, searchUsers,
@@ -41,6 +41,7 @@ router.post('/resend-verification', protect, resendVerification);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.put('/update-profile', protect, updateProfile);
+router.put('/username', protect, updateUsername);
 router.put('/status', protect, updateStatus);
 router.get('/active-now', protect, getActiveNow);
 router.get('/users', protect, searchUsers);

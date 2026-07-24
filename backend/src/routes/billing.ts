@@ -1,10 +1,22 @@
 import { Router, Response, Request } from 'express';
 import Stripe from 'stripe';
+import rateLimit from 'express-rate-limit';
 import { protect, AuthRequest } from '../middleware/auth';
 import User from '../models/User';
+import CashAppPayment from '../models/CashAppPayment';
+import { upload, uploadToCloudinary } from '../middleware/upload';
+import { sendAdminCashAppSubmittedEmail } from '../utils/email';
 import { sendPushToUser } from './notifications';
 
 const router = Router();
+
+const cashAppLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { message: 'Too many submissions. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 let _stripe: InstanceType<typeof Stripe> | null = null;
 function getStripe(): InstanceType<typeof Stripe> {
@@ -111,6 +123,7 @@ router.post('/webhook', express_raw_body, async (req: Request, res: Response) =>
         subscriptionStatus: 'active',
         subscriptionPlan: plan,
         subscriptionEnd: null,
+        subscriptionSource: 'stripe',
         stripeCustomerId: session.customer,
       });
     }
@@ -133,13 +146,42 @@ router.post('/webhook', express_raw_body, async (req: Request, res: Response) =>
 });
 
 // ── POST /api/billing/cashapp-request ────────────────────────────────────────
-// Partner submits "I've sent Cash App payment" — admin will manually activate
-router.post('/cashapp-request', protect, async (req: AuthRequest, res: Response) => {
-  const { plan } = req.body;
+// Partner submits "I've sent Cash App payment" — admin will manually verify
+// against their own Cash App activity feed before activating.
+router.post('/cashapp-request', protect, cashAppLimiter, upload.single('screenshot'), async (req: AuthRequest, res: Response) => {
+  const { plan, referenceNumber, senderCashtag } = req.body;
   if (!['monthly', 'annual'].includes(plan)) {
     res.status(400).json({ message: 'Invalid plan.' }); return;
   }
+  if (!referenceNumber || !String(referenceNumber).trim()) {
+    res.status(400).json({ message: 'Cash App reference number is required.' }); return;
+  }
+  if (!senderCashtag || !String(senderCashtag).trim()) {
+    res.status(400).json({ message: 'Your Cash App $cashtag is required so we can match your payment.' }); return;
+  }
+  if (!req.file) {
+    res.status(400).json({ message: 'A screenshot of your Cash App payment confirmation is required.' }); return;
+  }
+
   try {
+    const dupe = await CashAppPayment.findOne({ referenceNumber: referenceNumber.trim() });
+    if (dupe) {
+      res.status(400).json({ message: 'This Cash App reference number has already been submitted. Each payment can only be claimed once.' });
+      return;
+    }
+
+    const screenshot = await uploadToCloudinary(req.file.buffer, `road-ready-cashapp/${req.user._id}`, req.file.mimetype);
+    const amount = plan === 'annual' ? 100 : 10;
+
+    const payment = await CashAppPayment.create({
+      userId: req.user._id,
+      plan,
+      amount,
+      senderCashtag: senderCashtag.trim(),
+      referenceNumber: referenceNumber.trim(),
+      screenshotUrl: screenshot.url,
+    });
+
     await User.findByIdAndUpdate(req.user._id, {
       cashAppPending: true,
       cashAppPendingPlan: plan,
@@ -147,7 +189,7 @@ router.post('/cashapp-request', protect, async (req: AuthRequest, res: Response)
     });
     res.json({ ok: true });
 
-    // Notify all admins so they don't have to manually check
+    // Notify admins by push and email so they don't have to manually check
     const partnerName = req.user.name ?? req.user.email;
     const planLabel   = plan === 'annual' ? 'Annual ($100.00)' : 'Monthly ($10.00)';
     const admins = await User.find({ role: 'admin' }).select('_id');
@@ -160,7 +202,21 @@ router.post('/cashapp-request', protect, async (req: AuthRequest, res: Response)
         )
       )
     );
+    await sendAdminCashAppSubmittedEmail({
+      partnerName,
+      partnerEmail: req.user.email,
+      plan,
+      amount,
+      referenceNumber: referenceNumber.trim(),
+      senderCashtag: senderCashtag.trim(),
+      screenshotUrl: screenshot.url,
+      paymentId: String(payment._id),
+    }).catch(err => console.error('[cashapp-admin-email]', err));
   } catch (err: any) {
+    if (err.code === 11000) {
+      res.status(400).json({ message: 'This Cash App reference number has already been submitted. Each payment can only be claimed once.' });
+      return;
+    }
     res.status(500).json({ message: 'Server error.' });
   }
 });

@@ -5,6 +5,9 @@ import Group from '../models/Group';
 import SavedPost from '../models/SavedPost';
 import Follow from '../models/Follow';
 import { hiddenAuthorIds } from '../utils/visibility';
+import { createNotification } from '../utils/notify';
+import { resolveMentions } from '../utils/mentions';
+import { getFriendIds } from '../utils/friendStatus';
 
 // Pulls lowercased #hashtag tokens out of post text, deduped, in first-seen order.
 function extractHashtags(body: string): string[] {
@@ -20,6 +23,10 @@ async function canViewPost(post: INetworkPost, userId: string): Promise<boolean>
   if (!post.visibility || post.visibility === 'public') return true;
   if (post.visibility === 'followers') {
     return !!(await Follow.exists({ followerId: userId, followingId: post.authorId }));
+  }
+  if (post.visibility === 'friends') {
+    const friendIds = await getFriendIds(userId);
+    return friendIds.includes(post.authorId.toString());
   }
   if (post.visibility === 'convoy') {
     if (!post.groupId) return false;
@@ -40,6 +47,34 @@ function applyReaction(post: INetworkPost, userId: string, type: ReactionType) {
   post.upvotes = post.reactions.map(r => r.userId) as typeof post.upvotes;
 }
 
+async function notifyMentions(text: string, postId: string, postTitle: string, actor: AuthRequest['user']) {
+  const mentioned = await resolveMentions(text, actor._id.toString());
+  for (const u of mentioned) {
+    createNotification({
+      recipientId: u._id.toString(),
+      actorId: actor._id.toString(),
+      actorName: actor.name,
+      actorAvatarUrl: actor.avatarUrl,
+      type: 'mention',
+      postId,
+      postTitle,
+    }).catch(() => {});
+  }
+}
+
+function notifyReaction(post: INetworkPost, actor: AuthRequest['user'], type: ReactionType) {
+  createNotification({
+    recipientId: post.authorId.toString(),
+    actorId: actor._id.toString(),
+    actorName: actor.name,
+    actorAvatarUrl: actor.avatarUrl,
+    type: 'reaction',
+    postId: post._id.toString(),
+    postTitle: post.title || post.body.slice(0, 60),
+    reactionType: type,
+  }).catch(() => {});
+}
+
 router.get('/', async (req: AuthRequest, res: Response) => {
   const { category, authorId, groupId, feed, hashtag, onlyVideo } = req.query;
   const query: Record<string, unknown> = {};
@@ -49,10 +84,11 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   if (onlyVideo === 'true') query.videoUrl = { $exists: true, $ne: null };
 
   const userId = req.user._id.toString();
-  const [hidden, myFollows, myGroups] = await Promise.all([
+  const [hidden, myFollows, myGroups, friendIds] = await Promise.all([
     hiddenAuthorIds(userId),
     Follow.find({ followerId: req.user._id }).select('followingId'),
     Group.find({ members: req.user._id }).select('_id'),
+    getFriendIds(userId),
   ]);
   const followingIds = myFollows.map(f => f.followingId.toString());
   const myGroupIds = myGroups.map(g => g._id.toString());
@@ -66,22 +102,47 @@ router.get('/', async (req: AuthRequest, res: Response) => {
     query.authorId = { $nin: hidden };
   }
 
-  // Visibility: public posts show to everyone; followers-only posts only to followers
-  // (and the author); convoy-only posts only to fellow members of that post's group.
+  // Visibility: public posts show to everyone; followers-only posts only to followers;
+  // friends-only posts only to friends; convoy-only posts only to fellow group members.
   query.$or = [
     { visibility: { $exists: false } },
     { visibility: 'public' },
     { visibility: 'followers', authorId: { $in: [...followingIds, userId] } },
+    { visibility: 'friends', authorId: { $in: [...friendIds, userId] } },
     { visibility: 'convoy', groupId: { $in: myGroupIds } },
     { authorId: userId },
   ];
 
+  const useForYouRanking = feed === 'forYou' && !authorId && !groupId;
+
   const [posts, saves] = await Promise.all([
-    NetworkPost.find(query).sort({ createdAt: -1 }).limit(50),
+    useForYouRanking ? rankForYou(query, friendIds) : NetworkPost.find(query).sort({ createdAt: -1 }).limit(50),
     SavedPost.find({ userId: req.user._id }).select('postId'),
   ]);
   res.json({ posts, savedPostIds: saves.map(s => s.postId.toString()) });
 });
+
+// "For You" hot ranking: engagement decayed by age, HN-style, so fresh zero-engagement
+// posts still surface (the +1 baseline) while genuinely popular posts stay up longer.
+// Posts from friends get a boost, giving the friend relationship a real feed benefit.
+async function rankForYou(query: Record<string, unknown>, friendIds: string[]) {
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const candidates = await NetworkPost.find({ ...query, createdAt: { $gte: since } })
+    .sort({ createdAt: -1 })
+    .limit(300);
+
+  const friendSet = new Set(friendIds);
+  const scored = candidates.map(post => {
+    const ageHours = (Date.now() - post.createdAt.getTime()) / (1000 * 60 * 60);
+    const engagement = post.reactions.length + post.replies.length * 2 + post.shareCount * 1.5 + post.viewCount * 0.1;
+    const friendBoost = friendSet.has(post.authorId.toString()) ? 1.5 : 1;
+    const score = friendBoost * (engagement + 1) / Math.pow(ageHours + 2, 1.5);
+    return { post, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 50).map(s => s.post);
+}
 
 // Must come before /:id so "hashtags" isn't parsed as a post id
 router.get('/hashtags/trending', async (req: AuthRequest, res: Response) => {
@@ -123,7 +184,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     videoUrl, videoThumbnailUrl, poll, visibility,
   } = req.body;
 
-  if (visibility && !['public', 'followers', 'convoy'].includes(visibility)) {
+  if (visibility && !['public', 'followers', 'friends', 'convoy'].includes(visibility)) {
     res.status(400).json({ message: 'Invalid visibility' }); return;
   }
   if (visibility === 'convoy' && !groupId) {
@@ -160,6 +221,15 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     };
     original.shareCount = (original.shareCount ?? 0) + 1;
     await original.save();
+    createNotification({
+      recipientId: original.authorId.toString(),
+      actorId: req.user._id.toString(),
+      actorName: req.user.name,
+      actorAvatarUrl: req.user.avatarUrl,
+      type: 'share',
+      postId: original._id.toString(),
+      postTitle: original.title || original.body.slice(0, 60),
+    }).catch(() => {});
   }
 
   if (!sharedPost && (!title || !body)) {
@@ -192,6 +262,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     shareCount: 0,
     upvotes: [], reactions: [], replies: [],
   });
+  notifyMentions(finalBody, post._id.toString(), post.title, req.user).catch(() => {});
   res.status(201).json({ post });
 });
 
@@ -200,6 +271,7 @@ router.post('/:id/upvote', async (req: AuthRequest, res: Response) => {
   if (!post) { res.status(404).json({ message: 'Not found' }); return; }
   applyReaction(post, req.user._id.toString(), 'like');
   await post.save();
+  notifyReaction(post, req.user, 'like');
   res.json({ post });
 });
 
@@ -210,6 +282,7 @@ router.post('/:id/react', async (req: AuthRequest, res: Response) => {
   if (!post) { res.status(404).json({ message: 'Not found' }); return; }
   applyReaction(post, req.user._id.toString(), type);
   await post.save();
+  notifyReaction(post, req.user, type);
   res.json({ post });
 });
 
@@ -235,7 +308,8 @@ router.post('/:id/reply', async (req: AuthRequest, res: Response) => {
   const post = await NetworkPost.findById(req.params.id);
   if (!post) { res.status(404).json({ message: 'Not found' }); return; }
 
-  if (parentReplyId && !post.replies.some(r => r._id.toString() === parentReplyId)) {
+  const parentReply = parentReplyId ? post.replies.find(r => r._id.toString() === parentReplyId) : undefined;
+  if (parentReplyId && !parentReply) {
     res.status(400).json({ message: 'Parent reply not found' }); return;
   }
 
@@ -248,6 +322,22 @@ router.post('/:id/reply', async (req: AuthRequest, res: Response) => {
     createdAt: new Date(),
   } as any);
   await post.save();
+
+  const actorId = req.user._id.toString();
+  const notifyBase = {
+    actorId,
+    actorName: req.user.name,
+    actorAvatarUrl: req.user.avatarUrl,
+    type: 'reply' as const,
+    postId: post._id.toString(),
+    postTitle: post.title || post.body.slice(0, 60),
+  };
+  createNotification({ ...notifyBase, recipientId: post.authorId.toString() }).catch(() => {});
+  if (parentReply && parentReply.authorId.toString() !== post.authorId.toString()) {
+    createNotification({ ...notifyBase, recipientId: parentReply.authorId.toString() }).catch(() => {});
+  }
+  notifyMentions(body, post._id.toString(), post.title, req.user).catch(() => {});
+
   res.json({ post });
 });
 
@@ -283,7 +373,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
   if (typeof lat === 'number') post.lat = lat;
   if (typeof lng === 'number') post.lng = lng;
   if (visibility !== undefined) {
-    if (!['public', 'followers', 'convoy'].includes(visibility)) { res.status(400).json({ message: 'Invalid visibility' }); return; }
+    if (!['public', 'followers', 'friends', 'convoy'].includes(visibility)) { res.status(400).json({ message: 'Invalid visibility' }); return; }
     if (visibility === 'convoy' && !post.groupId) { res.status(400).json({ message: 'Convoy-only posts must belong to a group' }); return; }
     post.visibility = visibility;
   }

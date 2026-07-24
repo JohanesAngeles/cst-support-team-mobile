@@ -1,13 +1,22 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import appleSignin from 'apple-signin-auth';
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User';
+import LoginSession from '../models/LoginSession';
 
-const signToken = (userId: string) =>
-  jwt.sign({ id: userId }, process.env.JWT_SECRET!, {
+const signToken = (userId: string, sid: string) =>
+  jwt.sign({ id: userId, sid }, process.env.JWT_SECRET!, {
     expiresIn: process.env.JWT_EXPIRES_IN ?? '30d',
   } as jwt.SignOptions);
+
+const createSession = async (userId: string, req: Request): Promise<string> => {
+  const sessionId = crypto.randomUUID();
+  const device = (req.headers['x-device-name'] as string) || (req.headers['user-agent'] as string) || 'Unknown device';
+  await LoginSession.create({ userId, sessionId, device, ip: req.ip });
+  return sessionId;
+};
 
 // ─── Google ───────────────────────────────────────────────────────────────────
 // Receives an ID token from @react-native-google-signin/google-signin (native
@@ -46,8 +55,9 @@ export const googleSignIn = async (req: Request, res: Response) => {
       await user.save();
     }
 
+    const sid = await createSession(String(user._id), req);
     res.json({
-      token: signToken(String(user._id)),
+      token: signToken(String(user._id), sid),
       user: { _id: user._id, name: user.name, email: user.email, isVerified: user.isVerified },
     });
   } catch (err: any) {
@@ -86,8 +96,9 @@ export const appleSignIn = async (req: Request, res: Response) => {
       await user.save();
     }
 
+    const sid = await createSession(String(user._id), req);
     res.json({
-      token: signToken(String(user._id)),
+      token: signToken(String(user._id), sid),
       user: { _id: user._id, name: user.name, email: user.email, isVerified: user.isVerified },
     });
   } catch (err: any) {

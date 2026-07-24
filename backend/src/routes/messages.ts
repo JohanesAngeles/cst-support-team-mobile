@@ -5,6 +5,9 @@ import DirectMessage from '../models/DirectMessage';
 import User from '../models/User';
 import NetworkPost from '../models/NetworkPost';
 import Block from '../models/Block';
+import { sendPushToUser } from './notifications';
+import { REACTION_TYPES, ReactionType } from '../models/NetworkPost';
+import { io } from '../app';
 
 const router = Router();
 router.use(protect);
@@ -116,7 +119,51 @@ router.post('/:userId', async (req: AuthRequest, res: Response) => {
     message: message?.trim() ?? '',
     sharedPost,
   });
+
+  sendPushToUser(
+    otherId,
+    req.user.name,
+    msg.message || '📤 Shared a post',
+    'directMessages',
+    { type: 'dm', userId: req.user._id.toString() }
+  ).catch(() => {});
+
   res.status(201).json({ message: msg });
+});
+
+// Toggle a reaction (tapback) on a message in this thread — same type again removes it,
+// a different type replaces it. Live-pushed to the thread's socket room so it shows without
+// waiting for the 4s poll.
+router.post('/:userId/:messageId/react', async (req: AuthRequest, res: Response) => {
+  const otherId = req.params.userId as string;
+  const { messageId } = req.params;
+  const { type } = req.body as { type: ReactionType };
+  if (!REACTION_TYPES.includes(type)) { res.status(400).json({ message: 'Invalid reaction type' }); return; }
+
+  const msg = await DirectMessage.findOne({
+    _id: messageId,
+    $or: [
+      { senderId: req.user._id, recipientId: otherId },
+      { senderId: otherId, recipientId: req.user._id },
+    ],
+  });
+  if (!msg) { res.status(404).json({ message: 'Not found' }); return; }
+
+  const meId = req.user._id.toString();
+  const existingIndex = msg.reactions.findIndex(r => r.userId.toString() === meId);
+  if (existingIndex >= 0 && msg.reactions[existingIndex].type === type) {
+    msg.reactions.splice(existingIndex, 1);
+  } else if (existingIndex >= 0) {
+    msg.reactions[existingIndex].type = type;
+  } else {
+    msg.reactions.push({ userId: req.user._id, type } as any);
+  }
+  await msg.save();
+
+  const roomId = [meId, otherId].sort().join('_');
+  io.to(roomId).emit('dm:message_updated', msg);
+
+  res.json({ message: msg });
 });
 
 // Mark messages from one user as read

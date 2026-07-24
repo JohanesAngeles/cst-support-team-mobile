@@ -13,10 +13,13 @@ export interface INotificationPreferences {
   dailyAlerts: boolean;
   hosReminders: boolean;
   fuelUpdates: boolean;
+  social: boolean;
+  directMessages: boolean;
 }
 
 export interface IUser extends Document {
   name: string;
+  username?: string;
   email: string;
   password: string;
   hasPassword?: boolean;
@@ -50,6 +53,8 @@ export interface IUser extends Document {
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual';
   subscriptionEnd?: Date;
+  subscriptionSource?: 'stripe' | 'cashapp' | 'apple';
+  appleOriginalTransactionId?: string;
   cashAppPending?: boolean;
   cashAppPendingPlan?: 'monthly' | 'annual';
   cashAppPendingAt?: Date;
@@ -64,6 +69,10 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     name:     { type: String, required: true, trim: true },
+    username: {
+      type: String, unique: true, sparse: true, lowercase: true, trim: true,
+      match: /^[a-z0-9_]{3,24}$/,
+    },
     email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 8, select: false },
     // false for accounts created via Google/Apple/phone sign-in, where the password
@@ -100,6 +109,8 @@ const UserSchema = new Schema<IUser>(
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },
     subscriptionPlan:    { type: String, enum: ['monthly', 'annual'] },
     subscriptionEnd:     { type: Date },
+    subscriptionSource:  { type: String, enum: ['stripe', 'cashapp', 'apple'] },
+    appleOriginalTransactionId: { type: String },
     cashAppPending:      { type: Boolean, default: false },
     cashAppPendingPlan:  { type: String, enum: ['monthly', 'annual'] },
     cashAppPendingAt:    { type: Date },
@@ -111,6 +122,8 @@ const UserSchema = new Schema<IUser>(
       dailyAlerts:       { type: Boolean, default: false },
       hosReminders:      { type: Boolean, default: true },
       fuelUpdates:       { type: Boolean, default: false },
+      social:            { type: Boolean, default: true },
+      directMessages:    { type: Boolean, default: true },
     },
     preferredLanguage: { type: String, default: 'en' },
   },

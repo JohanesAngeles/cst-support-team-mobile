@@ -15,6 +15,7 @@ import MapReport from '../models/MapReport';
 import Report from '../models/Report';
 import NetworkPost from '../models/NetworkPost';
 import CDLDoc from '../models/CDLDoc';
+import CashAppPayment from '../models/CashAppPayment';
 import { geocodeAddress } from '../utils/geocode';
 import {
   sendPartnerWelcomeEmail, sendPartnerRejectedEmail,
@@ -299,32 +300,62 @@ router.delete('/listings/:id', protect, adminOnly, async (req: AuthRequest, res:
 });
 
 // ── GET /api/admin/cashapp-requests ──────────────────────────────────────────
-// List partners who have submitted a Cash App payment
+// List Cash App payments awaiting verification — reference number, sender
+// cashtag, and screenshot are all required at submission (see billing.ts).
 router.get('/cashapp-requests', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
-    const pending = await User.find({ cashAppPending: true })
-      .select('name email cashAppPendingPlan cashAppPendingAt subscriptionStatus')
-      .sort({ cashAppPendingAt: -1 });
+    const pending = await CashAppPayment.find({ status: 'pending' })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
     res.json(pending);
   } catch {
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// ── POST /api/admin/cashapp-approve/:userId ───────────────────────────────────
-// Admin manually activates a partner subscription after confirming Cash App payment
-router.post('/cashapp-approve/:userId', protect, adminOnly, async (req: AuthRequest, res: Response) => {
-  const { plan } = req.body as { plan: 'monthly' | 'annual' };
-  if (!['monthly', 'annual'].includes(plan)) {
-    res.status(400).json({ message: 'Invalid plan.' }); return;
-  }
+// ── POST /api/admin/cashapp-approve/:paymentId ────────────────────────────────
+// Admin manually activates a partner subscription after confirming the Cash App
+// payment against their own account activity feed. Idempotent.
+router.post('/cashapp-approve/:paymentId', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
+    const payment = await CashAppPayment.findById(req.params.paymentId);
+    if (!payment) { res.status(404).json({ message: 'Payment not found.' }); return; }
+    if (payment.status === 'paid') { res.json({ ok: true }); return; }
+
     const expiry = new Date();
-    expiry.setMonth(expiry.getMonth() + (plan === 'annual' ? 12 : 1));
-    await User.findByIdAndUpdate(req.params.userId, {
+    expiry.setMonth(expiry.getMonth() + (payment.plan === 'annual' ? 12 : 1));
+
+    payment.status = 'paid';
+    payment.paidAt = new Date();
+    payment.verifiedBy = req.user._id;
+    await payment.save();
+
+    await User.findByIdAndUpdate(payment.userId, {
       subscriptionStatus: 'active',
-      subscriptionPlan: plan,
+      subscriptionPlan: payment.plan,
       subscriptionEnd: expiry,
+      subscriptionSource: 'cashapp',
+      cashAppPending: false,
+      cashAppPendingPlan: null,
+    });
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/admin/cashapp-reject/:paymentId ─────────────────────────────────
+// Admin rejects a Cash App submission (e.g. no matching transaction found).
+router.post('/cashapp-reject/:paymentId', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const payment = await CashAppPayment.findByIdAndUpdate(
+      req.params.paymentId,
+      { status: 'rejected', verifiedBy: req.user._id },
+      { new: true }
+    );
+    if (!payment) { res.status(404).json({ message: 'Payment not found.' }); return; }
+
+    await User.findByIdAndUpdate(payment.userId, {
       cashAppPending: false,
       cashAppPendingPlan: null,
     });
