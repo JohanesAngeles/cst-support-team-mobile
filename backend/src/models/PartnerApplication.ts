@@ -10,6 +10,7 @@ export interface IPartnerApplication extends Document {
   state: string;
   website?: string;
   description?: string;
+  referralCode?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: Date;
 }
@@ -25,6 +26,8 @@ const PartnerApplicationSchema = new Schema<IPartnerApplication>(
     state:        { type: String, required: true, trim: true },
     website:      { type: String, trim: true },
     description:  { type: String, trim: true },
+    // Code of the driver/partner (if any) who referred this applicant
+    referralCode: { type: String, trim: true, uppercase: true },
     status:       { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   },
   { timestamps: true }

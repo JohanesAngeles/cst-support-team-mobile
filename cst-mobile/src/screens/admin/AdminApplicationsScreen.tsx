@@ -161,6 +161,13 @@ function AppCard({ app, acting, onDecide }: { app: any; acting: string | null; o
           <Text style={{ fontSize: 13, color: '#8E8E93', lineHeight: 19 }} numberOfLines={3}>{app.description}</Text>
         ) : null}
 
+        {app.referralCode ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF8E1', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start' }}>
+            <Ionicons name="pricetag-outline" size={13} color="#D4A017" />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#8A6D0B' }}>Referred by: {app.referralCode}</Text>
+          </View>
+        ) : null}
+
         {/* Action buttons — only for pending */}
         {isPending && (
           <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>

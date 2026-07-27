@@ -27,6 +27,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
   const [state,         setState]         = useState('');
   const [website,       setWebsite]       = useState('');
   const [description,   setDescription]   = useState('');
+  const [referralCode,  setReferralCode]  = useState('');
   const [focused,       setFocused]       = useState<string | null>(null);
   const [loading,       setLoading]       = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
@@ -53,6 +54,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
         state: state.trim().toUpperCase(),
         website: website.trim() || undefined,
         description: description.trim() || undefined,
+        referralCode: referralCode.trim() || undefined,
       });
       navigation.replace('PartnerApplicationSuccess');
     } catch (err: any) {
@@ -180,6 +182,23 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                   autoCapitalize="none"
                   autoCorrect={false}
                   onFocus={() => setFocused('website')}
+                  onBlur={() => setFocused(null)}
+                />
+              </View>
+            </View>
+
+            <View style={s.field}>
+              <Text style={s.label}>Referral Code (optional)</Text>
+              <View style={inputStyle('referralCode')}>
+                <TextInput
+                  style={s.input}
+                  placeholder="Were you referred by a driver or partner?"
+                  placeholderTextColor="#C7C7CC"
+                  value={referralCode}
+                  onChangeText={(t) => setReferralCode(t.toUpperCase())}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  onFocus={() => setFocused('referralCode')}
                   onBlur={() => setFocused(null)}
                 />
               </View>

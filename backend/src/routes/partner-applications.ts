@@ -18,7 +18,7 @@ router.post('/', applyLimiter, async (req: Request, res: Response) => {
   try {
     const {
       businessName, category, contactName,
-      email, phone, city, state, website, description,
+      email, phone, city, state, website, description, referralCode,
     } = req.body;
 
     if (!businessName || !category || !contactName || !email || !phone || !city || !state) {
@@ -33,6 +33,7 @@ router.post('/', applyLimiter, async (req: Request, res: Response) => {
     const application = await PartnerApplication.create({
       businessName, category, contactName,
       email, phone, city, state, website, description,
+      referralCode: referralCode || undefined,
     });
 
     res.status(201).json({ message: 'Application submitted successfully.', id: application._id });
