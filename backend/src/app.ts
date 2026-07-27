@@ -76,6 +76,8 @@ import configRoutes from './routes/config';
 import sponsorsRoutes from './routes/sponsors';
 import sessionsRoutes from './routes/sessions';
 import supportRoutes from './routes/support';
+import internalRoutes from './routes/internal';
+import celebrityRoutes from './routes/celebrity';
 import { initCronJobs } from './cron/notificationCron';
 
 if (process.env.SENTRY_DSN) {
@@ -264,6 +266,8 @@ app.use('/api/config', configRoutes);
 app.use('/api/sponsors', sponsorsRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/internal', internalRoutes);
+app.use('/api/celebrity', celebrityRoutes);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', service: 'CST Backend', timestamp: new Date().toISOString() });

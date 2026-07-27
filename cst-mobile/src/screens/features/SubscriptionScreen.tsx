@@ -1,6 +1,6 @@
 ﻿import React, { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, Text, StyleSheet, TouchableOpacity, TextInput,
   ScrollView, Alert, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import client from '../../api/client';
+import { billingAPI } from '../../api/billing';
+
+interface PromoPreview {
+  label: string;
+  discountType: 'percent' | 'fixed';
+  discountValue: number;
+  plans: ('monthly' | 'annual')[];
+}
 
 interface SubStatus {
   status: 'free' | 'active' | 'cancelled' | 'past_due';
@@ -77,10 +85,22 @@ export default function SubscriptionScreen() {
     portalBtnText: { color: Colors.textDark, fontSize: 15, fontWeight: '800' },
     disclaimer: { backgroundColor: Colors.surface, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.border },
     disclaimerText: { color: Colors.textMuted, fontSize: 11, lineHeight: 17, textAlign: 'center' },
+    promoCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, borderWidth: 1, borderColor: Colors.border, gap: 10 },
+    promoTitle: { color: Colors.text, fontSize: 14, fontWeight: '800' },
+    promoRow: { flexDirection: 'row', gap: 8 },
+    promoInput: { flex: 1, backgroundColor: Colors.surfaceLight, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, paddingVertical: 10, color: Colors.text, fontSize: 14, letterSpacing: 1 },
+    promoBtn: { backgroundColor: Colors.secondary, borderRadius: 10, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center' },
+    promoBtnText: { color: Colors.textDark, fontWeight: '800', fontSize: 13 },
+    promoSuccess: { color: Colors.success, fontSize: 13, fontWeight: '600' },
+    promoError: { color: Colors.danger, fontSize: 13, fontWeight: '600' },
   }), [Colors]);
   const [status, setStatus] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkoutLoading, setCheckoutLoading] = useState<'monthly' | 'annual' | 'portal' | null>(null);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoPreview, setPromoPreview] = useState<PromoPreview | null>(null);
+  const [promoError, setPromoError] = useState('');
+  const [validatingPromo, setValidatingPromo] = useState(false);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -95,6 +115,23 @@ export default function SubscriptionScreen() {
 
   useFocusEffect(useCallback(() => { loadStatus(); }, [loadStatus]));
 
+  const checkPromo = async () => {
+    if (!promoCode.trim()) return;
+    setValidatingPromo(true);
+    setPromoError('');
+    try {
+      // No plan yet — the user hasn't picked monthly/annual at this point in the
+      // screen. The actual plan is validated for real at checkout time below.
+      const res = await billingAPI.validatePromo(promoCode.trim());
+      setPromoPreview(res.data);
+    } catch (err: any) {
+      setPromoPreview(null);
+      setPromoError(err?.response?.data?.message ?? 'Invalid or expired promo code.');
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
   const startCheckout = async (plan: 'monthly' | 'annual') => {
     setCheckoutLoading(plan);
     try {
@@ -102,6 +139,7 @@ export default function SubscriptionScreen() {
         plan,
         successUrl: 'cst://subscription?success=true',
         cancelUrl: 'cst://subscription?cancelled=true',
+        promoCode: promoCode.trim() || undefined,
       });
       if (res.data.url) {
         await Linking.openURL(res.data.url);
@@ -189,6 +227,34 @@ export default function SubscriptionScreen() {
 
         {!isActive ? (
           <>
+            {/* Promo code */}
+            <View style={styles.promoCard}>
+              <Text style={styles.promoTitle}>Have a promo code?</Text>
+              <View style={styles.promoRow}>
+                <TextInput
+                  style={styles.promoInput}
+                  value={promoCode}
+                  onChangeText={(t) => { setPromoCode(t); setPromoPreview(null); setPromoError(''); }}
+                  placeholder="Enter code"
+                  placeholderTextColor={Colors.textMuted}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity style={styles.promoBtn} onPress={checkPromo} disabled={validatingPromo || !promoCode.trim()}>
+                  {validatingPromo
+                    ? <ActivityIndicator size="small" color={Colors.textDark} />
+                    : <Text style={styles.promoBtnText}>Apply</Text>}
+                </TouchableOpacity>
+              </View>
+              {promoPreview && (
+                <Text style={styles.promoSuccess}>
+                  {promoPreview.label} — {promoPreview.discountType === 'percent' ? `${promoPreview.discountValue}% off` : `$${(promoPreview.discountValue / 100).toFixed(2)} off`}
+                  {promoPreview.plans.length < 2 ? ` (${promoPreview.plans[0]} plan only)` : ''} — select a plan below to apply it
+                </Text>
+              )}
+              {!!promoError && <Text style={styles.promoError}>{promoError}</Text>}
+            </View>
+
             {/* Monthly plan */}
             <TouchableOpacity
               style={styles.planCard}

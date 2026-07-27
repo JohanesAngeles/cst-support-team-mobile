@@ -16,6 +16,7 @@ export interface ICashAppPayment extends Document {
   status: 'pending' | 'paid' | 'rejected';
   paidAt?: Date;
   verifiedBy?: mongoose.Types.ObjectId;
+  promoCode?: string;
   createdAt: Date;
 }
 
@@ -30,6 +31,9 @@ const CashAppPaymentSchema = new Schema<ICashAppPayment>(
     status:          { type: String, enum: ['pending', 'paid', 'rejected'], default: 'pending' },
     paidAt:          { type: Date },
     verifiedBy:      { type: Schema.Types.ObjectId, ref: 'User' },
+    // Celebrity promo code applied at submission time, if any — `amount` above is
+    // already the discounted dollar figure the admin should expect to see.
+    promoCode:       { type: String, trim: true, uppercase: true },
   },
   { timestamps: true }
 );

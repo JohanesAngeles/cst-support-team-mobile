@@ -67,6 +67,10 @@ export default function PartnerSubscriptionScreen() {
   const [senderCashtag, setSenderCashtag]     = useState('');
   const [screenshotUri, setScreenshotUri]     = useState<string | null>(null);
   const [applePurchasing, setApplePurchasing] = useState(false);
+  const [promoCode, setPromoCode]             = useState('');
+  const [promoDiscountedAmount, setPromoDiscountedAmount] = useState<number | null>(null);
+  const [promoError, setPromoError]           = useState('');
+  const [checkingPromo, setCheckingPromo]     = useState(false);
 
   const {
     connected: iapConnected,
@@ -143,6 +147,21 @@ export default function PartnerSubscriptionScreen() {
     if (!result.canceled && result.assets?.length) setScreenshotUri(result.assets[0].uri);
   };
 
+  const checkPromo = async () => {
+    if (!promoCode.trim() || !selectedPlan) return;
+    setCheckingPromo(true);
+    setPromoError('');
+    try {
+      const res = await billingAPI.validatePromo(promoCode.trim(), selectedPlan);
+      setPromoDiscountedAmount(res.data.discountedAmount);
+    } catch (err: any) {
+      setPromoDiscountedAmount(null);
+      setPromoError(err?.response?.data?.message ?? 'Invalid or expired promo code.');
+    } finally {
+      setCheckingPromo(false);
+    }
+  };
+
   const handleSubmitPayment = async () => {
     if (!selectedPlan) return;
     if (!referenceNumber.trim()) {
@@ -162,6 +181,7 @@ export default function PartnerSubscriptionScreen() {
       form.append('referenceNumber', referenceNumber.trim());
       form.append('senderCashtag', senderCashtag.trim());
       form.append('screenshot', { uri: screenshotUri, type: `image/${ext}`, name: `cashapp.${ext}` } as any);
+      if (promoCode.trim()) form.append('promoCode', promoCode.trim());
       await client.post('/billing/cashapp-request', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -248,7 +268,7 @@ export default function PartnerSubscriptionScreen() {
                   <TouchableOpacity
                     key={plan.id}
                     style={[s.planCard, isSelected && s.planCardSelected]}
-                    onPress={() => setSelectedPlan(plan.id)}
+                    onPress={() => { setSelectedPlan(plan.id); setPromoDiscountedAmount(null); setPromoError(''); }}
                     activeOpacity={0.8}
                     disabled={submitted}
                   >
@@ -297,13 +317,40 @@ export default function PartnerSubscriptionScreen() {
                   <View style={s.cashAppAmountRow}>
                     <View style={s.cashAppAmountBox}>
                       <Text style={s.cashAppAmountLabel}>SEND EXACTLY</Text>
-                      <Text style={s.cashAppAmount}>${chosenPlan?.amount}</Text>
+                      <Text style={s.cashAppAmount}>
+                        ${promoDiscountedAmount != null ? (promoDiscountedAmount / 100).toFixed(2) : chosenPlan?.amount}
+                      </Text>
                     </View>
                     <Ionicons name="arrow-forward" size={20} color="#8E8E93" />
                     <View style={s.cashAppTagBox}>
                       <Text style={s.cashAppTagLabel}>TO</Text>
                       <Text style={s.cashAppTag}>{CASHTAG}</Text>
                     </View>
+                  </View>
+
+                  {/* Promo code */}
+                  <View style={{ paddingHorizontal: 16, gap: 6, marginBottom: 16 }}>
+                    <Text style={s.fieldLabel}>Promo Code (optional)</Text>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TextInput
+                        style={[s.textInput, { flex: 1 }]}
+                        placeholder="Enter code"
+                        placeholderTextColor="#AEAEB2"
+                        value={promoCode}
+                        onChangeText={(t) => { setPromoCode(t); setPromoDiscountedAmount(null); setPromoError(''); }}
+                        autoCapitalize="characters"
+                      />
+                      <TouchableOpacity
+                        style={{ backgroundColor: CASHAPP_GREEN, borderRadius: 12, paddingHorizontal: 16, justifyContent: 'center' }}
+                        onPress={checkPromo}
+                        disabled={checkingPromo || !promoCode.trim()}
+                      >
+                        {checkingPromo
+                          ? <ActivityIndicator size="small" color="#FFFFFF" />
+                          : <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>Apply</Text>}
+                      </TouchableOpacity>
+                    </View>
+                    {!!promoError && <Text style={{ color: '#DC3545', fontSize: 12 }}>{promoError}</Text>}
                   </View>
 
                   {/* Note instruction */}
