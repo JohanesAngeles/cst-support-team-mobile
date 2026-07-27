@@ -38,9 +38,10 @@ router.get('/mine', async (req: AuthRequest, res: Response) => {
 
 // Admin inbox
 router.get('/', adminOnly, async (req: AuthRequest, res: Response) => {
-  const { status } = req.query;
+  const { status, userId } = req.query;
   const query: Record<string, unknown> = {};
   if (status) query.status = status;
+  if (userId) query.userId = userId;
   const tickets = await SupportTicket.find(query).sort({ createdAt: -1 }).limit(200);
   res.json({ tickets });
 });

@@ -25,10 +25,19 @@ import Group from '../models/Group';
 import ConvoyLocation from '../models/ConvoyLocation';
 import Event from '../models/Event';
 import ChatMessage from '../models/ChatMessage';
+import AdminNote from '../models/AdminNote';
+import LoginSession from '../models/LoginSession';
+import Referral from '../models/Referral';
+import SupportTicket from '../models/SupportTicket';
+import Celebrity from '../models/Celebrity';
+import PromoRedemption from '../models/PromoRedemption';
+import { incrementRedemption } from '../utils/promoCodes';
+import { PLANS } from './billing';
 import { geocodeAddress } from '../utils/geocode';
 import {
   sendPartnerWelcomeEmail, sendPartnerRejectedEmail,
   sendUniversityApplicationApprovedEmail, sendUniversityApplicationRejectedEmail,
+  sendPasswordResetEmail,
 } from '../utils/email';
 
 const router = Router();
@@ -347,6 +356,31 @@ router.post('/cashapp-approve/:paymentId', protect, adminOnly, async (req: AuthR
       cashAppPending: false,
       cashAppPendingPlan: null,
     });
+
+    if (payment.promoCode) {
+      const celebrity = await Celebrity.findOne({ code: payment.promoCode });
+      if (celebrity) {
+        const baseAmountCents = PLANS[payment.plan].amount;
+        const amountChargedCents = Math.round(payment.amount * 100);
+        try {
+          // Same idempotency pattern as the Stripe webhook — insert first, only
+          // increment on first success, so re-clicking approve can't double-count.
+          await PromoRedemption.create({
+            celebrityId: celebrity._id,
+            userId: payment.userId,
+            plan: payment.plan,
+            source: 'cashapp',
+            sourceRef: String(payment._id),
+            discountAmount: baseAmountCents - amountChargedCents,
+            amountCharged: amountChargedCents,
+          });
+          await incrementRedemption(String(celebrity._id));
+        } catch (err: any) {
+          if (err.code !== 11000) throw err;
+        }
+      }
+    }
+
     res.json({ ok: true });
   } catch {
     res.status(500).json({ message: 'Server error.' });
@@ -620,6 +654,95 @@ router.patch('/users/:id/cdl-verify', protect, adminOnly, async (req: AuthReques
   }
 });
 
+// ── GET /api/admin/users/:id/activity ─────────────────────────────────────────
+// Aggregate counts of what this user has actually done across the app, so an
+// admin handling a support case has context beyond the static profile fields.
+router.get('/users/:id/activity', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.params.id;
+    const [posts, listings, blacklistEntries, reportsFiled, reportsAgainst, referrals, tickets] = await Promise.all([
+      NetworkPost.countDocuments({ authorId: userId }),
+      MarketplaceListing.countDocuments({ postedBy: userId }),
+      BrokerBlacklist.countDocuments({ submittedBy: userId }),
+      Report.countDocuments({ reporterId: userId }),
+      Report.countDocuments({ targetType: 'user', targetId: userId }),
+      Referral.countDocuments({ referrerId: userId }),
+      SupportTicket.countDocuments({ userId }),
+    ]);
+    res.json({ posts, listings, blacklistEntries, reportsFiled, reportsAgainst, referrals, tickets });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Case Notes (internal, admin-only) ───────────────────────────────────────────
+router.get('/users/:id/notes', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const notes = await AdminNote.find({ userId: req.params.id }).sort({ createdAt: -1 });
+    res.json({ notes });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.post('/users/:id/notes', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { body } = req.body as { body?: string };
+    if (!body?.trim()) { res.status(400).json({ message: 'Note body is required.' }); return; }
+    const note = await AdminNote.create({
+      userId: String(req.params.id),
+      authorId: req.user._id,
+      authorName: req.user.name,
+      body: body.trim(),
+    });
+    res.status(201).json({ note });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Session management ───────────────────────────────────────────────────────────
+router.get('/users/:id/sessions', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const sessions = await LoginSession.find({ userId: req.params.id, revoked: { $ne: true } }).sort({ lastSeenAt: -1 });
+    res.json({ sessions });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/users/:id/sessions/:sessionId', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const session = await LoginSession.findOne({ _id: req.params.sessionId, userId: req.params.id });
+    if (!session) { res.status(404).json({ message: 'Session not found.' }); return; }
+    session.revoked = true;
+    await session.save();
+    res.json({ message: 'Session revoked.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── POST /api/admin/users/:id/reset-password ──────────────────────────────────
+// Triggers the same self-service reset-code flow as forgotPassword (authController.ts)
+// so the user completes it themselves — admin never sees or handles a raw password.
+router.post('/users/:id/reset-password', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) { res.status(404).json({ message: 'User not found.' }); return; }
+
+    const code = crypto.randomInt(100000, 999999).toString();
+    user.resetCode = code;
+    user.resetExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    await sendPasswordResetEmail(user.email, user.name, code);
+    res.json({ message: `Password reset email sent to ${user.email}.` });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
 // ── GET /api/admin/news ─────────────────────────────────────────────────────────
 router.get('/news', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
   try {
@@ -734,10 +857,11 @@ router.delete('/map-reports/:id', protect, adminOnly, async (req: AuthRequest, r
 // ── Marketplace moderation ──────────────────────────────────────────────────────
 router.get('/marketplace', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
-    const { search, status } = req.query;
+    const { search, status, postedBy } = req.query;
     const filter: Record<string, unknown> = {};
     if (search) filter.title = { $regex: String(search), $options: 'i' };
     if (status) filter.status = status;
+    if (postedBy) filter.postedBy = postedBy;
     const listings = await MarketplaceListing.find(filter).sort({ createdAt: -1 }).limit(200);
     res.json({ listings });
   } catch {
@@ -772,9 +896,10 @@ router.delete('/marketplace/:id', protect, adminOnly, async (req: AuthRequest, r
 // ── Broker Blacklist moderation ─────────────────────────────────────────────────
 router.get('/broker-blacklist', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
-    const { search } = req.query;
+    const { search, submittedBy } = req.query;
     const filter: Record<string, unknown> = {};
     if (search) filter.brokerName = { $regex: String(search), $options: 'i' };
+    if (submittedBy) filter.submittedBy = submittedBy;
     const entries = await BrokerBlacklist.find(filter).sort({ createdAt: -1 }).limit(200);
     res.json({ entries });
   } catch {
@@ -795,7 +920,7 @@ router.delete('/broker-blacklist/:id', protect, adminOnly, async (req: AuthReque
 // Proactive browse+delete, unlike the Reports queue which only surfaces reported posts.
 router.get('/posts', protect, adminOnly, async (req: AuthRequest, res: Response) => {
   try {
-    const { search, hashtag, hasVideo, category } = req.query;
+    const { search, hashtag, hasVideo, category, authorId } = req.query;
     const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10) || 1);
     const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? '25'), 10) || 25));
 
@@ -807,6 +932,7 @@ router.get('/posts', protect, adminOnly, async (req: AuthRequest, res: Response)
     if (hashtag) filter.hashtags = String(hashtag).toLowerCase();
     if (hasVideo === '1' || hasVideo === 'true') filter.videoUrl = { $exists: true, $ne: null };
     if (category) filter.category = category;
+    if (authorId) filter.authorId = authorId;
 
     const [posts, total] = await Promise.all([
       NetworkPost.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
