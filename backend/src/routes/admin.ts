@@ -16,6 +16,15 @@ import Report from '../models/Report';
 import NetworkPost from '../models/NetworkPost';
 import CDLDoc from '../models/CDLDoc';
 import CashAppPayment from '../models/CashAppPayment';
+import MarketplaceListing from '../models/MarketplaceListing';
+import MarketplaceReview from '../models/MarketplaceReview';
+import BrokerBlacklist from '../models/BrokerBlacklist';
+import LiveSession from '../models/LiveSession';
+import Story from '../models/Story';
+import Group from '../models/Group';
+import ConvoyLocation from '../models/ConvoyLocation';
+import Event from '../models/Event';
+import ChatMessage from '../models/ChatMessage';
 import { geocodeAddress } from '../utils/geocode';
 import {
   sendPartnerWelcomeEmail, sendPartnerRejectedEmail,
@@ -717,6 +726,219 @@ router.delete('/map-reports/:id', protect, adminOnly, async (req: AuthRequest, r
   try {
     await MapReport.findByIdAndDelete(req.params.id);
     res.json({ message: 'Road Intel report deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Marketplace moderation ──────────────────────────────────────────────────────
+router.get('/marketplace', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { search, status } = req.query;
+    const filter: Record<string, unknown> = {};
+    if (search) filter.title = { $regex: String(search), $options: 'i' };
+    if (status) filter.status = status;
+    const listings = await MarketplaceListing.find(filter).sort({ createdAt: -1 }).limit(200);
+    res.json({ listings });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.patch('/marketplace/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const listing = await MarketplaceListing.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true, runValidators: true }
+    );
+    if (!listing) { res.status(404).json({ message: 'Listing not found.' }); return; }
+    res.json({ listing });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/marketplace/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const listing = await MarketplaceListing.findByIdAndDelete(req.params.id);
+    if (listing) await MarketplaceReview.deleteMany({ listingId: listing._id });
+    res.json({ message: 'Listing deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Broker Blacklist moderation ─────────────────────────────────────────────────
+router.get('/broker-blacklist', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { search } = req.query;
+    const filter: Record<string, unknown> = {};
+    if (search) filter.brokerName = { $regex: String(search), $options: 'i' };
+    const entries = await BrokerBlacklist.find(filter).sort({ createdAt: -1 }).limit(200);
+    res.json({ entries });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/broker-blacklist/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await BrokerBlacklist.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Entry deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Posts moderation (Feed / ShortClips / hashtags) ─────────────────────────────
+// Proactive browse+delete, unlike the Reports queue which only surfaces reported posts.
+router.get('/posts', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { search, hashtag, hasVideo, category } = req.query;
+    const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(String(req.query.limit ?? '25'), 10) || 25));
+
+    const filter: Record<string, unknown> = {};
+    if (search) {
+      const re = { $regex: String(search), $options: 'i' };
+      filter.$or = [{ title: re }, { body: re }];
+    }
+    if (hashtag) filter.hashtags = String(hashtag).toLowerCase();
+    if (hasVideo === '1' || hasVideo === 'true') filter.videoUrl = { $exists: true, $ne: null };
+    if (category) filter.category = category;
+
+    const [posts, total] = await Promise.all([
+      NetworkPost.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      NetworkPost.countDocuments(filter),
+    ]);
+
+    res.json({ posts, total, page, limit });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/posts/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await NetworkPost.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Post deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Live Sessions moderation (GoLive / LiveView) ─────────────────────────────────
+router.get('/live-sessions', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const { status } = req.query;
+    const filter: Record<string, unknown> = {};
+    if (status) filter.status = status;
+    const sessions = await LiveSession.find(filter).sort({ startedAt: -1 }).limit(100);
+    res.json({ sessions });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// Admin override of the host-only end endpoint in live.ts — no hostId restriction.
+router.post('/live-sessions/:id/end', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const session = await LiveSession.findByIdAndUpdate(
+      req.params.id,
+      { status: 'ended', endedAt: new Date() },
+      { new: true }
+    );
+    if (!session) { res.status(404).json({ message: 'Live session not found.' }); return; }
+    res.json({ session });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Stories moderation ───────────────────────────────────────────────────────────
+router.get('/stories', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const stories = await Story.find().sort({ createdAt: -1 }).limit(200);
+    res.json({ stories });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/stories/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await Story.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Story deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Convoys moderation ───────────────────────────────────────────────────────────
+router.get('/convoys', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const groups = await Group.find({ type: 'convoy' }).sort({ createdAt: -1 }).limit(200);
+    const convoys = groups.map(g => ({
+      _id: g._id,
+      name: g.name,
+      description: g.description,
+      creatorName: g.creatorName,
+      memberCount: g.members.length,
+      originCity: g.originCity,
+      destinationCity: g.destinationCity,
+      departureAt: g.departureAt,
+      createdAt: g.createdAt,
+    }));
+    res.json({ convoys });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/convoys/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const group = await Group.findOneAndDelete({ _id: req.params.id, type: 'convoy' });
+    if (group) await ConvoyLocation.deleteMany({ groupId: group._id });
+    res.json({ message: 'Convoy disbanded.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── Events moderation ────────────────────────────────────────────────────────────
+router.get('/events', protect, adminOnly, async (_req: AuthRequest, res: Response) => {
+  try {
+    const events = await Event.find().sort({ date: -1 }).limit(200);
+    res.json({ events });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/events/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await Event.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Event deleted.' });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// ── CB Lounge moderation ─────────────────────────────────────────────────────────
+router.get('/chat-channels/:channelId', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    const messages = await ChatMessage.find({ channelId: req.params.channelId }).sort({ createdAt: -1 }).limit(200);
+    res.json({ messages });
+  } catch {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+router.delete('/chat-messages/:id', protect, adminOnly, async (req: AuthRequest, res: Response) => {
+  try {
+    await ChatMessage.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Message deleted.' });
   } catch {
     res.status(500).json({ message: 'Server error.' });
   }
