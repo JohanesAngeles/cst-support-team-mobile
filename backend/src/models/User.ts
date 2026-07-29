@@ -53,11 +53,14 @@ export interface IUser extends Document {
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual';
   subscriptionEnd?: Date;
-  subscriptionSource?: 'stripe' | 'cashapp' | 'apple';
+  subscriptionSource?: 'stripe' | 'cashapp' | 'apple' | 'authorizenet';
   appleOriginalTransactionId?: string;
   cashAppPending?: boolean;
   cashAppPendingPlan?: 'monthly' | 'annual';
   cashAppPendingAt?: Date;
+  authorizeNetCustomerProfileId?: string;
+  authorizeNetPaymentProfileId?: string;
+  authorizeNetSubscriptionId?: string;
   referralCode?: string;
   referredBy?: string;
   notificationPreferences?: INotificationPreferences;
@@ -109,11 +112,14 @@ const UserSchema = new Schema<IUser>(
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },
     subscriptionPlan:    { type: String, enum: ['monthly', 'annual'] },
     subscriptionEnd:     { type: Date },
-    subscriptionSource:  { type: String, enum: ['stripe', 'cashapp', 'apple'] },
+    subscriptionSource:  { type: String, enum: ['stripe', 'cashapp', 'apple', 'authorizenet'] },
     appleOriginalTransactionId: { type: String },
     cashAppPending:      { type: Boolean, default: false },
     cashAppPendingPlan:  { type: String, enum: ['monthly', 'annual'] },
     cashAppPendingAt:    { type: Date },
+    authorizeNetCustomerProfileId: { type: String },
+    authorizeNetPaymentProfileId:  { type: String },
+    authorizeNetSubscriptionId:    { type: String },
     referralCode:        { type: String, unique: true, sparse: true },
     referredBy:          { type: String },
     notificationPreferences: {

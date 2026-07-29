@@ -28,6 +28,8 @@ import emergencyContactsRoutes from './routes/emergencycontacts';
 import notificationsRoutes from './routes/notifications';
 import billingRoutes from './routes/billing';
 import appleBillingRoutes from './routes/appleBilling';
+import authorizeNetBillingRoutes from './routes/authorizeNetBilling';
+import authorizeNetWebhookRoutes from './routes/authorizeNetWebhook';
 import mapRoutes from './routes/map';
 import loadsRoutes from './routes/loads';
 import dispatchContactsRoutes from './routes/dispatchcontacts';
@@ -196,6 +198,9 @@ const apiLimiter = rateLimit({
 
 app.use(helmet());
 app.use(cors());
+// Authorize.Net webhook MUST receive the raw body for signature verification —
+// register BEFORE express.json(), which has no `verify` callback to preserve it.
+app.use('/api/billing/authorizenet/webhook', express.raw({ type: 'application/json' }), authorizeNetWebhookRoutes);
 app.use(express.json());
 
 app.use('/api/auth/login', authLimiter);
@@ -219,6 +224,7 @@ app.use('/api/emergency-contacts', emergencyContactsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/billing/apple', appleBillingRoutes);
+app.use('/api/billing/authorizenet', authorizeNetBillingRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/loads', loadsRoutes);
 app.use('/api/dispatch-contacts', dispatchContactsRoutes);

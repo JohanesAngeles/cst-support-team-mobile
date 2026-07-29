@@ -7,10 +7,87 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useIAP, ErrorCode } from 'react-native-iap';
 import { useAuth } from '../../context/AuthContext';
 import client from '../../api/client';
 import { billingAPI } from '../../api/billing';
+
+// Renders plain, app-styled card inputs + Authorize.Net's Accept.js inside a
+// WebView (RN has no DOM, and Accept.js needs one to tokenize the card).
+// The card number/CVV never leave this WebView — only the resulting opaque
+// nonce is posted back to the app via postMessage.
+function buildAcceptJsHtml(apiLoginId: string, clientKey: string, env: 'sandbox' | 'production'): string {
+  const scriptSrc = env === 'production'
+    ? 'https://js.authorize.net/v1/Accept.js'
+    : 'https://jstest.authorize.net/v1/Accept.js';
+  return `
+<!DOCTYPE html><html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<script src="${scriptSrc}" charset="utf-8"></script>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; padding: 14px 16px 20px; font-family: -apple-system, Roboto, sans-serif; background: #F8F8FA; }
+  .field { margin-bottom: 10px; }
+  label { display: block; font-size: 12px; font-weight: 700; color: #1A1A2E; margin-bottom: 6px; }
+  input { width: 100%; height: 46px; border-radius: 12px; border: 1px solid #D4D4DC; background: #FFFFFF; padding: 0 14px; font-size: 15px; color: #1A1A2E; }
+  input:focus { outline: none; border-color: #021B3A; }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+  button { width: 100%; height: 50px; border: none; border-radius: 14px; background: #021B3A; color: #fff; font-size: 15px; font-weight: 800; margin-top: 6px; }
+  button:disabled { opacity: 0.6; }
+  .err { color: #DC3545; font-size: 12px; margin-top: 8px; min-height: 14px; }
+</style>
+</head><body>
+  <div class="field">
+    <label>Card Number</label>
+    <input id="cardNumber" inputmode="numeric" placeholder="4111 1111 1111 1111" />
+  </div>
+  <div class="row">
+    <div class="field">
+      <label>Month</label>
+      <input id="expMonth" inputmode="numeric" placeholder="MM" maxlength="2" />
+    </div>
+    <div class="field">
+      <label>Year</label>
+      <input id="expYear" inputmode="numeric" placeholder="YYYY" maxlength="4" />
+    </div>
+    <div class="field">
+      <label>CVV</label>
+      <input id="cvv" inputmode="numeric" placeholder="123" maxlength="4" />
+    </div>
+  </div>
+  <div id="err" class="err"></div>
+  <button id="payBtn" onclick="submitCard()">Pay Now</button>
+  <script>
+    function post(msg) { window.ReactNativeWebView.postMessage(JSON.stringify(msg)); }
+    function submitCard() {
+      document.getElementById('err').innerText = '';
+      var btn = document.getElementById('payBtn');
+      btn.disabled = true; btn.innerText = 'Processing…';
+      var secureData = {
+        authData: { clientKey: '${clientKey}', apiLoginID: '${apiLoginId}' },
+        cardData: {
+          cardNumber: document.getElementById('cardNumber').value.replace(/\\s+/g, ''),
+          month: document.getElementById('expMonth').value,
+          year: document.getElementById('expYear').value,
+          cardCode: document.getElementById('cvv').value,
+        },
+      };
+      Accept.dispatchData(secureData, function (response) {
+        btn.disabled = false; btn.innerText = 'Pay Now';
+        if (response.messages.resultCode === 'Error') {
+          var msg = (response.messages.message && response.messages.message[0] && response.messages.message[0].text) || 'Card was declined.';
+          document.getElementById('err').innerText = msg;
+          post({ type: 'error', message: msg });
+          return;
+        }
+        post({ type: 'success', dataDescriptor: response.opaqueData.dataDescriptor, dataValue: response.opaqueData.dataValue });
+      });
+    }
+  </script>
+</body></html>`;
+}
 
 const CASHTAG   = '$roadreadyapp';
 const CASHAPP_URL = 'https://cash.app/$roadreadyapp';
@@ -71,6 +148,46 @@ export default function PartnerSubscriptionScreen() {
   const [promoDiscountedAmount, setPromoDiscountedAmount] = useState<number | null>(null);
   const [promoError, setPromoError]           = useState('');
   const [checkingPromo, setCheckingPromo]     = useState(false);
+
+  // ── Authorize.Net (card) state — Android only, same policy reason Cash App is ──
+  const [anConfig, setAnConfig] = useState<{ apiLoginId: string; clientKey: string; env: 'sandbox' | 'production' } | null>(null);
+  const [cardSubmitting, setCardSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isIOS) return;
+    billingAPI.getAuthorizeNetConfig()
+      .then(res => {
+        const { apiLoginId, clientKey, env } = res.data;
+        if (apiLoginId && clientKey) setAnConfig({ apiLoginId, clientKey, env });
+      })
+      .catch(() => {});
+  }, [isIOS]);
+
+  const handleCardWebViewMessage = async (event: WebViewMessageEvent) => {
+    let msg: any;
+    try { msg = JSON.parse(event.nativeEvent.data); } catch { return; }
+    if (msg.type === 'error') {
+      Alert.alert('Payment Failed', msg.message);
+      return;
+    }
+    if (msg.type !== 'success' || !selectedPlan) return;
+
+    setCardSubmitting(true);
+    try {
+      await billingAPI.subscribeAuthorizeNet({
+        plan: selectedPlan,
+        opaqueDataDescriptor: msg.dataDescriptor,
+        opaqueDataValue: msg.dataValue,
+        promoCode: promoCode.trim() || undefined,
+      });
+      updateUser({ subscriptionStatus: 'active', subscriptionPlan: selectedPlan });
+      Alert.alert('Success', 'Your subscription is now active.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message ?? 'Could not process your payment. Please try again.');
+    } finally {
+      setCardSubmitting(false);
+    }
+  };
 
   const {
     connected: iapConnected,
@@ -432,6 +549,35 @@ export default function PartnerSubscriptionScreen() {
                 </View>
               )}
 
+              {/* ── Pay with Card via Authorize.Net (Android only) ────────── */}
+              {selectedPlan && !isIOS && anConfig && (
+                <View style={s.cardPayCard}>
+                  <View style={s.cardPayHeader}>
+                    <Ionicons name="card" size={20} color="#FFFFFF" />
+                    <View>
+                      <Text style={s.cardPayHeaderTitle}>Pay with Card</Text>
+                      <Text style={s.cardPayHeaderSub}>Activates instantly, renews automatically</Text>
+                    </View>
+                  </View>
+                  <View style={s.cardWebViewWrap}>
+                    <WebView
+                      key={selectedPlan}
+                      originWhitelist={['*']}
+                      source={{ html: buildAcceptJsHtml(anConfig.apiLoginId, anConfig.clientKey, anConfig.env) }}
+                      onMessage={handleCardWebViewMessage}
+                      style={s.cardWebView}
+                      scrollEnabled={false}
+                    />
+                    {cardSubmitting && (
+                      <View style={s.cardWebViewOverlay}>
+                        <ActivityIndicator size="small" color="#021B3A" />
+                        <Text style={s.cardWebViewOverlayText}>Activating your subscription…</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
               {/* ── Apple In-App Purchase section (iOS only) ────────────── */}
               {selectedPlan && isIOS && (
                 <View style={s.appleCard}>
@@ -629,6 +775,25 @@ const s = StyleSheet.create({
     paddingVertical: 14, marginBottom: 20,
   },
   sentBtnTxt: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+
+  // ── Card pay card (Authorize.Net) ───────────────────────────────────────────
+  cardPayCard: {
+    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#EBEBEF',
+    backgroundColor: '#F8F8FA', overflow: 'hidden', marginBottom: 16,
+  },
+  cardPayHeader: {
+    backgroundColor: '#021B3A', flexDirection: 'row', alignItems: 'center',
+    gap: 12, paddingHorizontal: 18, paddingVertical: 14,
+  },
+  cardPayHeaderTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  cardPayHeaderSub:   { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 },
+  cardWebViewWrap: { position: 'relative' },
+  cardWebView: { height: 300, backgroundColor: 'transparent' },
+  cardWebViewOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(248,248,250,0.9)', justifyContent: 'center', alignItems: 'center', gap: 10,
+  },
+  cardWebViewOverlayText: { fontSize: 13, fontWeight: '700', color: '#021B3A' },
 
   // ── Pending / active states ───────────────────────────────────────────────
   pendingCard: {
