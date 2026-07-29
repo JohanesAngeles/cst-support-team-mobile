@@ -2,7 +2,7 @@
   "expo": {
     "name": "Road Ready Network",
     "slug": "cst-mobile",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "scheme": "cst",
     "orientation": "portrait",
     "icon": "./assets/icon-road-ready.png",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cst.driver",
-      "buildNumber": "5",
+      "buildNumber": "7",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Road Ready Network uses your location to find nearby fuel stops, truck stops, rest areas, and emergency services.",
@@ -41,7 +41,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.cst.driver",
-      "versionCode": 8,
+      "versionCode": 9,
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
