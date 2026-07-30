@@ -437,6 +437,14 @@ export default function DashboardScreen() {
     fetchListings(nearbyMode ? coordsRef.current : null, false, page + 1);
   }, [fetchListings, loadingMore, listings.length, totalCount, nearbyMode, page]);
 
+  // ── Auto-load remaining pages in the background — no tap required, the
+  // badge total and the actual loaded list should always converge on their own.
+  useEffect(() => {
+    if (!loading && !refreshing && !loadingMore && listings.length > 0 && listings.length < totalCount) {
+      loadMore();
+    }
+  }, [loading, refreshing, loadingMore, listings.length, totalCount, loadMore]);
+
   useEffect(() => {
     fetchListings();
     Location.requestForegroundPermissionsAsync().then(({ status }) => {
@@ -778,25 +786,18 @@ export default function DashboardScreen() {
             })
           )}
 
-          {/* Load More — results are paged 100 at a time */}
-          {!loading && !searchQuery && !activeCategory && listings.length < totalCount && (
-            <TouchableOpacity
-              style={{
-                marginTop: 8, height: 44, borderRadius: 12, backgroundColor: Colors.surface,
-                borderWidth: 1, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center',
-                flexDirection: 'row', gap: 8,
-              }}
-              onPress={loadMore}
-              disabled={loadingMore}
-              activeOpacity={0.8}
-            >
-              {loadingMore
-                ? <ActivityIndicator size="small" color={NAVY} />
-                : <Text style={{ fontSize: 13, fontWeight: '700', color: NAVY }}>
-                    Load {Math.min(PAGE_SIZE, totalCount - listings.length)} More ({listings.length} of {totalCount})
-                  </Text>
-              }
-            </TouchableOpacity>
+          {/* Loading indicator — remaining pages load automatically in the
+              background, no tap required */}
+          {!loading && listings.length < totalCount && (
+            <View style={{
+              marginTop: 8, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
+              flexDirection: 'row', gap: 8,
+            }}>
+              <ActivityIndicator size="small" color={NAVY} />
+              <Text style={{ fontSize: 12, color: Colors.textMuted }}>
+                Loading more partners… ({listings.length} of {totalCount})
+              </Text>
+            </View>
           )}
 
           {/* Divider */}
