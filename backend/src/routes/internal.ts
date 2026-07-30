@@ -2,10 +2,32 @@ import { Router, Request, Response } from 'express';
 import { internalOnly } from '../middleware/internalAuth';
 import Celebrity from '../models/Celebrity';
 import PromoRedemption from '../models/PromoRedemption';
+import { provisionFeaturedPartner } from '../services/partnerProvisioning';
 
 const router = Router();
 
 router.use(internalOnly);
+
+// ── POST /api/internal/founding-partners/provision ──────────────────────────
+// Called by ca_website right after a Founding Partner's payment is confirmed.
+// Creates the partner's app login (if they don't already have one) and
+// upgrades their listing to 'featured'. Idempotent — safe to retry, and the
+// hourly partner sync cron also calls this as a fallback in case this
+// real-time call never lands (server restart, network blip, etc).
+router.post('/founding-partners/provision', async (req: Request, res: Response) => {
+  try {
+    const fp = req.body;
+    if (!fp?.email && !fp?.ownerEmail) {
+      res.status(400).json({ message: 'email is required.' });
+      return;
+    }
+    const { created } = await provisionFeaturedPartner(fp);
+    res.json({ success: true, created });
+  } catch (err: any) {
+    console.error('[internal] founding-partner provision error:', err.message);
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
 
 // ── GET /api/internal/celebrities ───────────────────────────────────────────
 router.get('/celebrities', async (_req: Request, res: Response) => {

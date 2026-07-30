@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import BusinessListing from '../models/BusinessListing';
+import { mapFoundingPartnerFields, geocodeAddress, SYSTEM_OWNER_ID } from '../services/foundingPartnerMapping';
+import { provisionFeaturedPartner } from '../services/partnerProvisioning';
 
 const WEBSITE_URI = 'mongodb+srv://cst-admin:rAXIov7yplFQKJVv@cst-database.upppc4y.mongodb.net/test?appName=cst-database';
 
@@ -36,58 +38,10 @@ const FoundingPartnerSchema = new mongoose.Schema({
   linkedin:            String,
   otherSocial:         String,
   status:              String,
+  source:              String,
+  claimStatus:         String,
+  subscriptionStatus:  String,
 }, { timestamps: true });
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function parseCityState(address?: string): { city: string; state: string } {
-  if (!address) return { city: '', state: '' };
-  const parts = address.split(',').map(p => p.trim());
-  if (parts.length >= 2) {
-    const city     = parts[parts.length - 2];
-    const stateZip = parts[parts.length - 1].trim().split(/\s+/);
-    return { city, state: stateZip[0] ?? '' };
-  }
-  return { city: address, state: '' };
-}
-
-function buildHours(fp: any): string {
-  if (fp.is24Hours) return '24 Hours';
-  return fp.businessHours ?? '';
-}
-
-function buildDescription(fp: any): string {
-  const parts: string[] = [];
-  if (fp.businessDescription) parts.push(fp.businessDescription);
-  if (fp.servicesOffered)     parts.push(`Services: ${fp.servicesOffered}`);
-  const flags: string[] = [];
-  if (fp.mobileService)      flags.push('Mobile Service');
-  if (fp.roadsideAssistance) flags.push('Roadside Assistance');
-  if (fp.heavyDutyService)   flags.push('Heavy Duty');
-  if (flags.length)          parts.push(flags.join(' · '));
-  return parts.join('\n\n');
-}
-
-// Placeholder ownerId for website-imported listings
-const SYSTEM_OWNER_ID = new mongoose.Types.ObjectId('000000000000000000000001');
-
-// ── Geocoding ─────────────────────────────────────────────────────────────────
-
-async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
-  const key = process.env.TOMTOM_API_KEY;
-  if (!key || !address) return null;
-  try {
-    const query    = encodeURIComponent(address);
-    const url      = `https://api.tomtom.com/search/2/geocode/${query}.json?key=${key}&limit=1`;
-    const res      = await fetch(url);
-    const data: any = await res.json();
-    const pos      = data?.results?.[0]?.position;
-    if (!pos) return null;
-    return { lat: pos.lat, lng: pos.lon };
-  } catch {
-    return null;
-  }
-}
 
 // ── Core sync function ────────────────────────────────────────────────────────
 
@@ -99,57 +53,50 @@ export async function syncApprovedPartners(): Promise<void> {
     const FoundingPartner = conn.models['FoundingPartner']
       ?? conn.model('FoundingPartner', FoundingPartnerSchema);
 
-    const approved = await FoundingPartner.find({ status: 'approved' }).lean() as any[];
+    // Visible in the app as (at minimum) a free Basic Listing:
+    //  - every imported ("seeded") business, the moment it's imported — these
+    //    were already vetted by the admin who built the lead spreadsheet, so
+    //    they don't need a separate approval step before showing up
+    //  - organic applications (submitted via the public apply form) only
+    //    after an admin has explicitly approved them
+    // Either way, a business that was rejected or that declined its claimed
+    // listing is excluded.
+    const partners = await FoundingPartner.find({
+      status:      { $ne: 'rejected' },
+      claimStatus: { $ne: 'declined' },
+      $or: [
+        { source: 'seeded' },
+        { status: 'approved' },
+      ],
+    }).lean() as any[];
 
-    if (!approved.length) {
-      console.log('[partnerSync] No approved partners on website yet — nothing to sync.');
+    if (!partners.length) {
+      console.log('[partnerSync] No partners to sync yet.');
       return;
     }
 
     let upserted = 0;
     let unchanged = 0;
+    let provisioned = 0;
 
-    for (const fp of approved) {
-      const { city, state } = parseCityState(fp.physicalAddress);
+    for (const fp of partners) {
       const websiteId = fp._id.toString();
+      const fields = mapFoundingPartnerFields(fp);
 
-      // Only geocode if we don't already have coordinates stored
-      const existing = await BusinessListing.findOne({ websiteId }).lean();
-      let lat = (existing as any)?.latitude;
-      let lng = (existing as any)?.longitude;
+      // A partner already provisioned with a real paid account owns their
+      // listing — don't stomp that back to the system placeholder owner.
+      const existing = await BusinessListing.findOne({ websiteId }).lean() as any;
+      const hasRealOwner = existing?.ownerId && existing.ownerId.toString() !== SYSTEM_OWNER_ID.toString();
+
+      let lat = existing?.latitude;
+      let lng = existing?.longitude;
       if (!lat && fp.physicalAddress) {
         const coords = await geocodeAddress(fp.physicalAddress);
         if (coords) { lat = coords.lat; lng = coords.lng; }
       }
 
-      const update: any = {
-        ownerId:             SYSTEM_OWNER_ID,
-        businessName:        fp.businessName        ?? '',
-        category:            fp.category            ?? '',
-        phone:               fp.phone               ?? '',
-        city,
-        state,
-        website:             fp.website             ?? '',
-        description:         buildDescription(fp),
-        hours:               buildHours(fp),
-        logoUrl:             fp.logoUrl             ?? '',
-        isActive:            true,
-        physicalAddress:     fp.physicalAddress     ?? '',
-        ownerName:           fp.ownerName           ?? '',
-        ownerEmail:          fp.email               ?? '',
-        serviceArea:         fp.serviceArea         ?? '',
-        servicesOffered:     fp.servicesOffered      ?? '',
-        mobileService:       fp.mobileService       ?? false,
-        roadsideAssistance:  fp.roadsideAssistance  ?? false,
-        heavyDutyService:    fp.heavyDutyService    ?? false,
-        is24Hours:           fp.is24Hours           ?? false,
-        photoUrls:           fp.photoUrls           ?? [],
-        facebook:            fp.facebook            ?? '',
-        instagram:           fp.instagram           ?? '',
-        linkedin:            fp.linkedin            ?? '',
-        importedFromWebsite: true,
-        websiteId,
-      };
+      const update: any = { ...fields };
+      if (!hasRealOwner) update.ownerId = SYSTEM_OWNER_ID;
       if (lat) update.latitude  = lat;
       if (lng) update.longitude = lng;
 
@@ -161,23 +108,39 @@ export async function syncApprovedPartners(): Promise<void> {
 
       if (result.upsertedCount > 0) {
         upserted++;
-        console.log(`[partnerSync] ✅ Added: ${fp.businessName} (${city}, ${state})`);
+        console.log(`[partnerSync] ✅ Added: ${fp.businessName} (${fields.city}, ${fields.state})`);
       } else {
         unchanged++;
       }
+
+      // Safety net: a partner whose payment went through but who somehow
+      // never got a login (e.g. the real-time provisioning call from
+      // ca_website failed) gets caught and provisioned here instead.
+      if (fp.subscriptionStatus === 'active' && !hasRealOwner) {
+        try {
+          const { created } = await provisionFeaturedPartner(fp);
+          if (created) {
+            provisioned++;
+            console.log(`[partnerSync] 🌟 Provisioned featured account: ${fp.businessName}`);
+          }
+        } catch (err: any) {
+          console.error(`[partnerSync] Failed to provision ${fp.businessName}:`, err.message);
+        }
+      }
     }
 
-    // Deactivate any previously synced listings whose website record was un-approved
-    const approvedIds = approved.map((fp: any) => fp._id.toString());
+    // Deactivate any previously synced listings that dropped out of the
+    // visible set above (rejected, declined, or an un-approved application).
+    const visibleIds = partners.map((fp: any) => fp._id.toString());
     const deactivated = await BusinessListing.updateMany(
-      { importedFromWebsite: true, websiteId: { $nin: approvedIds }, isActive: true },
+      { importedFromWebsite: true, websiteId: { $nin: visibleIds }, isActive: true },
       { $set: { isActive: false } }
     );
     if (deactivated.modifiedCount > 0) {
-      console.log(`[partnerSync] ⚠️  Deactivated ${deactivated.modifiedCount} listing(s) no longer approved on website.`);
+      console.log(`[partnerSync] ⚠️  Deactivated ${deactivated.modifiedCount} listing(s) no longer visible on website.`);
     }
 
-    console.log(`[partnerSync] Sync complete — ${upserted} new, ${unchanged} unchanged, ${approved.length} approved total on website.`);
+    console.log(`[partnerSync] Sync complete — ${upserted} new, ${unchanged} unchanged, ${provisioned} newly provisioned, ${partners.length} total on website.`);
   } catch (err: any) {
     console.error('[partnerSync] Error during sync:', err.message);
   }

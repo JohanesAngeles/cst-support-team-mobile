@@ -102,6 +102,36 @@ export const sendPartnerWelcomeEmail = (
     <p style="color:#999;font-size:12px;margin-top:20px">Questions? Email us at support@roadreadynetwork.com</p>
   `));
 
+export const sendFeaturedPartnerWelcomeEmail = (
+  to: string,
+  contactName: string,
+  businessName: string,
+  tempPassword: string,
+) =>
+  send(to, `You're Featured! ${businessName} is now live on Road Ready Network`, layout(`
+    <h2 style="color:#1A3A5C;margin-top:0">Congratulations, ${contactName}!</h2>
+    <p style="color:#444">Your payment is confirmed — <strong>${businessName}</strong> has been upgraded from a Basic Listing to a <strong>Featured Business Listing</strong> on the Road Ready Network.</p>
+    <p style="color:#444">Sign in to the Road Ready Network app to manage your listing:</p>
+    <div style="background:#f4f6f8;border-radius:10px;padding:20px;margin:16px 0">
+      <p style="margin:0 0 4px;color:#888;font-size:11px;font-weight:700;letter-spacing:1px">EMAIL</p>
+      <p style="margin:0 0 16px;color:#1A3A5C;font-weight:700;font-size:15px">${to}</p>
+      <p style="margin:0 0 4px;color:#888;font-size:11px;font-weight:700;letter-spacing:1px">TEMPORARY PASSWORD</p>
+      <p style="margin:0;color:#1A3A5C;font-weight:900;font-size:22px;letter-spacing:3px;font-family:monospace">${tempPassword}</p>
+    </div>
+    <p style="color:#c0392b;font-size:13px;font-weight:600">⚠️ Please change your password after your first login.</p>
+    <p style="color:#444">Your Featured Listing now includes:</p>
+    <ul style="color:#444;font-size:14px;line-height:1.9;padding-left:20px">
+      <li>Featured badge &amp; priority placement in search results</li>
+      <li>Logo, cover photo, and full business description</li>
+      <li>Website, email, and social media links</li>
+      <li>Call Now and Directions buttons</li>
+      <li>Promotional banners and homepage rotation</li>
+      <li>Analytics — views, clicks, and calls</li>
+      <li>Ability to edit your listing anytime, plus priority support</li>
+    </ul>
+    <p style="color:#999;font-size:12px;margin-top:20px">Questions? Email us at support@roadreadynetwork.com</p>
+  `));
+
 export const sendPartnerRejectedEmail = (
   to: string,
   contactName: string,
