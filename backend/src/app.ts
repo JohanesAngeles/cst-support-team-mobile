@@ -197,7 +197,10 @@ const apiLimiter = rateLimit({
 });
 
 app.use(helmet());
-app.use(cors());
+// exposedHeaders lets browser-based clients (e.g. a future web build) read
+// X-Total-Count for pagination — native RN networking isn't CORS-restricted,
+// but this keeps behavior consistent everywhere.
+app.use(cors({ exposedHeaders: ['X-Total-Count'] }));
 // Authorize.Net webhook MUST receive the raw body for signature verification —
 // register BEFORE express.json(), which has no `verify` callback to preserve it.
 app.use('/api/billing/authorizenet/webhook', express.raw({ type: 'application/json' }), authorizeNetWebhookRoutes);

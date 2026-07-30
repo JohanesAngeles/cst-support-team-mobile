@@ -380,7 +380,10 @@ export default function FindHelpScreen() {
   const mapRef = useRef<MapView>(null);
 
   const [listings,        setListings]        = useState<Listing[]>([]);
+  const [totalCount,      setTotalCount]      = useState(0);
+  const [page,            setPage]            = useState(1);
   const [loading,         setLoading]         = useState(true);
+  const [loadingMore,     setLoadingMore]     = useState(false);
   const [refreshing,      setRefreshing]      = useState(false);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [userCoords,      setUserCoords]      = useState<{ latitude: number; longitude: number } | null>(null);
@@ -390,25 +393,41 @@ export default function FindHelpScreen() {
   const [searchQuery,     setSearchQuery]     = useState('');
   const [activeCategory,  setActiveCategory]  = useState<string | null>(null);
   const coordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const PAGE_SIZE = 100;
 
   // ── Fetch — no params = all partners, coords = nearby filter ─────────────
-  const fetchListings = useCallback(async (coords?: { latitude: number; longitude: number } | null, isRefresh = false) => {
-    if (isRefresh) setRefreshing(true); else setLoading(true);
+  // pageNum > 1 appends to the existing list instead of replacing it, so
+  // "Load More" can page through everything instead of being capped at 100.
+  const fetchListings = useCallback(async (coords?: { latitude: number; longitude: number } | null, isRefresh = false, pageNum = 1) => {
+    if (isRefresh) setRefreshing(true);
+    else if (pageNum > 1) setLoadingMore(true);
+    else setLoading(true);
     try {
-      const params: Record<string, string> = coords
-        ? { lat: String(coords.latitude), lng: String(coords.longitude), radius: '75' }
-        : {};
+      const params: Record<string, string> = {
+        ...(coords ? { lat: String(coords.latitude), lng: String(coords.longitude), radius: '75' } : {}),
+        page: String(pageNum),
+        limit: String(PAGE_SIZE),
+      };
       const res = await client.get('/partner/listings', { params });
       const results: Listing[] = res.data ?? [];
-      setListings(results);
-      if (!isRefresh) results.slice(0, 10).forEach(l => client.post(`/partner/listing/${l._id}/view`).catch(() => {}));
+      const total = parseInt(res.headers?.['x-total-count'], 10);
+      setTotalCount(Number.isFinite(total) ? total : results.length);
+      setPage(pageNum);
+      setListings(prev => pageNum > 1 ? [...prev, ...results] : results);
+      if (!isRefresh && pageNum === 1) results.slice(0, 10).forEach(l => client.post(`/partner/listing/${l._id}/view`).catch(() => {}));
     } catch {
       // silent — show empty state
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, []);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || listings.length >= totalCount) return;
+    fetchListings(nearbyMode ? coordsRef.current : null, false, page + 1);
+  }, [fetchListings, loadingMore, listings.length, totalCount, nearbyMode, page]);
 
   // ── Initial load — show ALL partners ─────────────────────────────────────
   useEffect(() => {
@@ -613,7 +632,7 @@ export default function FindHelpScreen() {
           <View style={styles.mapOverlay}>
             <Ionicons name="storefront" size={13} color="#F5C842" />
             <Text style={styles.mapOverlayTx}>
-              {listings.length} RRN Partner{listings.length !== 1 ? 's' : ''}
+              {totalCount} RRN Partner{totalCount !== 1 ? 's' : ''}
               {nearbyMode ? ' Nearby' : ' Nationwide'}
             </Text>
           </View>
@@ -765,6 +784,27 @@ export default function FindHelpScreen() {
                 </View>
               );
             })
+          )}
+
+          {/* ── Load More — results are paged 100 at a time ──────────────────── */}
+          {!loading && !searchQuery && !activeCategory && listings.length < totalCount && (
+            <TouchableOpacity
+              style={{
+                marginTop: 8, height: 44, borderRadius: 12, backgroundColor: Colors.surface,
+                borderWidth: 1, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center',
+                flexDirection: 'row', gap: 8,
+              }}
+              onPress={loadMore}
+              disabled={loadingMore}
+              activeOpacity={0.8}
+            >
+              {loadingMore
+                ? <ActivityIndicator size="small" color="#021B3A" />
+                : <Text style={{ fontSize: 13, fontWeight: '700', color: '#021B3A' }}>
+                    Load {Math.min(PAGE_SIZE, totalCount - listings.length)} More ({listings.length} of {totalCount})
+                  </Text>
+              }
+            </TouchableOpacity>
           )}
 
           {/* ── Divider ────────────────────────────────────────────────────────── */}

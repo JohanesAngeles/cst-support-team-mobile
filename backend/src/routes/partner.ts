@@ -178,9 +178,12 @@ router.post('/listing/:listingId/review', protect, async (req: AuthRequest, res:
 // Query params:
 //   lat, lng, radius (miles) — return listings within radius (requires lat/lng stored on listing)
 //   city, state, category    — text fallback filters
+//   page (default 1), limit (default 100, capped at 200) — pagination; total
+//   match count (ignoring page/limit) comes back on the X-Total-Count header
+//   so the client knows whether there's more to load.
 router.get('/listings', async (req: AuthRequest, res: Response) => {
   try {
-    const { city, state, category, lat, lng, radius } = req.query;
+    const { city, state, category, lat, lng, radius, page, limit } = req.query;
     const filter: Record<string, any> = { isActive: { $ne: false } };
 
     if (lat && lng) {
@@ -200,10 +203,19 @@ router.get('/listings', async (req: AuthRequest, res: Response) => {
 
     if (category) filter.category = { $regex: new RegExp(category as string, 'i') };
 
-    const listings = await BusinessListing.find(filter)
-      .select('-ownerId')
-      .sort({ tier: 1, rating: -1 })
-      .limit(100);
+    const pageNum  = Math.max(1, parseInt(page as string, 10) || 1);
+    const pageSize = Math.min(200, Math.max(1, parseInt(limit as string, 10) || 100));
+
+    const [listings, total] = await Promise.all([
+      BusinessListing.find(filter)
+        .select('-ownerId')
+        .sort({ tier: 1, rating: -1 })
+        .skip((pageNum - 1) * pageSize)
+        .limit(pageSize),
+      BusinessListing.countDocuments(filter),
+    ]);
+
+    res.set('X-Total-Count', String(total));
     res.json(listings);
   } catch {
     res.status(500).json({ message: 'Server error.' });
