@@ -5,7 +5,7 @@ interface Props {
   onFinish: () => void;
 }
 
-const BG = '#050B18';
+const BG = '#000000';
 const SILVER = '#C8D2DC';
 
 export default function SplashScreen({ onFinish }: Props) {

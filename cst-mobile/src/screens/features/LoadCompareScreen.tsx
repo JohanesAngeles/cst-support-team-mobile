@@ -54,7 +54,7 @@ export default function LoadCompareScreen() {
     inputRow: { flexDirection: 'row', marginHorizontal: -4 },
     fieldLabel: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 5, letterSpacing: 0.4 },
     input: {
-      backgroundColor: Colors.surfaceLight ?? '#1E3A5C', borderRadius: 8, borderWidth: 1,
+      backgroundColor: Colors.surfaceLight ?? '#2A2A2E', borderRadius: 8, borderWidth: 1,
       borderColor: Colors.border, color: Colors.text, paddingHorizontal: 10,
       paddingVertical: 9, fontSize: 14,
     },

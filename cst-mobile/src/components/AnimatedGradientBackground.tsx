@@ -20,13 +20,6 @@ const LIGHT: GradConfig[] = [
   { colors: ['#E8D6FF', '#F5F7FF', '#D8E0FF'], start: { x: 0, y: 1 }, end: { x: 1, y: 0 } },
 ];
 
-const DARK: GradConfig[] = [
-  { colors: ['#0B1845', '#050B18', '#1A0830'], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
-  { colors: ['#1A0830', '#050B18', '#081830'], start: { x: 1, y: 0 }, end: { x: 0, y: 1 } },
-  { colors: ['#081830', '#050B18', '#180838'], start: { x: 1, y: 1 }, end: { x: 0, y: 0 } },
-  { colors: ['#180838', '#050B18', '#0B1845'], start: { x: 0, y: 1 }, end: { x: 1, y: 0 } },
-];
-
 const FADE_DURATION = 2500;  // ms — how long each cross-fade takes
 const HOLD_DURATION = 3000;  // ms — how long to hold before next fade
 
@@ -93,12 +86,19 @@ interface Props {
 
 export default function AnimatedGradientBackground({ children, style }: Props) {
   const { isDark } = useTheme();
-  const configs = isDark ? DARK : LIGHT;
-  const baseBg  = isDark ? '#050B18' : '#F5F7FF';
+
+  // Dark mode is a flat single color — no animated gradient sweep.
+  if (isDark) {
+    return (
+      <View style={[{ flex: 1, backgroundColor: '#000000' }, style]}>
+        {children}
+      </View>
+    );
+  }
 
   return (
-    <View style={[{ flex: 1, backgroundColor: baseBg }, style]}>
-      <GradientLayer configs={configs} baseBg={baseBg} />
+    <View style={[{ flex: 1, backgroundColor: '#F5F7FF' }, style]}>
+      <GradientLayer configs={LIGHT} baseBg="#F5F7FF" />
       {children}
     </View>
   );

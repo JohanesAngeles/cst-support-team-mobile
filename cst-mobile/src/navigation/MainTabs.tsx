@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
 import { useColors } from '../constants/colors';
+import { useAuth } from '../context/AuthContext';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
 import FeaturesScreen from '../screens/features/FeaturesScreen';
@@ -71,11 +71,13 @@ const TAB_META: Record<string, TabMeta> = {
   Profile:   { outline: 'person-outline',           filled: 'person',          tKey: 'tabs.profile'   },
 };
 
-// ─── Floating glass tab bar ────────────────────────────────────────────────────
+// ─── Solid tab bar ──────────────────────────────────────────────────────────────
 function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const Colors = useColors();
+  const { user } = useAuth();
+  const initials = (user?.name ?? 'D').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
   return (
     <View
@@ -93,9 +95,9 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
         borderRadius: 40,
         paddingVertical: 7,
         paddingHorizontal: 6,
-        backgroundColor: 'rgba(10, 27, 51, 0.88)',
+        backgroundColor: Colors.surface,
         borderWidth: 1,
-        borderColor: 'rgba(200, 210, 220, 0.25)',
+        borderColor: Colors.border,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.10,
@@ -104,18 +106,9 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
         overflow: 'hidden',
       }}>
 
-        {/* White glass sheen */}
-        <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%' }}>
-          <LinearGradient
-            colors={['rgba(255, 255, 255, 0.10)', 'rgba(255, 255, 255, 0.00)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={{ flex: 1, borderRadius: 40 }}
-          />
-        </View>
-
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
+          const isProfile = route.name === 'Profile';
           const meta = TAB_META[route.name] ?? {
             outline: 'ellipse-outline' as IoniconsName,
             filled:  'ellipse' as IoniconsName,
@@ -147,17 +140,30 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
                 paddingVertical: 10,
                 paddingHorizontal: isFocused ? 18 : 4,
                 borderRadius: 30,
-                backgroundColor: isFocused ? 'rgba(200, 210, 220, 0.14)' : 'transparent',
+                backgroundColor: isFocused ? Colors.surfaceLight : 'transparent',
                 borderWidth: isFocused ? 1 : 0,
-                borderColor: 'rgba(200, 210, 220, 0.30)',
+                borderColor: Colors.border,
                 gap: 7,
               }}
             >
-              <Ionicons
-                name={isFocused ? meta.filled : meta.outline}
-                size={21}
-                color={isFocused ? Colors.secondary : 'rgba(255, 255, 255, 0.35)'}
-              />
+              {isProfile ? (
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11, overflow: 'hidden',
+                  justifyContent: 'center', alignItems: 'center',
+                  backgroundColor: isFocused ? Colors.primary : Colors.surfaceLight,
+                }}>
+                  {user?.avatarUrl
+                    ? <Image source={{ uri: user.avatarUrl }} style={{ width: 22, height: 22 }} />
+                    : <Text style={{ fontSize: 8, fontWeight: '800', color: isFocused ? Colors.white : Colors.textMuted }}>{initials}</Text>
+                  }
+                </View>
+              ) : (
+                <Ionicons
+                  name={isFocused ? meta.filled : meta.outline}
+                  size={21}
+                  color={isFocused ? Colors.secondary : Colors.textMuted}
+                />
+              )}
               {isFocused && (
                 <Text numberOfLines={1} style={{ color: Colors.secondary, fontSize: 13, fontWeight: '700', letterSpacing: 0.1 }}>
                   {label}

@@ -11,12 +11,12 @@
     "splash": {
       "image": "./assets/road_ready_logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#050B18"
+      "backgroundColor": "#000000"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cst.driver",
-      "buildNumber": "10",
+      "buildNumber": "11",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Road Ready Network uses your location to find nearby fuel stops, truck stops, rest areas, and emergency services.",

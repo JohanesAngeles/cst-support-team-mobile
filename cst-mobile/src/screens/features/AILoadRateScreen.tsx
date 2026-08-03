@@ -44,7 +44,7 @@ export default function AILoadRateScreen() {
     row: { flexDirection: 'row', alignItems: 'flex-end' },
     label: { color: Colors.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 5, letterSpacing: 0.3 },
     input: {
-      backgroundColor: Colors.surfaceLight ?? '#1E3A5C', borderRadius: 8, borderWidth: 1,
+      backgroundColor: Colors.surfaceLight ?? '#2A2A2E', borderRadius: 8, borderWidth: 1,
       borderColor: Colors.border, color: Colors.text, paddingHorizontal: 12,
       paddingVertical: 10, fontSize: 14,
     },
@@ -62,7 +62,7 @@ export default function AILoadRateScreen() {
     verdictReason: { color: Colors.textMuted, fontSize: 13, lineHeight: 20 },
     statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     statBox: {
-      flex: 1, minWidth: '45%', backgroundColor: Colors.surfaceLight ?? '#1E3A5C',
+      flex: 1, minWidth: '45%', backgroundColor: Colors.surfaceLight ?? '#2A2A2E',
       borderRadius: 10, padding: 12, alignItems: 'center', gap: 4,
     },
     statValue: { fontSize: 18, fontWeight: '900' },
@@ -255,7 +255,7 @@ export default function AILoadRateScreen() {
 function StatBox({ label, value, color }: { label: string; value: string; color: string }) {
   const Colors = useColors();
   return (
-    <View style={{ flex: 1, minWidth: '45%', backgroundColor: Colors.surfaceLight ?? '#1E3A5C', borderRadius: 10, padding: 12, alignItems: 'center', gap: 4 }}>
+    <View style={{ flex: 1, minWidth: '45%', backgroundColor: Colors.surfaceLight ?? '#2A2A2E', borderRadius: 10, padding: 12, alignItems: 'center', gap: 4 }}>
       <Text style={{ fontSize: 18, fontWeight: '900', color }}>{value}</Text>
       <Text style={{ color: Colors.textMuted, fontSize: 11, fontWeight: '600', textAlign: 'center' }}>{label}</Text>
     </View>

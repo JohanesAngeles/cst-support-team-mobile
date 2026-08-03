@@ -114,7 +114,7 @@ function App() {
   // Matches the native splash background — avoids a flash of system-font
   // text before Poppins/Bebas Neue are ready.
   if (!fontsLoaded) {
-    return <View style={{ flex: 1, backgroundColor: '#050B18' }} />;
+    return <View style={{ flex: 1, backgroundColor: '#000000' }} />;
   }
 
   return (
