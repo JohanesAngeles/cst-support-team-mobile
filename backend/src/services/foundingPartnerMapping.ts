@@ -52,7 +52,12 @@ export async function geocodeAddress(address: string): Promise<{ lat: number; ln
 // BusinessListing fields that mirror it. Does NOT set ownerId or tier —
 // callers decide those based on whether the partner has a real paid account.
 export function mapFoundingPartnerFields(fp: any): Record<string, any> {
-  const { city, state } = parseCityState(fp.physicalAddress);
+  const parsed = parseCityState(fp.physicalAddress);
+  // Seeded partners have no street address to parse a city/state out of, but
+  // the seeder does group them by state — use that directly so the listing
+  // isn't left with no location at all.
+  const city  = parsed.city;
+  const state = parsed.state || fp.state || '';
   return {
     businessName:        fp.businessName        ?? '',
     category:            fp.category            ?? '',

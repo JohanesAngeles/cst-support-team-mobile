@@ -22,6 +22,11 @@ const FoundingPartnerSchema = new mongoose.Schema({
   email:               String,
   website:             String,
   physicalAddress:     String,
+  // Seeded (bulk-imported) partners are grouped by state but have no street
+  // address — without this field declared here, Mongoose silently drops it
+  // from every read on this connection, so it's needed as a geocoding
+  // fallback below for the ~199 seeded listings that have no physicalAddress.
+  state:               String,
   serviceArea:         String,
   businessHours:       String,
   is24Hours:           Boolean,
@@ -90,9 +95,15 @@ export async function syncApprovedPartners(): Promise<void> {
 
       let lat = existing?.latitude;
       let lng = existing?.longitude;
-      if (!lat && fp.physicalAddress) {
-        const coords = await geocodeAddress(fp.physicalAddress);
-        if (coords) { lat = coords.lat; lng = coords.lng; }
+      if (!lat) {
+        // Prefer the precise street address; seeded partners usually don't
+        // have one, so fall back to a state-level geocode — a coarse pin is
+        // still far better than no pin at all on the driver-facing map.
+        const geoQuery = fp.physicalAddress || (fp.state ? `${fp.state}, USA` : null);
+        if (geoQuery) {
+          const coords = await geocodeAddress(geoQuery);
+          if (coords) { lat = coords.lat; lng = coords.lng; }
+        }
       }
 
       const update: any = { ...fields };
