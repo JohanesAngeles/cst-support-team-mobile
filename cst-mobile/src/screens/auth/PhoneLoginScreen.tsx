@@ -10,6 +10,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
+import { useColors } from '../../constants/colors';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'PhoneLogin'> };
 
@@ -46,7 +47,8 @@ const COUNTRIES = [
   { code: '+46',  flag: '🇸🇪', name: 'Sweden' },
 ];
 
-function SparkleCluster() {
+function SparkleCluster({ Colors }: { Colors: ReturnType<typeof useColors> }) {
+  const sp = getSparkleStyles(Colors);
   return (
     <View style={sp.wrap}>
       <View style={[sp.diamond, { width: 60, height: 60, left: 0, top: 16, borderRadius: 7 }]} />
@@ -56,13 +58,16 @@ function SparkleCluster() {
   );
 }
 
-const sp = StyleSheet.create({
+const getSparkleStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
   wrap: { width: 102, height: 80 },
-  diamond: { position: 'absolute', backgroundColor: '#EEF3F8', borderWidth: 1.5, borderColor: '#C0D0E0', transform: [{ rotate: '45deg' }] },
+  diamond: { position: 'absolute', backgroundColor: Colors.surfaceLight, borderWidth: 1.5, borderColor: Colors.border, transform: [{ rotate: '45deg' }] },
 });
 
 export default function PhoneLoginScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const Colors = useColors();
+  const s = getStyles(Colors);
+  const m = getModalStyles(Colors);
   const [country,      setCountry]      = useState(COUNTRIES[0]);
   const [phone,        setPhone]        = useState('');
   const [focused,      setFocused]      = useState(false);
@@ -100,11 +105,11 @@ export default function PhoneLoginScreen({ navigation }: Props) {
           <View style={s.inner}>
 
             <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-              <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+              <Ionicons name="chevron-back" size={22} color={Colors.text} />
             </TouchableOpacity>
 
             <View style={s.header}>
-              <SparkleCluster />
+              <SparkleCluster Colors={Colors} />
               <Text style={s.title}>{t('auth.phoneLogin.title')}</Text>
               <Text style={s.subtitle}>{t('auth.phoneLogin.subtitle')}</Text>
             </View>
@@ -116,7 +121,7 @@ export default function PhoneLoginScreen({ navigation }: Props) {
                 <TouchableOpacity style={s.countryBtn} onPress={() => setShowPicker(true)} activeOpacity={0.8}>
                   <Text style={s.countryFlag}>{country.flag}</Text>
                   <Text style={s.countryCode}>{country.code}</Text>
-                  <Ionicons name="chevron-down" size={14} color="#8E8E93" />
+                  <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
                 </TouchableOpacity>
                 <View style={s.divider} />
                 <TextInput
@@ -124,7 +129,7 @@ export default function PhoneLoginScreen({ navigation }: Props) {
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="Phone number"
-                  placeholderTextColor="#AEAEB2"
+                  placeholderTextColor={Colors.textMuted}
                   keyboardType="phone-pad"
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
@@ -138,7 +143,7 @@ export default function PhoneLoginScreen({ navigation }: Props) {
                 activeOpacity={0.85}
               >
                 {loading
-                  ? <ActivityIndicator color="#FFFFFF" />
+                  ? <ActivityIndicator color={Colors.white} />
                   : <Text style={s.primaryBtnText}>{t('auth.phoneLogin.sendBtn')}</Text>
                 }
               </TouchableOpacity>
@@ -163,16 +168,16 @@ export default function PhoneLoginScreen({ navigation }: Props) {
           <View style={m.header}>
             <Text style={m.title}>{t('auth.phoneLogin.selectCountry')}</Text>
             <TouchableOpacity onPress={() => { setShowPicker(false); setCountrySearch(''); }}>
-              <Ionicons name="close" size={24} color="#1A1A2E" />
+              <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
 
           <View style={m.searchWrap}>
-            <Ionicons name="search-outline" size={18} color="#AEAEB2" style={{ marginRight: 8 }} />
+            <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
             <TextInput
               style={m.searchInput}
               placeholder={t('auth.phoneLogin.searchCountry')}
-              placeholderTextColor="#AEAEB2"
+              placeholderTextColor={Colors.textMuted}
               value={countrySearch}
               onChangeText={setCountrySearch}
               autoFocus
@@ -202,71 +207,71 @@ export default function PhoneLoginScreen({ navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: '#FFFFFF' },
+const getStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root:  { flex: 1, backgroundColor: Colors.background },
   kav:   { flex: 1 },
   inner: { flex: 1, paddingHorizontal: 28, paddingTop: 16, paddingBottom: 32 },
 
   backBtn: { padding: 4, alignSelf: 'flex-start', marginBottom: 8 },
 
   header:   { paddingTop: 10, paddingBottom: 4, flex: 1 },
-  title:    { fontSize: 28, fontWeight: '800', color: '#1A1A2E', marginTop: 10 },
-  subtitle: { fontSize: 15, color: '#8E8E93', marginTop: 6, lineHeight: 22 },
+  title:    { fontSize: 28, fontWeight: '800', color: Colors.text, marginTop: 10 },
+  subtitle: { fontSize: 15, color: Colors.textMuted, marginTop: 6, lineHeight: 22 },
 
   form:  { gap: 16 },
-  label: { fontSize: 14, fontWeight: '600', color: '#1A1A2E' },
+  label: { fontSize: 14, fontWeight: '600', color: Colors.text },
 
   phoneRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F2F2F7', borderRadius: 14,
+    backgroundColor: Colors.inputBg, borderRadius: 14,
     borderWidth: 1.5, borderColor: 'transparent', height: 54,
   },
-  phoneRowFocused: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
+  phoneRowFocused: { borderColor: Colors.primary, backgroundColor: Colors.background },
 
   countryBtn: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: 12, gap: 4,
   },
   countryFlag: { fontSize: 20 },
-  countryCode: { fontSize: 14, fontWeight: '600', color: '#1A1A2E' },
-  divider:     { width: 1, height: 28, backgroundColor: '#E5E5EA', marginHorizontal: 4 },
-  phoneInput:  { flex: 1, fontSize: 15, color: '#1A1A2E', paddingHorizontal: 10 },
+  countryCode: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  divider:     { width: 1, height: 28, backgroundColor: Colors.border, marginHorizontal: 4 },
+  phoneInput:  { flex: 1, fontSize: 15, color: Colors.text, paddingHorizontal: 10 },
 
   primaryBtn: {
-    height: 56, borderRadius: 28, backgroundColor: '#021B3A',
+    height: 56, borderRadius: 28, backgroundColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#021B3A', shadowOffset: { width: 0, height: 4 },
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22, shadowRadius: 10, elevation: 5,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  primaryBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   disabled: { opacity: 0.55 },
 
   footer:    { alignItems: 'center', marginTop: 24 },
-  footerText:{ fontSize: 14, color: '#8E8E93' },
-  footerBold:{ color: '#021B3A', fontWeight: '700' },
+  footerText:{ fontSize: 14, color: Colors.textMuted },
+  footerBold:{ color: Colors.secondary, fontWeight: '700' },
 });
 
-const m = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const getModalStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.background },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderColor: '#F0F0F0',
+    borderBottomWidth: 1, borderColor: Colors.border,
   },
-  title: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
+  title: { fontSize: 18, fontWeight: '700', color: Colors.text },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    margin: 20, backgroundColor: '#F2F2F7',
+    margin: 20, backgroundColor: Colors.inputBg,
     borderRadius: 14, paddingHorizontal: 14, height: 48,
   },
-  searchInput: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  searchInput: { flex: 1, fontSize: 15, color: Colors.text },
   row: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 14, paddingHorizontal: 14,
     borderRadius: 12, gap: 12,
   },
-  rowSelected: { backgroundColor: '#EEF3F8' },
+  rowSelected: { backgroundColor: Colors.surfaceLight },
   flag:        { fontSize: 24 },
-  countryName: { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A2E' },
-  countryCode: { fontSize: 14, color: '#8E8E93', fontWeight: '600' },
+  countryName: { flex: 1, fontSize: 15, fontWeight: '500', color: Colors.text },
+  countryCode: { fontSize: 14, color: Colors.textMuted, fontWeight: '600' },
 });

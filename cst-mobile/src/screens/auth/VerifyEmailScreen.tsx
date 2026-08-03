@@ -8,8 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
+import { useColors } from '../../constants/colors';
 
-function SparkleCluster() {
+function SparkleCluster({ Colors }: { Colors: ReturnType<typeof useColors> }) {
+  const sp = getSparkleStyles(Colors);
   return (
     <View style={sp.wrap}>
       <View style={[sp.diamond, { width: 60, height: 60, left: 0, top: 16, borderRadius: 7 }]} />
@@ -18,13 +20,14 @@ function SparkleCluster() {
     </View>
   );
 }
-const sp = StyleSheet.create({
+const getSparkleStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
   wrap: { width: 102, height: 80 },
-  diamond: { position: 'absolute', backgroundColor: '#EEF3F8', borderWidth: 1.5, borderColor: '#C0D0E0', transform: [{ rotate: '45deg' }] },
+  diamond: { position: 'absolute', backgroundColor: Colors.surfaceLight, borderWidth: 1.5, borderColor: Colors.border, transform: [{ rotate: '45deg' }] },
 });
 
-function OtpInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function OtpInput({ value, onChange, Colors }: { value: string; onChange: (v: string) => void; Colors: ReturnType<typeof useColors> }) {
   const inputRef = useRef<TextInput>(null);
+  const otp = getOtpStyles(Colors);
   const LEN = 6;
   return (
     <TouchableOpacity activeOpacity={1} onPress={() => inputRef.current?.focus()} style={otp.row}>
@@ -37,18 +40,20 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
     </TouchableOpacity>
   );
 }
-const otp = StyleSheet.create({
+const getOtpStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
   row:    { flexDirection: 'row', gap: 10, justifyContent: 'center' },
   hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
-  box:    { width: 46, height: 56, borderRadius: 12, backgroundColor: '#F2F2F7', borderWidth: 1.5, borderColor: '#E5E5EA', alignItems: 'center', justifyContent: 'center' },
-  boxActive: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
-  boxFilled: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
-  digit: { fontSize: 22, fontWeight: '700', color: '#1A1A2E' },
+  box:    { width: 46, height: 56, borderRadius: 12, backgroundColor: Colors.inputBg, borderWidth: 1.5, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
+  boxActive: { borderColor: Colors.primary, backgroundColor: Colors.background },
+  boxFilled: { borderColor: Colors.primary, backgroundColor: Colors.background },
+  digit: { fontSize: 22, fontWeight: '700', color: Colors.text },
 });
 
 export default function VerifyEmailScreen() {
   const { t } = useTranslation();
   const { user, logout, markVerified } = useAuth();
+  const Colors = useColors();
+  const s = getStyles(Colors);
   const [code,      setCode]      = useState('');
   const [loading,   setLoading]   = useState(false);
   const [resending, setResending] = useState(false);
@@ -86,7 +91,7 @@ export default function VerifyEmailScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.kav}>
           <View style={s.inner}>
             <View style={s.header}>
-              <SparkleCluster />
+              <SparkleCluster Colors={Colors} />
               <Text style={s.title}>{t('auth.verifyEmail.title')}</Text>
               <Text style={s.subtitle}>
                 {t('auth.verifyEmail.subtitle')}{'\n'}
@@ -95,16 +100,16 @@ export default function VerifyEmailScreen() {
             </View>
 
             <View style={s.otpSection}>
-              <OtpInput value={code} onChange={setCode} />
+              <OtpInput value={code} onChange={setCode} Colors={Colors} />
               <TouchableOpacity style={[s.primaryBtn, loading && s.disabled]} onPress={handleVerify} disabled={loading} activeOpacity={0.85}>
-                {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={s.primaryBtnText}>{t('auth.verifyEmail.verifyBtn')}</Text>}
+                {loading ? <ActivityIndicator color={Colors.white} /> : <Text style={s.primaryBtnText}>{t('auth.verifyEmail.verifyBtn')}</Text>}
               </TouchableOpacity>
             </View>
 
             <View style={s.bottom}>
               <TouchableOpacity onPress={handleResend} disabled={resending} activeOpacity={0.8}>
                 {resending
-                  ? <ActivityIndicator size="small" color="#8E8E93" />
+                  ? <ActivityIndicator size="small" color={Colors.textMuted} />
                   : <Text style={s.resendText}>
                       {t('auth.verifyEmail.didntReceive')}{'  '}
                       <Text style={s.resendBold}>{t('auth.verifyEmail.resendCode')}</Text>
@@ -112,7 +117,7 @@ export default function VerifyEmailScreen() {
                 }
               </TouchableOpacity>
               <TouchableOpacity style={s.logoutBtn} onPress={logout} activeOpacity={0.8}>
-                <Ionicons name="log-out-outline" size={15} color="#AEAEB2" />
+                <Ionicons name="log-out-outline" size={15} color={Colors.textMuted} />
                 <Text style={s.logoutText}>{t('auth.verifyEmail.differentAccount')}</Text>
               </TouchableOpacity>
             </View>
@@ -123,26 +128,26 @@ export default function VerifyEmailScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: '#FFFFFF' },
+const getStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root:  { flex: 1, backgroundColor: Colors.background },
   kav:   { flex: 1 },
   inner: { flex: 1, paddingHorizontal: 28, paddingVertical: 32, justifyContent: 'space-between' },
   header: { alignItems: 'flex-start', gap: 4 },
-  title:  { fontSize: 28, fontWeight: '800', color: '#1A1A2E', marginTop: 12 },
-  subtitle: { fontSize: 15, color: '#8E8E93', marginTop: 6, lineHeight: 22 },
-  emailHighlight: { color: '#021B3A', fontWeight: '700' },
+  title:  { fontSize: 28, fontWeight: '800', color: Colors.text, marginTop: 12 },
+  subtitle: { fontSize: 15, color: Colors.textMuted, marginTop: 6, lineHeight: 22 },
+  emailHighlight: { color: Colors.secondary, fontWeight: '700' },
   otpSection: { gap: 24 },
   primaryBtn: {
-    height: 56, borderRadius: 28, backgroundColor: '#021B3A',
+    height: 56, borderRadius: 28, backgroundColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#021B3A', shadowOffset: { width: 0, height: 4 },
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22, shadowRadius: 10, elevation: 5,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  primaryBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   disabled: { opacity: 0.55 },
   bottom:     { alignItems: 'center', gap: 16 },
-  resendText: { fontSize: 14, color: '#8E8E93' },
-  resendBold: { color: '#021B3A', fontWeight: '700' },
+  resendText: { fontSize: 14, color: Colors.textMuted },
+  resendBold: { color: Colors.secondary, fontWeight: '700' },
   logoutBtn:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  logoutText: { fontSize: 13, color: '#AEAEB2' },
+  logoutText: { fontSize: 13, color: Colors.textMuted },
 });

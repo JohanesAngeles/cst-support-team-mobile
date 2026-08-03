@@ -21,15 +21,18 @@ interface BrokerNote {
   notes: string;
 }
 
-const Stars = ({ value, onPress }: { value: number; onPress?: (v: number) => void }) => (
-  <View style={{ flexDirection: 'row', gap: 2 }}>
-    {[1, 2, 3, 4, 5].map(i => (
-      <TouchableOpacity key={i} onPress={() => onPress?.(i)} disabled={!onPress}>
-        <Ionicons name={i <= value ? 'star' : 'star-outline'} size={onPress ? 24 : 14} color={i <= value ? '#2C6EBD' : '#757575'} />
-      </TouchableOpacity>
-    ))}
-  </View>
-);
+const Stars = ({ value, onPress }: { value: number; onPress?: (v: number) => void }) => {
+  const Colors = useColors();
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1, 2, 3, 4, 5].map(i => (
+        <TouchableOpacity key={i} onPress={() => onPress?.(i)} disabled={!onPress}>
+          <Ionicons name={i <= value ? 'star' : 'star-outline'} size={onPress ? 24 : 14} color={i <= value ? Colors.secondary : Colors.textMuted} />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+};
 
 const avgRating = (b: BrokerNote) => ((b.paySpeed + b.communication + b.loadQuality) / 3).toFixed(1);
 

@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../context/ThemeContext';
+import { useColors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import { getUpcomingAlerts, UpcomingAlert } from '../../utils/notifications';
@@ -48,7 +48,7 @@ const DEFAULT_PREFS: Prefs = {
 
 export default function NotificationsScreen() {
   const { t } = useTranslation();
-  const { theme } = useTheme();
+  const Colors = useColors();
   const { user, updateUser } = useAuth();
   const [alerts,  setAlerts]  = useState<UpcomingAlert[]>([]);
   const [history, setHistory] = useState<StoredNotification[]>([]);
@@ -107,13 +107,13 @@ export default function NotificationsScreen() {
   const renderAlert = ({ item }: { item: UpcomingAlert }) => {
     const color = urgencyColor(item.daysAway);
     return (
-      <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border, borderLeftColor: color }]}>
+      <View style={[s.card, { backgroundColor: Colors.surface, borderColor: Colors.border, borderLeftColor: color }]}>
         <View style={[s.iconWrap, { backgroundColor: color + '1A' }]}>
           <Ionicons name="time-outline" size={20} color={color} />
         </View>
         <View style={s.cardBody}>
-          <Text style={[s.cardTitle, { color: theme.text }]}>{item.title}</Text>
-          <Text style={[s.cardSub, { color: theme.textMuted }]}>
+          <Text style={[s.cardTitle, { color: Colors.text }]}>{item.title}</Text>
+          <Text style={[s.cardSub, { color: Colors.textMuted }]}>
             {item.daysAway <= 0
               ? t('notifications.dueToday')
               : item.daysAway === 1
@@ -131,37 +131,37 @@ export default function NotificationsScreen() {
   };
 
   const renderHistory = ({ item }: { item: StoredNotification }) => (
-    <View style={[s.card, { backgroundColor: theme.surface, borderColor: theme.border, borderLeftColor: theme.secondary, opacity: item.read ? 0.7 : 1 }]}>
-      <View style={[s.iconWrap, { backgroundColor: theme.secondary + '1A' }]}>
-        <Ionicons name="notifications-outline" size={20} color={theme.secondary} />
+    <View style={[s.card, { backgroundColor: Colors.surface, borderColor: Colors.border, borderLeftColor: Colors.secondary, opacity: item.read ? 0.7 : 1 }]}>
+      <View style={[s.iconWrap, { backgroundColor: Colors.secondary + '1A' }]}>
+        <Ionicons name="notifications-outline" size={20} color={Colors.secondary} />
       </View>
       <View style={s.cardBody}>
-        <Text style={[s.cardTitle, { color: theme.text }]}>{item.title}</Text>
-        <Text style={[s.cardSub, { color: theme.textMuted }]}>{item.body}</Text>
-        <Text style={[s.cardTime, { color: theme.textMuted }]}>
+        <Text style={[s.cardTitle, { color: Colors.text }]}>{item.title}</Text>
+        <Text style={[s.cardSub, { color: Colors.textMuted }]}>{item.body}</Text>
+        <Text style={[s.cardTime, { color: Colors.textMuted }]}>
           {new Date(item.receivedAt).toLocaleString('en-US', {
             month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
           })}
         </Text>
       </View>
-      {!item.read && <View style={[s.unreadDot, { backgroundColor: theme.secondary }]} />}
+      {!item.read && <View style={[s.unreadDot, { backgroundColor: Colors.secondary }]} />}
     </View>
   );
 
   const isEmpty = tab === 'upcoming' ? alerts.length === 0 : history.length === 0;
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: theme.background }]} edges={['bottom']}>
+    <SafeAreaView style={[s.safe, { backgroundColor: Colors.background }]} edges={['bottom']}>
 
       {/* Tabs */}
-      <View style={[s.tabs, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+      <View style={[s.tabs, { backgroundColor: Colors.surface, borderBottomColor: Colors.border }]}>
         {(['upcoming', 'history', 'settings'] as Tab[]).map(tabKey => (
           <TouchableOpacity
             key={tabKey}
-            style={[s.tab, tab === tabKey && { borderBottomColor: theme.secondary }]}
+            style={[s.tab, tab === tabKey && { borderBottomColor: Colors.secondary }]}
             onPress={() => setTab(tabKey)}
           >
-            <Text style={[s.tabTxt, { color: tab === tabKey ? theme.secondary : theme.textMuted }]}>
+            <Text style={[s.tabTxt, { color: tab === tabKey ? Colors.secondary : Colors.textMuted }]}>
               {tabKey === 'upcoming' ? t('notifications.upcoming')
                 : tabKey === 'history' ? t('notifications.history')
                 : 'Settings'}
@@ -171,20 +171,20 @@ export default function NotificationsScreen() {
 
         {tab === 'history' && history.length > 0 && (
           <TouchableOpacity style={s.clearBtn} onPress={handleClearHistory}>
-            <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
+            <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
 
       {tab === 'settings' ? (
         <ScrollView contentContainerStyle={s.settingsWrap} showsVerticalScrollIndicator={false}>
-          <Text style={[s.settingsHeading, { color: theme.textMuted }]}>
+          <Text style={[s.settingsHeading, { color: Colors.textMuted }]}>
             Control which notifications you receive. Changes save instantly.
           </Text>
           {prefsSaving && (
             <View style={s.savingRow}>
-              <ActivityIndicator size="small" color={theme.secondary} />
-              <Text style={[s.savingTxt, { color: theme.textMuted }]}>Saving…</Text>
+              <ActivityIndicator size="small" color={Colors.secondary} />
+              <Text style={[s.savingTxt, { color: Colors.textMuted }]}>Saving…</Text>
             </View>
           )}
           {PREF_ITEMS.map((item, idx) => (
@@ -192,22 +192,22 @@ export default function NotificationsScreen() {
               key={item.key}
               style={[
                 s.prefRow,
-                { backgroundColor: theme.surface, borderColor: theme.border },
+                { backgroundColor: Colors.surface, borderColor: Colors.border },
                 idx === 0 && s.prefFirst,
                 idx === PREF_ITEMS.length - 1 && s.prefLast,
               ]}
             >
-              <View style={[s.prefIcon, { backgroundColor: theme.secondary + '1A' }]}>
-                <Ionicons name={item.icon as any} size={20} color={theme.secondary} />
+              <View style={[s.prefIcon, { backgroundColor: Colors.secondary + '1A' }]}>
+                <Ionicons name={item.icon as any} size={20} color={Colors.secondary} />
               </View>
               <View style={s.prefBody}>
-                <Text style={[s.prefLabel, { color: theme.text }]}>{item.label}</Text>
-                <Text style={[s.prefSub, { color: theme.textMuted }]}>{item.sub}</Text>
+                <Text style={[s.prefLabel, { color: Colors.text }]}>{item.label}</Text>
+                <Text style={[s.prefSub, { color: Colors.textMuted }]}>{item.sub}</Text>
               </View>
               <Switch
                 value={prefs[item.key]}
                 onValueChange={(v: boolean) => togglePref(item.key, v)}
-                trackColor={{ false: theme.border, true: theme.secondary }}
+                trackColor={{ false: Colors.border, true: Colors.secondary }}
                 thumbColor="#FFFFFF"
                 disabled={prefsSaving}
               />
@@ -216,12 +216,12 @@ export default function NotificationsScreen() {
         </ScrollView>
       ) : loading ? (
         <View style={s.center}>
-          <ActivityIndicator color={theme.secondary} />
+          <ActivityIndicator color={Colors.secondary} />
         </View>
       ) : isEmpty ? (
         <View style={s.center}>
-          <Ionicons name="notifications-off-outline" size={48} color={theme.border} />
-          <Text style={[s.emptyTxt, { color: theme.textMuted }]}>
+          <Ionicons name="notifications-off-outline" size={48} color={Colors.border} />
+          <Text style={[s.emptyTxt, { color: Colors.textMuted }]}>
             {tab === 'upcoming' ? t('notifications.noUpcoming') : t('notifications.noHistory')}
           </Text>
         </View>

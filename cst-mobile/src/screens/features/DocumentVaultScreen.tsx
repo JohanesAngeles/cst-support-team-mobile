@@ -265,10 +265,10 @@ export default function DocumentVaultScreen() {
               }).sort((a, b) => daysUntil(a.expiryDate!) - daysUntil(b.expiryDate!));
               if (expiring.length === 0) return null;
               return (
-                <View style={{ backgroundColor: '#FFF3E0', borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: '#FFB74D', gap: 8 }}>
+                <View style={{ backgroundColor: Colors.surface, borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1.5, borderColor: '#F39C12', gap: 8 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="alert-circle" size={18} color="#E65100" />
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#E65100' }}>
+                    <Ionicons name="alert-circle" size={18} color="#F39C12" />
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#F39C12' }}>
                       {expiring.length} Document{expiring.length > 1 ? 's' : ''} Expiring Soon
                     </Text>
                   </View>
@@ -278,7 +278,7 @@ export default function DocumentVaultScreen() {
                     return (
                       <View key={d._id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: urgent ? '#E74C3C' : '#E67E22' }} />
-                        <Text style={{ flex: 1, fontSize: 13, color: '#5D4037', fontWeight: '600' }}>{d.name}</Text>
+                        <Text style={{ flex: 1, fontSize: 13, color: Colors.text, fontWeight: '600' }}>{d.name}</Text>
                         <Text style={{ fontSize: 12, fontWeight: '800', color: urgent ? '#E74C3C' : '#E67E22' }}>
                           {days === 0 ? 'Today!' : `${days}d`}
                         </Text>
@@ -304,8 +304,8 @@ export default function DocumentVaultScreen() {
                 <Text style={styles.summaryLabel}>Uploaded</Text>
               </View>
               <View style={styles.summaryCard}>
-                <Ionicons name="shield-checkmark-outline" size={18} color='#3498DB' />
-                <Text style={[styles.summaryValue, { color: '#3498DB' }]}>
+                <Ionicons name="shield-checkmark-outline" size={18} color={Colors.secondary} />
+                <Text style={[styles.summaryValue, { color: Colors.secondary }]}>
                   {docs.filter(d => d.status === 'Active').length}
                 </Text>
                 <Text style={styles.summaryLabel}>Active</Text>
@@ -358,13 +358,13 @@ export default function DocumentVaultScreen() {
             </View>
 
             {/* Why store docs tip */}
-            <View style={{ backgroundColor: '#EEF6FF', borderRadius: 14, padding: 16, marginTop: 20, flexDirection: 'row', gap: 12, alignItems: 'flex-start', borderWidth: 1, borderColor: '#C8DEFF' }}>
-              <Ionicons name="information-circle-outline" size={22} color='#3498DB' style={{ marginTop: 1 }} />
+            <View style={{ backgroundColor: Colors.surface, borderRadius: 14, padding: 16, marginTop: 20, flexDirection: 'row', gap: 12, alignItems: 'flex-start', borderWidth: 1, borderColor: Colors.border }}>
+              <Ionicons name="information-circle-outline" size={22} color={Colors.secondary} style={{ marginTop: 1 }} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: '#1A3A6E', fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
+                <Text style={{ color: Colors.text, fontSize: 13, fontWeight: '700', marginBottom: 4 }}>
                   Why store docs here?
                 </Text>
-                <Text style={{ color: '#4A6FA0', fontSize: 12, lineHeight: 18 }}>
+                <Text style={{ color: Colors.textMuted, fontSize: 12, lineHeight: 18 }}>
                   Access your CDL, insurance, and permits instantly during roadside inspections — even offline.
                   Set expiry dates and get alerts before they lapse.
                 </Text>

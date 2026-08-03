@@ -659,8 +659,8 @@ function makeStyles(Colors: any) {
     timerBarFill:  { height: '100%', borderRadius: 3 },
     timerNum:      { fontSize: 13, fontWeight: '800', minWidth: 28, textAlign: 'right' },
 
-    questionCard: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, marginBottom: 20, minHeight: 100, justifyContent: 'center' },
-    questionText: { color: '#1A1A2E', fontSize: 17, fontWeight: '800', lineHeight: 25 },
+    questionCard: { backgroundColor: Colors.surfaceLight ?? Colors.surface, borderRadius: 20, padding: 20, marginBottom: 20, minHeight: 100, justifyContent: 'center' },
+    questionText: { color: Colors.text, fontSize: 17, fontWeight: '800', lineHeight: 25 },
 
     optionsWrap:  { gap: 10, flex: 1 },
     option:       { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1.5, gap: 12 },

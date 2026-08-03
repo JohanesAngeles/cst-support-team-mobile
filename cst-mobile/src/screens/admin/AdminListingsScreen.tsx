@@ -7,10 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../../api/client';
-
-const NAVY = '#021B3A';
+import { useColors } from '../../constants/colors';
 
 export default function AdminListingsScreen() {
+  const Colors = useColors();
   const [listings,   setListings]   = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -119,23 +119,23 @@ export default function AdminListingsScreen() {
   const noPin    = listings.filter(l => !l.latitude).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
 
-        <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EBEBEF', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name="business-outline" size={18} color="#27AE60" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#1A1A2E' }}>Business Listings</Text>
-            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.text }}>Business Listings</Text>
+            <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 1 }}>
               {active.length} live · {inactive.length} offline
               {noPin > 0 ? ` · ${noPin} no pin` : ''}
             </Text>
           </View>
           {noPin > 0 && (
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: NAVY, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, opacity: geocoding ? 0.6 : 1 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: Colors.primary, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, opacity: geocoding ? 0.6 : 1 }}
               onPress={handleGeocodeBackfill}
               disabled={geocoding}
               activeOpacity={0.8}
@@ -153,7 +153,7 @@ export default function AdminListingsScreen() {
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#021B3A" />
+            <ActivityIndicator size="large" color={Colors.secondary} />
           </View>
         ) : (
           <ScrollView
@@ -163,14 +163,14 @@ export default function AdminListingsScreen() {
           >
             {listings.length === 0 && (
               <View style={{ alignItems: 'center', paddingTop: 60, gap: 10 }}>
-                <Ionicons name="business-outline" size={48} color="#C7C7CC" />
-                <Text style={{ color: '#8E8E93', fontSize: 15, fontWeight: '600' }}>No listings yet</Text>
-                <Text style={{ color: '#AEAEB2', fontSize: 13, textAlign: 'center' }}>Use the admin bulk import to add{'\n'}Truck Club Magazine listings.</Text>
+                <Ionicons name="business-outline" size={48} color={Colors.textMuted} />
+                <Text style={{ color: Colors.textMuted, fontSize: 15, fontWeight: '600' }}>No listings yet</Text>
+                <Text style={{ color: Colors.textMuted, fontSize: 13, textAlign: 'center' }}>Use the admin bulk import to add{'\n'}Truck Club Magazine listings.</Text>
               </View>
             )}
 
             {active.length > 0 && (
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 }}>
                 LIVE ({active.length})
               </Text>
             )}
@@ -179,7 +179,7 @@ export default function AdminListingsScreen() {
             ))}
 
             {inactive.length > 0 && (
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginTop: 8, marginBottom: 2 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginTop: 8, marginBottom: 2 }}>
                 OFFLINE ({inactive.length})
               </Text>
             )}
@@ -203,28 +203,29 @@ function ListingCard({ listing: l, deleting, toggling, featuring, onDelete, onTo
   onToggle: (id: string, currentActive: boolean) => void;
   onTier: (id: string, currentTier: string) => void;
 }) {
+  const Colors = useColors();
   const isDeleting  = deleting  === l._id;
   const isToggling  = toggling  === l._id;
   const isFeaturing = featuring === l._id;
   const isFeatured  = l.tier === 'featured';
 
   return (
-    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#EBEBEF', padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
+    <View style={{ backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 16, flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
       {/* Status dot */}
-      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: l.isActive ? '#27AE60' : '#C7C7CC', marginTop: 5 }} />
+      <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: l.isActive ? '#27AE60' : Colors.textMuted, marginTop: 5 }} />
 
       {/* Info */}
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1A1A2E', flex: 1 }}>{l.businessName}</Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: Colors.text, flex: 1 }}>{l.businessName}</Text>
           {isFeatured && (
             <View style={{ backgroundColor: '#FEF3C7', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#F5C842' }}>
               <Text style={{ fontSize: 9, fontWeight: '800', color: '#92400E' }}>★ FEATURED</Text>
             </View>
           )}
         </View>
-        <Text style={{ fontSize: 13, color: '#8E8E93' }}>{l.category} · {l.city}, {l.state}</Text>
-        {l.phone ? <Text style={{ fontSize: 12, color: '#AEAEB2' }}>{l.phone}</Text> : null}
+        <Text style={{ fontSize: 13, color: Colors.textMuted }}>{l.category} · {l.city}, {l.state}</Text>
+        {l.phone ? <Text style={{ fontSize: 12, color: Colors.textMuted }}>{l.phone}</Text> : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
           <Ionicons name={l.latitude ? 'location' : 'location-outline'} size={12} color={l.latitude ? '#27AE60' : '#E53935'} />
           <Text style={{ fontSize: 11, color: l.latitude ? '#27AE60' : '#E53935' }}>
@@ -233,39 +234,39 @@ function ListingCard({ listing: l, deleting, toggling, featuring, onDelete, onTo
         </View>
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Ionicons name="eye-outline" size={13} color="#8E8E93" />
-            <Text style={{ fontSize: 12, color: '#8E8E93' }}>{l.viewCount ?? 0} views</Text>
+            <Ionicons name="eye-outline" size={13} color={Colors.textMuted} />
+            <Text style={{ fontSize: 12, color: Colors.textMuted }}>{l.viewCount ?? 0} views</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="star" size={13} color="#F5C842" />
-            <Text style={{ fontSize: 12, color: '#8E8E93' }}>{l.rating?.toFixed(1) ?? '—'} ({l.reviewCount ?? 0})</Text>
+            <Text style={{ fontSize: 12, color: Colors.textMuted }}>{l.rating?.toFixed(1) ?? '—'} ({l.reviewCount ?? 0})</Text>
           </View>
         </View>
       </View>
 
       {/* Featured toggle */}
       <TouchableOpacity
-        style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isFeatured ? '#FEF3C7' : '#F5F5F5', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: isFeatured ? '#F5C842' : '#E0E0E0', opacity: isFeaturing ? 0.5 : 1 }}
+        style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: isFeatured ? '#FEF3C7' : Colors.surfaceLight, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: isFeatured ? '#F5C842' : Colors.border, opacity: isFeaturing ? 0.5 : 1 }}
         onPress={() => onTier(l._id, l.tier ?? 'standard')}
         disabled={isFeaturing || isDeleting || isToggling}
         activeOpacity={0.8}
       >
         {isFeaturing
           ? <ActivityIndicator size="small" color="#B45309" />
-          : <Ionicons name={isFeatured ? 'star' : 'star-outline'} size={16} color={isFeatured ? '#B45309' : '#8E8E93'} />
+          : <Ionicons name={isFeatured ? 'star' : 'star-outline'} size={16} color={isFeatured ? '#B45309' : Colors.textMuted} />
         }
       </TouchableOpacity>
 
       {/* Toggle active/inactive */}
       <TouchableOpacity
-        style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: l.isActive ? '#E8F5E9' : '#F5F5F5', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: l.isActive ? '#A5D6A7' : '#E0E0E0', opacity: isToggling ? 0.5 : 1 }}
+        style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: l.isActive ? '#E8F5E9' : Colors.surfaceLight, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: l.isActive ? '#A5D6A7' : Colors.border, opacity: isToggling ? 0.5 : 1 }}
         onPress={() => onToggle(l._id, l.isActive)}
         disabled={isToggling || isDeleting}
         activeOpacity={0.8}
       >
         {isToggling
-          ? <ActivityIndicator size="small" color={l.isActive ? '#27AE60' : '#8E8E93'} />
-          : <Ionicons name={l.isActive ? 'eye-outline' : 'eye-off-outline'} size={16} color={l.isActive ? '#27AE60' : '#8E8E93'} />
+          ? <ActivityIndicator size="small" color={l.isActive ? '#27AE60' : Colors.textMuted} />
+          : <Ionicons name={l.isActive ? 'eye-outline' : 'eye-off-outline'} size={16} color={l.isActive ? '#27AE60' : Colors.textMuted} />
         }
       </TouchableOpacity>
 

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
+import { useColors } from '../../constants/colors';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'PhoneOTP'>;
@@ -21,12 +22,15 @@ function OtpInput({
   value,
   onChange,
   hasError,
+  Colors,
 }: {
   value: string;
   onChange: (v: string) => void;
   hasError: boolean;
+  Colors: ReturnType<typeof useColors>;
 }) {
   const inputRef = useRef<TextInput>(null);
+  const otp = getOtpStyles(Colors);
   const LEN = 6;
 
   return (
@@ -58,20 +62,20 @@ function OtpInput({
   );
 }
 
-const otp = StyleSheet.create({
+const getOtpStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
   row:    { flexDirection: 'row', gap: 10, justifyContent: 'center' },
   hidden: { position: 'absolute', opacity: 0, width: 1, height: 1 },
   box: {
     width: 46, height: 56, borderRadius: 12,
-    backgroundColor: '#F2F2F7',
-    borderWidth: 1.5, borderColor: '#E5E5EA',
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1.5, borderColor: Colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  boxActive: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
-  boxFilled: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
-  boxError:  { borderColor: '#FF3B30', backgroundColor: '#FFF5F5' },
-  digit:     { fontSize: 22, fontWeight: '700', color: '#1A1A2E' },
-  digitError:{ color: '#FF3B30' },
+  boxActive: { borderColor: Colors.primary, backgroundColor: Colors.background },
+  boxFilled: { borderColor: Colors.primary, backgroundColor: Colors.background },
+  boxError:  { borderColor: Colors.danger, backgroundColor: Colors.background },
+  digit:     { fontSize: 22, fontWeight: '700', color: Colors.text },
+  digitError:{ color: Colors.danger },
 });
 
 const RESEND_SECONDS = 30;
@@ -79,6 +83,8 @@ const RESEND_SECONDS = 30;
 export default function PhoneOTPScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
   const { loginWithSocial } = useAuth();
+  const Colors = useColors();
+  const s = getStyles(Colors);
   const phone = route.params.phone;
 
   const [code,      setCode]      = useState('');
@@ -142,7 +148,7 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
           <View style={s.inner}>
 
             <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-              <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+              <Ionicons name="chevron-back" size={22} color={Colors.text} />
             </TouchableOpacity>
 
             <View style={s.header}>
@@ -154,7 +160,7 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
             </View>
 
             <View style={s.otpSection}>
-              <OtpInput value={code} onChange={handleCodeChange} hasError={hasError} />
+              <OtpInput value={code} onChange={handleCodeChange} hasError={hasError} Colors={Colors} />
 
               {hasError && (
                 <Text style={s.errorText}>{t('auth.phoneOTP.wrongCode')}</Text>
@@ -167,7 +173,7 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
                 activeOpacity={0.85}
               >
                 {loading
-                  ? <ActivityIndicator color="#FFFFFF" />
+                  ? <ActivityIndicator color={Colors.white} />
                   : <Text style={s.primaryBtnText}>{t('auth.phoneOTP.verifyBtn')}</Text>
                 }
               </TouchableOpacity>
@@ -181,7 +187,7 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
               ) : (
                 <TouchableOpacity onPress={handleResend} disabled={resending} activeOpacity={0.8}>
                   {resending
-                    ? <ActivityIndicator size="small" color="#8E8E93" />
+                    ? <ActivityIndicator size="small" color={Colors.textMuted} />
                     : <Text style={s.resendText}>
                         {t('auth.phoneOTP.didntReceive')}{'  '}
                         <Text style={s.resendBold}>{t('auth.phoneOTP.resendCode')}</Text>
@@ -198,33 +204,30 @@ export default function PhoneOTPScreen({ navigation, route }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: '#FFFFFF' },
+const getStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root:  { flex: 1, backgroundColor: Colors.background },
   kav:   { flex: 1 },
-  inner: { flex: 1, paddingHorizontal: 28, paddingTop: 16, paddingBottom: 32 },
-
+  inner: { flex: 1, paddingHorizontal: 28, paddingVertical: 32, justifyContent: 'space-between' },
+  header: { alignItems: 'flex-start', gap: 4 },
   backBtn: { padding: 4, alignSelf: 'flex-start', marginBottom: 8 },
-
-  header:    { paddingTop: 10, paddingBottom: 4, flex: 1 },
-  title:     { fontSize: 28, fontWeight: '800', color: '#1A1A2E', marginTop: 10 },
-  subtitle:  { fontSize: 15, color: '#8E8E93', marginTop: 8, lineHeight: 22 },
-  phoneText: { color: '#021B3A', fontWeight: '700' },
-
-  otpSection: { gap: 16 },
-  errorText:  { textAlign: 'center', fontSize: 13, color: '#FF3B30', fontWeight: '500' },
+  title:  { fontSize: 28, fontWeight: '800', color: Colors.text, marginTop: 12 },
+  subtitle: { fontSize: 15, color: Colors.textMuted, marginTop: 6, lineHeight: 22 },
+  phoneText: { color: Colors.secondary, fontWeight: '700' },
+  otpSection: { gap: 24 },
+  errorText:  { textAlign: 'center', fontSize: 13, color: Colors.danger, fontWeight: '500' },
 
   primaryBtn: {
-    height: 56, borderRadius: 28, backgroundColor: '#021B3A',
+    height: 56, borderRadius: 28, backgroundColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#021B3A', shadowOffset: { width: 0, height: 4 },
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22, shadowRadius: 10, elevation: 5,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  primaryBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   disabled: { opacity: 0.55 },
 
   bottom:        { alignItems: 'center', marginTop: 24 },
-  countdownText: { fontSize: 14, color: '#8E8E93' },
-  countdownNum:  { color: '#021B3A', fontWeight: '700' },
-  resendText:    { fontSize: 14, color: '#8E8E93' },
-  resendBold:    { color: '#021B3A', fontWeight: '700' },
+  countdownText: { fontSize: 14, color: Colors.textMuted },
+  countdownNum:  { color: Colors.secondary, fontWeight: '700' },
+  resendText:    { fontSize: 14, color: Colors.textMuted },
+  resendBold:    { color: Colors.secondary, fontWeight: '700' },
 });

@@ -72,7 +72,7 @@ const rankFromScore = (score: number) => {
   if (score >= 500) return { rank: 'Owner-Operator', color: '#CD7F32' };
   if (score >= 300) return { rank: 'Company Driver', color: '#3498DB' };
   if (score >= 100) return { rank: 'Student Driver', color: '#2ECC71' };
-  return { rank: 'Rookie', color: '#757575' };
+  return { rank: 'Rookie', color: '#8FA0B3' };
 };
 
 export default function RoadReadyScreen() {

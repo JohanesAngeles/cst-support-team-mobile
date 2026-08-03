@@ -111,7 +111,7 @@ function PartnerCard({ partner }: { partner: Partner }) {
           </View>
         )}
         {partner.comingSoon && (
-          <View style={[styles.featuredBadge, { backgroundColor: '#8E8E93' }]}>
+          <View style={[styles.featuredBadge, { backgroundColor: Colors.textMuted }]}>
             <Text style={styles.badgeTxt}>PARTNER SLOT AVAILABLE</Text>
           </View>
         )}
@@ -200,8 +200,8 @@ export default function SponsorsScreen() {
 
         {/* Advertise CTA */}
         <View style={[styles.ctaBox, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
-          <View style={styles.ctaIconWrap}>
-            <Ionicons name="megaphone-outline" size={24} color="#021B3A" />
+          <View style={[styles.ctaIconWrap, { backgroundColor: Colors.secondary + '22' }]}>
+            <Ionicons name="megaphone-outline" size={24} color={Colors.secondary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.ctaTitle, { color: Colors.text }]}>Want to advertise here?</Text>
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
     padding: 24, alignItems: 'center', gap: 8,
   },
   heroTitle: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', textAlign: 'center' },
-  heroSub:   { color: '#A8C4E0', fontSize: 13, textAlign: 'center', lineHeight: 19 },
+  heroSub:   { color: '#8FA0B3', fontSize: 13, textAlign: 'center', lineHeight: 19 },
 
   card: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 10 },
 
@@ -278,7 +278,6 @@ const styles = StyleSheet.create({
   },
   ctaIconWrap: {
     width: 42, height: 42, borderRadius: 21,
-    backgroundColor: '#021B3A18',
     justifyContent: 'center', alignItems: 'center',
     marginTop: 2,
   },

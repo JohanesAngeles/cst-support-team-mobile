@@ -6,9 +6,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 
 export default function PartnerAccountScreen() {
+  const Colors = useColors();
+  const s = makeStyles(Colors);
   const { user, logout } = useAuth();
   const [showChangePwd,  setShowChangePwd]  = useState(false);
   const [currentPwd,     setCurrentPwd]     = useState('');
@@ -57,7 +60,7 @@ export default function PartnerAccountScreen() {
           {/* Header */}
           <View style={s.topBar}>
             <View style={s.topBarIcon}>
-              <Ionicons name="person" size={20} color="#021B3A" />
+              <Ionicons name="person" size={20} color={Colors.secondary} />
             </View>
             <Text style={s.topBarTitle}>Account</Text>
           </View>
@@ -86,7 +89,7 @@ export default function PartnerAccountScreen() {
               { icon: 'call-outline',   label: 'Phone', value: user?.phone ?? 'Not set' },
             ].map((item, i) => (
               <View key={i} style={[s.infoRow, i < 2 && s.infoRowBorder]}>
-                <Ionicons name={item.icon as any} size={18} color="#8E8E93" />
+                <Ionicons name={item.icon as any} size={18} color={Colors.textMuted} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.infoLabel}>{item.label}</Text>
                   <Text style={s.infoValue}>{item.value}</Text>
@@ -103,10 +106,10 @@ export default function PartnerAccountScreen() {
             activeOpacity={0.8}
           >
             <View style={s.actionIcon}>
-              <Ionicons name="lock-closed-outline" size={20} color="#021B3A" />
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.secondary} />
             </View>
             <Text style={s.actionLabel}>Change Password</Text>
-            <Ionicons name={showChangePwd ? 'chevron-up' : 'chevron-down'} size={16} color="#C7C7CC" />
+            <Ionicons name={showChangePwd ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
           </TouchableOpacity>
 
           {showChangePwd && (
@@ -122,7 +125,7 @@ export default function PartnerAccountScreen() {
                     <TextInput
                       style={s.input}
                       secureTextEntry
-                      placeholderTextColor="#C7C7CC"
+                      placeholderTextColor={Colors.textMuted}
                       placeholder="••••••••"
                       value={item.value}
                       onChangeText={item.setter}
@@ -139,7 +142,7 @@ export default function PartnerAccountScreen() {
                 activeOpacity={0.85}
               >
                 {savingPwd
-                  ? <ActivityIndicator color="#FFFFFF" size="small" />
+                  ? <ActivityIndicator color={Colors.white} size="small" />
                   : <Text style={s.savePwdBtnText}>Update Password</Text>
                 }
               </TouchableOpacity>
@@ -162,58 +165,60 @@ export default function PartnerAccountScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+function makeStyles(Colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  root:   { flex: 1, backgroundColor: Colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 100 },
 
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5', gap: 10, marginBottom: 4 },
-  topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
-  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
+  topBar: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 10, marginBottom: 4 },
+  topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' },
+  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: Colors.text },
 
   profileCard: {
     flexDirection: 'row', alignItems: 'center', gap: 16,
-    backgroundColor: '#F8F8FA', borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: '#EBEBEF', marginTop: 16, marginBottom: 24,
+    backgroundColor: Colors.surface, borderRadius: 18, padding: 18,
+    borderWidth: 1, borderColor: Colors.border, marginTop: 16, marginBottom: 24,
   },
-  avatar:       { width: 56, height: 56, borderRadius: 28, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
-  avatarText:   { fontSize: 24, fontWeight: '800', color: '#FFFFFF' },
-  profileName:  { fontSize: 18, fontWeight: '800', color: '#1A1A2E' },
-  profileEmail: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
-  roleBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, alignSelf: 'flex-start', backgroundColor: '#FFF8E1', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#FFE082' },
+  avatar:       { width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  avatarText:   { fontSize: 24, fontWeight: '800', color: Colors.white },
+  profileName:  { fontSize: 18, fontWeight: '800', color: Colors.text },
+  profileEmail: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
+  roleBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, alignSelf: 'flex-start', backgroundColor: 'rgba(212,160,23,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(212,160,23,0.35)' },
   roleBadgeText: { fontSize: 11, fontWeight: '700', color: '#D4A017' },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginTop: 8 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginTop: 8 },
 
-  infoCard:    { backgroundColor: '#F8F8FA', borderRadius: 16, borderWidth: 1, borderColor: '#EBEBEF', overflow: 'hidden', marginBottom: 24 },
+  infoCard:    { backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', marginBottom: 24 },
   infoRow:     { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
-  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F0F5' },
-  infoLabel:   { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
-  infoValue:   { fontSize: 15, color: '#1A1A2E', fontWeight: '600', marginTop: 1 },
+  infoRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
+  infoLabel:   { fontSize: 12, color: Colors.textMuted, fontWeight: '500' },
+  infoValue:   { fontSize: 15, color: Colors.text, fontWeight: '600', marginTop: 1 },
 
   actionRow: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#F8F8FA', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 8,
+    backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: Colors.border, marginBottom: 8,
   },
-  actionIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
-  actionLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
+  actionIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' },
+  actionLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: Colors.text },
 
-  pwdForm:    { backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 8, gap: 12 },
+  pwdForm:    { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 8, gap: 12 },
   field:      { gap: 6 },
-  label:      { fontSize: 13, fontWeight: '600', color: '#1A1A2E' },
-  inputBox:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 14, height: 48, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#EBEBEF' },
-  inputFocused: { borderColor: '#021B3A' },
-  input:      { flex: 1, fontSize: 15, color: '#1A1A2E' },
-  savePwdBtn: { height: 48, borderRadius: 24, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center', marginTop: 4 },
-  savePwdBtnText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  label:      { fontSize: 13, fontWeight: '600', color: Colors.text },
+  inputBox:   { flexDirection: 'row', alignItems: 'center', borderRadius: 12, paddingHorizontal: 14, height: 48, backgroundColor: Colors.background, borderWidth: 1.5, borderColor: Colors.border },
+  inputFocused: { borderColor: Colors.secondary },
+  input:      { flex: 1, fontSize: 15, color: Colors.text },
+  savePwdBtn: { height: 48, borderRadius: 24, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center', marginTop: 4 },
+  savePwdBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
   disabled:   { opacity: 0.55 },
 
   signOutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    height: 52, borderRadius: 14, backgroundColor: '#FFF5F5',
-    borderWidth: 1, borderColor: '#FFCDD2', marginBottom: 20,
+    height: 52, borderRadius: 14, backgroundColor: 'rgba(229,57,53,0.12)',
+    borderWidth: 1, borderColor: 'rgba(229,57,53,0.3)', marginBottom: 20,
   },
   signOutText: { fontSize: 15, fontWeight: '700', color: '#E53935' },
 
-  version: { textAlign: 'center', fontSize: 12, color: '#C7C7CC', marginBottom: 8 },
-});
+  version: { textAlign: 'center', fontSize: 12, color: Colors.textMuted, marginBottom: 8 },
+  });
+}

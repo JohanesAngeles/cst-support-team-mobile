@@ -7,10 +7,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../../api/client';
-
-const NAVY = '#021B3A';
+import { useColors } from '../../constants/colors';
 
 export default function AdminCashAppScreen() {
+  const Colors = useColors();
   const [requests,   setRequests]   = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -82,20 +82,20 @@ export default function AdminCashAppScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F5F7FA', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color={NAVY} />
+      <View style={{ flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.secondary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
 
         {/* Header */}
-        <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: '#EBEBEF', backgroundColor: '#FFFFFF' }}>
-          <Text style={{ fontSize: 22, fontWeight: '900', color: NAVY }}>Cash App Requests</Text>
-          <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 3 }}>
+        <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface }}>
+          <Text style={{ fontSize: 22, fontWeight: '900', color: Colors.text }}>Cash App Requests</Text>
+          <Text style={{ fontSize: 13, color: Colors.textMuted, marginTop: 3 }}>
             {requests.length === 0
               ? 'No pending approvals'
               : `${requests.length} partner${requests.length > 1 ? 's' : ''} awaiting activation`}
@@ -106,14 +106,14 @@ export default function AdminCashAppScreen() {
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 60 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={NAVY} />
+            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={Colors.secondary} />
           }
         >
           {requests.length === 0 ? (
             <View style={{ alignItems: 'center', paddingTop: 60, gap: 10 }}>
-              <Ionicons name="checkmark-circle-outline" size={52} color="#C7C7CC" />
-              <Text style={{ color: '#8E8E93', fontSize: 15, fontWeight: '700' }}>All caught up!</Text>
-              <Text style={{ color: '#AEAEB2', fontSize: 13, textAlign: 'center' }}>
+              <Ionicons name="checkmark-circle-outline" size={52} color={Colors.textMuted} />
+              <Text style={{ color: Colors.textMuted, fontSize: 15, fontWeight: '700' }}>All caught up!</Text>
+              <Text style={{ color: Colors.textMuted, fontSize: 13, textAlign: 'center' }}>
                 No pending Cash App approvals.{'\n'}Pull down to refresh.
               </Text>
             </View>
@@ -141,6 +141,7 @@ function RequestCard({ request: r, busyId, onApprove, onReject }: {
   onApprove: (id: string, name: string, plan: string) => void;
   onReject: (id: string, name: string) => void;
 }) {
+  const Colors = useColors();
   const isBusy      = busyId === r._id;
   const partnerName = r.userId?.name ?? 'Unknown';
   const partnerEmail = r.userId?.email ?? '';
@@ -154,8 +155,8 @@ function RequestCard({ request: r, busyId, onApprove, onReject }: {
 
   return (
     <View style={{
-      backgroundColor: '#FFFFFF', borderRadius: 16,
-      borderWidth: 1, borderColor: '#EBEBEF',
+      backgroundColor: Colors.surface, borderRadius: 16,
+      borderWidth: 1, borderColor: Colors.border,
       padding: 16, gap: 12,
     }}>
 
@@ -168,9 +169,9 @@ function RequestCard({ request: r, busyId, onApprove, onReject }: {
           <Ionicons name="person-outline" size={22} color="#27AE60" />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: '#1A1A2E' }}>{partnerName}</Text>
-          <Text style={{ fontSize: 13, color: '#8E8E93' }}>{partnerEmail}</Text>
-          <Text style={{ fontSize: 11, color: '#AEAEB2', marginTop: 2 }}>Submitted {submittedAt}</Text>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: Colors.text }}>{partnerName}</Text>
+          <Text style={{ fontSize: 13, color: Colors.textMuted }}>{partnerEmail}</Text>
+          <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 2 }}>Submitted {submittedAt}</Text>
         </View>
       </View>
 
@@ -193,14 +194,14 @@ function RequestCard({ request: r, busyId, onApprove, onReject }: {
       </View>
 
       {/* Verification details — what admin needs to match against their own Cash App activity */}
-      <View style={{ backgroundColor: '#F8F8FA', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: '#EBEBEF', gap: 8 }}>
+      <View style={{ backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.border, gap: 8 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#8E8E93' }}>REFERENCE #</Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A2E', fontFamily: 'monospace' }}>{r.referenceNumber ?? '—'}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted }}>REFERENCE #</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.text, fontFamily: 'monospace' }}>{r.referenceNumber ?? '—'}</Text>
         </View>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: 11, fontWeight: '700', color: '#8E8E93' }}>SENDER $CASHTAG</Text>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: '#1A1A2E' }}>{r.senderCashtag ?? '—'}</Text>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted }}>SENDER $CASHTAG</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: Colors.text }}>{r.senderCashtag ?? '—'}</Text>
         </View>
         {r.screenshotUrl && (
           <Image source={{ uri: r.screenshotUrl }} style={{ width: '100%', height: 160, borderRadius: 8, marginTop: 4 }} resizeMode="contain" />

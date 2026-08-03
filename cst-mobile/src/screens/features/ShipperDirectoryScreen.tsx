@@ -9,7 +9,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useColors } from '../../constants/colors';
 import { getShippers, addShipper, updateShipper, toggleShipperFavorite, deleteShipper } from '../../api/features';
 
-const TYPE_COLORS: Record<string, string> = { shipper: '#3498DB', receiver: '#2ECC71', both: '#2C6EBD' };
+const TYPE_COLORS: Record<string, string> = { shipper: '#3498DB', receiver: '#2ECC71', both: '#C8D2DC' };
 
 interface Shipper {
   _id: string; name: string; type: string; address: string; city: string; state: string;

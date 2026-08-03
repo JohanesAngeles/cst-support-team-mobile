@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import client from '../../api/client';
+import { useColors } from '../../constants/colors';
 
 const CATEGORIES = [
   'Mechanic', 'Tire Shop', 'Fuel Station', 'Hotel / Motel',
@@ -27,6 +28,8 @@ interface Listing {
 }
 
 export default function MyListingScreen() {
+  const Colors = useColors();
+  const s = useMemo(() => makeStyles(Colors), [Colors]);
   const [form,          setForm]          = useState<Listing>({ businessName: '', category: '', phone: '', city: '', state: '', website: '', description: '', hours: '', coupon: '', isActive: true });
   const [focused,       setFocused]       = useState<string | null>(null);
   const [loading,       setLoading]       = useState(true);
@@ -94,7 +97,7 @@ export default function MyListingScreen() {
   if (loading) {
     return (
       <View style={[s.root, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#021B3A" />
+        <ActivityIndicator color={Colors.secondary} />
       </View>
     );
   }
@@ -107,7 +110,7 @@ export default function MyListingScreen() {
           {/* Header */}
           <View style={s.topBar}>
             <View style={s.topBarIcon}>
-              <Ionicons name="storefront" size={22} color="#021B3A" />
+              <Ionicons name="storefront" size={22} color={Colors.secondary} />
             </View>
             <Text style={s.topBarTitle}>My Listing</Text>
             <TouchableOpacity
@@ -147,7 +150,7 @@ export default function MyListingScreen() {
             <View style={s.field}>
               <Text style={s.label}>Business Name *</Text>
               <View style={inputStyle('businessName')}>
-                <TextInput style={s.input} placeholder="e.g. Mike's Truck Repair" placeholderTextColor="#C7C7CC"
+                <TextInput style={s.input} placeholder="e.g. Mike's Truck Repair" placeholderTextColor={Colors.textMuted}
                   value={form.businessName} onChangeText={v => set('businessName', v)}
                   onFocus={() => setFocused('businessName')} onBlur={() => setFocused(null)} />
               </View>
@@ -156,8 +159,8 @@ export default function MyListingScreen() {
             <View style={s.field}>
               <Text style={s.label}>Category *</Text>
               <TouchableOpacity style={[inputStyle('category'), s.pickerRow]} onPress={() => setShowCatPicker(v => !v)} activeOpacity={0.8}>
-                <Text style={[s.input, !form.category && { color: '#C7C7CC' }]}>{form.category || 'Select a category'}</Text>
-                <Ionicons name={showCatPicker ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                <Text style={[s.input, !form.category && { color: Colors.textMuted }]}>{form.category || 'Select a category'}</Text>
+                <Ionicons name={showCatPicker ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
               </TouchableOpacity>
               {showCatPicker && (
                 <View style={s.catList}>
@@ -165,7 +168,7 @@ export default function MyListingScreen() {
                     <TouchableOpacity key={cat} style={[s.catItem, form.category === cat && s.catItemSelected]}
                       onPress={() => { set('category', cat); setShowCatPicker(false); }} activeOpacity={0.75}>
                       <Text style={[s.catItemText, form.category === cat && s.catItemTextSelected]}>{cat}</Text>
-                      {form.category === cat && <Ionicons name="checkmark" size={16} color="#021B3A" />}
+                      {form.category === cat && <Ionicons name="checkmark" size={16} color={Colors.secondary} />}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -175,7 +178,7 @@ export default function MyListingScreen() {
             <View style={s.field}>
               <Text style={s.label}>Phone Number *</Text>
               <View style={inputStyle('phone')}>
-                <TextInput style={s.input} placeholder="+1 (555) 000-0000" placeholderTextColor="#C7C7CC"
+                <TextInput style={s.input} placeholder="+1 (555) 000-0000" placeholderTextColor={Colors.textMuted}
                   value={form.phone} onChangeText={v => set('phone', v)} keyboardType="phone-pad"
                   onFocus={() => setFocused('phone')} onBlur={() => setFocused(null)} />
               </View>
@@ -185,7 +188,7 @@ export default function MyListingScreen() {
               <View style={[s.field, { flex: 1 }]}>
                 <Text style={s.label}>City *</Text>
                 <View style={inputStyle('city')}>
-                  <TextInput style={s.input} placeholder="Los Angeles" placeholderTextColor="#C7C7CC"
+                  <TextInput style={s.input} placeholder="Los Angeles" placeholderTextColor={Colors.textMuted}
                     value={form.city} onChangeText={v => set('city', v)}
                     onFocus={() => setFocused('city')} onBlur={() => setFocused(null)} />
                 </View>
@@ -193,7 +196,7 @@ export default function MyListingScreen() {
               <View style={[s.field, { width: 80 }]}>
                 <Text style={s.label}>State *</Text>
                 <View style={inputStyle('state')}>
-                  <TextInput style={s.input} placeholder="CA" placeholderTextColor="#C7C7CC"
+                  <TextInput style={s.input} placeholder="CA" placeholderTextColor={Colors.textMuted}
                     value={form.state} onChangeText={v => set('state', v.toUpperCase())}
                     autoCapitalize="characters" maxLength={2}
                     onFocus={() => setFocused('state')} onBlur={() => setFocused(null)} />
@@ -207,7 +210,7 @@ export default function MyListingScreen() {
             <View style={s.field}>
               <Text style={s.label}>Business Hours</Text>
               <View style={inputStyle('hours')}>
-                <TextInput style={s.input} placeholder="e.g. Mon–Sat 7am–6pm" placeholderTextColor="#C7C7CC"
+                <TextInput style={s.input} placeholder="e.g. Mon–Sat 7am–6pm" placeholderTextColor={Colors.textMuted}
                   value={form.hours} onChangeText={v => set('hours', v)}
                   onFocus={() => setFocused('hours')} onBlur={() => setFocused(null)} />
               </View>
@@ -216,7 +219,7 @@ export default function MyListingScreen() {
             <View style={s.field}>
               <Text style={s.label}>Website</Text>
               <View style={inputStyle('website')}>
-                <TextInput style={s.input} placeholder="https://yourbusiness.com" placeholderTextColor="#C7C7CC"
+                <TextInput style={s.input} placeholder="https://yourbusiness.com" placeholderTextColor={Colors.textMuted}
                   value={form.website} onChangeText={v => set('website', v)}
                   keyboardType="url" autoCapitalize="none" autoCorrect={false}
                   onFocus={() => setFocused('website')} onBlur={() => setFocused(null)} />
@@ -228,7 +231,7 @@ export default function MyListingScreen() {
               <View style={[inputStyle('description'), { height: 110, alignItems: 'flex-start', paddingTop: 14 }]}>
                 <TextInput style={[s.input, { textAlignVertical: 'top' }]}
                   placeholder="Tell drivers what you offer and what makes your business stand out."
-                  placeholderTextColor="#C7C7CC" value={form.description}
+                  placeholderTextColor={Colors.textMuted} value={form.description}
                   onChangeText={v => set('description', v)} multiline numberOfLines={4}
                   onFocus={() => setFocused('description')} onBlur={() => setFocused(null)} />
               </View>
@@ -236,20 +239,20 @@ export default function MyListingScreen() {
 
             <View style={s.field}>
               <Text style={s.label}>Coupon / Special Offer</Text>
-              <View style={[inputStyle('coupon'), { borderColor: focused === 'coupon' ? '#021B3A' : '#F5C842', borderWidth: focused === 'coupon' ? 1.5 : 1, backgroundColor: focused === 'coupon' ? '#FFFFFF' : '#FFFEF5' }]}>
+              <View style={[inputStyle('coupon'), { borderColor: focused === 'coupon' ? Colors.secondary : '#F5C842', borderWidth: focused === 'coupon' ? 1.5 : 1, backgroundColor: focused === 'coupon' ? Colors.surfaceLight : '#3A331A' }]}>
                 <Ionicons name="pricetag-outline" size={16} color="#F5C842" style={{ marginRight: 6 }} />
                 <TextInput style={s.input}
                   placeholder="e.g. 10% off first service with RRN app"
-                  placeholderTextColor="#C7C7CC" value={form.coupon}
+                  placeholderTextColor={Colors.textMuted} value={form.coupon}
                   onChangeText={v => set('coupon', v)} maxLength={120}
                   onFocus={() => setFocused('coupon')} onBlur={() => setFocused(null)} />
               </View>
-              <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 3 }}>Shown to drivers on your listing as a highlighted deal</Text>
+              <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 3 }}>Shown to drivers on your listing as a highlighted deal</Text>
             </View>
 
             {/* Driver preview hint */}
             <View style={s.previewHint}>
-              <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+              <Ionicons name="information-circle-outline" size={18} color={Colors.textMuted} />
               <Text style={s.previewHintText}>
                 Drivers will see your business name, category, city/state, phone number, hours, and rating on the map.
               </Text>
@@ -261,45 +264,47 @@ export default function MyListingScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
-  scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 100 },
+function makeStyles(Colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    root:   { flex: 1, backgroundColor: Colors.background },
+    scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 100 },
 
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5', gap: 10 },
-  topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
-  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
-  saveBtn: { paddingHorizontal: 18, paddingVertical: 9, backgroundColor: '#021B3A', borderRadius: 20 },
-  saveBtnText: { fontSize: 14, fontWeight: '700', color: '#FFFFFF' },
-  disabled: { opacity: 0.55 },
+    topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 10 },
+    topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' },
+    topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: Colors.text },
+    saveBtn: { paddingHorizontal: 18, paddingVertical: 9, backgroundColor: Colors.primary, borderRadius: 20 },
+    saveBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
+    disabled: { opacity: 0.55 },
 
-  liveRow: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, marginTop: 16, marginBottom: 20,
-    borderWidth: 1, borderColor: '#EBEBEF',
-  },
-  liveTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
-  liveSub:   { fontSize: 12, color: '#8E8E93', marginTop: 3, maxWidth: 220 },
-  toggle:    { width: 50, height: 28, borderRadius: 14, backgroundColor: '#E0E0E0', justifyContent: 'center', paddingHorizontal: 3 },
-  toggleOn:  { backgroundColor: '#021B3A' },
-  toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#FFFFFF', alignSelf: 'flex-start' },
-  toggleKnobOn: { alignSelf: 'flex-end' },
+    liveRow: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 16, marginTop: 16, marginBottom: 20,
+      borderWidth: 1, borderColor: Colors.border,
+    },
+    liveTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
+    liveSub:   { fontSize: 12, color: Colors.textMuted, marginTop: 3, maxWidth: 220 },
+    toggle:    { width: 50, height: 28, borderRadius: 14, backgroundColor: Colors.border, justifyContent: 'center', paddingHorizontal: 3 },
+    toggleOn:  { backgroundColor: Colors.primary },
+    toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.white, alignSelf: 'flex-start' },
+    toggleKnobOn: { alignSelf: 'flex-end' },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginTop: 8 },
+    sectionLabel: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginTop: 8 },
 
-  field:    { gap: 6, marginBottom: 14 },
-  row:      { flexDirection: 'row', gap: 10 },
-  label:    { fontSize: 14, fontWeight: '600', color: '#1A1A2E' },
-  inputBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, paddingHorizontal: 16, height: 52, backgroundColor: '#F8F8FA', borderWidth: 1.5, borderColor: '#EBEBEF' },
-  inputFocused: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
-  input:    { flex: 1, fontSize: 15, color: '#1A1A2E' },
-  pickerRow: { justifyContent: 'space-between' },
+    field:    { gap: 6, marginBottom: 14 },
+    row:      { flexDirection: 'row', gap: 10 },
+    label:    { fontSize: 14, fontWeight: '600', color: Colors.text },
+    inputBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, paddingHorizontal: 16, height: 52, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
+    inputFocused: { borderColor: Colors.primary, backgroundColor: Colors.surfaceLight },
+    input:    { flex: 1, fontSize: 15, color: Colors.text },
+    pickerRow: { justifyContent: 'space-between' },
 
-  catList: { backgroundColor: '#FFFFFF', borderRadius: 14, borderWidth: 1, borderColor: '#EBEBEF', overflow: 'hidden', marginTop: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
-  catItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5' },
-  catItemSelected: { backgroundColor: '#F0F4FA' },
-  catItemText: { fontSize: 15, color: '#1A1A2E' },
-  catItemTextSelected: { fontWeight: '700', color: '#021B3A' },
+    catList: { backgroundColor: Colors.surfaceLight, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', marginTop: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
+    catItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border },
+    catItemSelected: { backgroundColor: Colors.surface },
+    catItemText: { fontSize: 15, color: Colors.text },
+    catItemTextSelected: { fontWeight: '700', color: Colors.secondary },
 
-  previewHint: { flexDirection: 'row', gap: 10, backgroundColor: '#F8F8FA', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EBEBEF', marginTop: 8 },
-  previewHintText: { flex: 1, fontSize: 13, color: '#8E8E93', lineHeight: 18 },
-});
+    previewHint: { flexDirection: 'row', gap: 10, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border, marginTop: 8 },
+    previewHintText: { flex: 1, fontSize: 13, color: Colors.textMuted, lineHeight: 18 },
+  });
+}

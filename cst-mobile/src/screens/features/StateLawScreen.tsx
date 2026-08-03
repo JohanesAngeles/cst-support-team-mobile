@@ -85,8 +85,8 @@ export default function StateLawScreen({ navigation }: Props) {
             <Text style={styles.pillText}>{item.truckSpeed} mph</Text>
           </View>
           <View style={styles.pill}>
-            <Ionicons name="water-outline" size={11} color='#3498DB' />
-            <Text style={[styles.pillText, { color: '#3498DB' }]}>{item.dieselTax}</Text>
+            <Ionicons name="water-outline" size={11} color={Colors.secondary} />
+            <Text style={[styles.pillText, { color: Colors.secondary }]}>{item.dieselTax}</Text>
           </View>
         </View>
       </View>

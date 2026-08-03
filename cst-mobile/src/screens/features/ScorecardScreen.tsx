@@ -30,7 +30,7 @@ const fmtDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('en-
 const fmtMoney = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n.toFixed(0)}`;
 
 function grade(sc: Scorecard): { letter: string; color: string; label: string } {
-  if (!sc.totalMiles && !sc.grossRevenue) return { letter: '—', color: '#757575', label: 'No data' };
+  if (!sc.totalMiles && !sc.grossRevenue) return { letter: '—', color: '#8FA0B3', label: 'No data' };
   const rpm = sc.avgRatePerMile;
   const mpg = sc.fuelEfficiency;
   const score = (rpm > 3.0 ? 4 : rpm > 2.5 ? 3 : rpm > 2.0 ? 2 : rpm > 1.5 ? 1 : 0)

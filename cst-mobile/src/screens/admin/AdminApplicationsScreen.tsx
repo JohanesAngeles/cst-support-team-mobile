@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import client from '../../api/client';
+import { useColors } from '../../constants/colors';
 
 const STATUS_COLOR: Record<string, string> = {
   pending:  '#FF9500',
@@ -15,6 +16,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function AdminApplicationsScreen() {
+  const Colors = useColors();
   const [apps,       setApps]       = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -64,22 +66,22 @@ export default function AdminApplicationsScreen() {
   const resolved = apps.filter(a => a.status !== 'pending');
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F5F7FA' }}>
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
 
-        <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EBEBEF', backgroundColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.surface, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFF3E0', justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name="document-text-outline" size={18} color="#FF9500" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#1A1A2E' }}>Partner Applications</Text>
-            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>{pending.length} pending review</Text>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: Colors.text }}>Partner Applications</Text>
+            <Text style={{ fontSize: 12, color: Colors.textMuted, marginTop: 1 }}>{pending.length} pending review</Text>
           </View>
         </View>
 
         {loading ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#021B3A" />
+            <ActivityIndicator size="large" color={Colors.secondary} />
           </View>
         ) : (
           <ScrollView
@@ -89,13 +91,13 @@ export default function AdminApplicationsScreen() {
           >
             {apps.length === 0 && (
               <View style={{ alignItems: 'center', paddingTop: 60, gap: 10 }}>
-                <Ionicons name="checkmark-circle-outline" size={48} color="#C7C7CC" />
-                <Text style={{ color: '#8E8E93', fontSize: 15, fontWeight: '600' }}>No applications yet</Text>
+                <Ionicons name="checkmark-circle-outline" size={48} color={Colors.textMuted} />
+                <Text style={{ color: Colors.textMuted, fontSize: 15, fontWeight: '600' }}>No applications yet</Text>
               </View>
             )}
 
             {pending.length > 0 && (
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>
                 NEEDS REVIEW ({pending.length})
               </Text>
             )}
@@ -105,7 +107,7 @@ export default function AdminApplicationsScreen() {
             ))}
 
             {resolved.length > 0 && (
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, textTransform: 'uppercase', marginTop: 8, marginBottom: 4 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, textTransform: 'uppercase', marginTop: 8, marginBottom: 4 }}>
                 RESOLVED ({resolved.length})
               </Text>
             )}
@@ -122,20 +124,21 @@ export default function AdminApplicationsScreen() {
 }
 
 function AppCard({ app, acting, onDecide }: { app: any; acting: string | null; onDecide: (id: string, s: 'approved' | 'rejected') => void }) {
+  const Colors = useColors();
   const isPending = app.status === 'pending';
   const isActing  = acting === app._id;
 
   return (
-    <View style={{ backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#EBEBEF', overflow: 'hidden' }}>
+    <View style={{ backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' }}>
       {/* Status stripe */}
-      <View style={{ height: 4, backgroundColor: STATUS_COLOR[app.status] ?? '#C7C7CC' }} />
+      <View style={{ height: 4, backgroundColor: STATUS_COLOR[app.status] ?? Colors.textMuted }} />
 
       <View style={{ padding: 16, gap: 12 }}>
         {/* Business name + status */}
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1A1A2E' }}>{app.businessName}</Text>
-            <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{app.category} · {app.city}, {app.state}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: Colors.text }}>{app.businessName}</Text>
+            <Text style={{ fontSize: 13, color: Colors.textMuted, marginTop: 2 }}>{app.category} · {app.city}, {app.state}</Text>
           </View>
           <View style={{ backgroundColor: STATUS_COLOR[app.status] + '20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1, borderColor: STATUS_COLOR[app.status] + '50' }}>
             <Text style={{ fontSize: 11, fontWeight: '800', color: STATUS_COLOR[app.status], textTransform: 'uppercase', letterSpacing: 0.5 }}>{app.status}</Text>
@@ -151,14 +154,14 @@ function AppCard({ app, acting, onDecide }: { app: any; acting: string | null; o
             app.website && { icon: 'globe-outline', val: app.website },
           ].filter(Boolean).map((row: any, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Ionicons name={row.icon} size={14} color="#8E8E93" />
-              <Text style={{ fontSize: 13, color: '#555', flex: 1 }} numberOfLines={1}>{row.val}</Text>
+              <Ionicons name={row.icon} size={14} color={Colors.textMuted} />
+              <Text style={{ fontSize: 13, color: Colors.textMuted, flex: 1 }} numberOfLines={1}>{row.val}</Text>
             </View>
           ))}
         </View>
 
         {app.description ? (
-          <Text style={{ fontSize: 13, color: '#8E8E93', lineHeight: 19 }} numberOfLines={3}>{app.description}</Text>
+          <Text style={{ fontSize: 13, color: Colors.textMuted, lineHeight: 19 }} numberOfLines={3}>{app.description}</Text>
         ) : null}
 
         {app.referralCode ? (

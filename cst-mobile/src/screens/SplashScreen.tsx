@@ -5,8 +5,8 @@ interface Props {
   onFinish: () => void;
 }
 
-const BG = '#FFFFFF';
-const GOLD = '#2C6EBD';
+const BG = '#050B18';
+const SILVER = '#C8D2DC';
 
 export default function SplashScreen({ onFinish }: Props) {
   const logoOpacity   = useRef(new Animated.Value(0)).current;
@@ -74,11 +74,11 @@ const s = StyleSheet.create({
   divider: {
     width: 40,
     height: 2,
-    backgroundColor: GOLD + '66',
+    backgroundColor: SILVER + '66',
     borderRadius: 1,
   },
   tagline: {
-    color: '#6B7280',
+    color: '#8FA0B3',
     fontSize: 13,
     fontWeight: '500',
     letterSpacing: 0.6,
@@ -86,7 +86,7 @@ const s = StyleSheet.create({
   version: {
     position: 'absolute',
     bottom: 48,
-    color: '#AEAEB2',
+    color: '#4F6178',
     fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.5,

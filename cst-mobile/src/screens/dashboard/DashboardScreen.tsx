@@ -1,27 +1,30 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, Modal,
-  Linking, Platform, Dimensions, Animated, ActivityIndicator,
-  Alert, TextInput, RefreshControl,
+  Linking, Platform, Animated, ActivityIndicator,
+  Alert, TextInput, RefreshControl, StyleSheet, ImageBackground, Image,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
 import { useColors } from '../../constants/colors';
+import { FONTS } from '../../constants/typography';
 import { MainStackParamList } from '../../navigation/MainStack';
 import client from '../../api/client';
 import DashboardMenuDrawer from './DashboardMenuDrawer';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
-const { width: SW } = Dimensions.get('window');
 const NAVY      = '#021B3A';
-const MAP_HEIGHT = 240;
+const PEEK_HEIGHT = 156;
+const SHEET_SNAP_POINTS = [PEEK_HEIGHT, '52%', '92%'];
 const DEFAULT_REGION = { latitude: 34.0522, longitude: -118.2437, latitudeDelta: 0.8, longitudeDelta: 0.8 };
 
 interface Listing {
@@ -54,7 +57,7 @@ const QUICK_TOOLS: { icon: string; label: string; screen: keyof MainStackParamLi
   { icon: 'trending-up-outline',   label: 'AI Rate',      screen: 'AILoadRate',  color: '#9B59B6' },
   { icon: 'list-outline',          label: 'Load Board',   screen: 'LoadBoard',   color: '#2ECC71' },
   { icon: 'cash-outline',          label: 'Expenses',     screen: 'Expenses',    color: '#F39C12' },
-  { icon: 'language-outline',      label: 'Translator',   screen: 'Translator',  color: '#2C6EBD' },
+  { icon: 'language-outline',      label: 'Translator',   screen: 'Translator',  color: '#C8D2DC' },
   { icon: 'document-text-outline', label: 'Broker Notes', screen: 'BrokerNotes', color: '#E74C3C' },
 ];
 
@@ -64,17 +67,27 @@ const MAP_CATEGORIES = [
   { icon: 'construct-outline',  label: 'Truck Repair',  color: '#E67E22', query: 'semi+truck+repair+shop'  },
   { icon: 'bed-outline',        label: 'Rest Areas',    color: '#F39C12', query: 'rest+area+truck+parking' },
   { icon: 'car-outline',        label: 'Tire Shops',    color: '#2ECC71', query: 'semi+truck+tire+shop'    },
-  { icon: 'restaurant-outline', label: 'Restaurants',   color: '#2C6EBD', query: 'truck+friendly+restaurant'},
+  { icon: 'restaurant-outline', label: 'Restaurants',   color: '#C8D2DC', query: 'truck+friendly+restaurant'},
   { icon: 'medical-outline',    label: 'Hospitals',     color: '#E74C3C', query: 'hospital+emergency+room' },
   { icon: 'home-outline',       label: 'Truck Parking', color: '#8E44AD', query: 'semi+truck+parking'      },
 ];
+
+// Maps a generic "Search Near Me" pill to the RRN partner category it can
+// filter on-map — pills with no alias (or no matching partners yet) fall
+// back to opening the phone's Maps app instead.
+const CATEGORY_ALIAS: Record<string, string> = {
+  'Diesel Fuel':  'Fuel Station',
+  'Truck Repair': 'Mechanic',
+  'Tire Shops':   'Tire Shop',
+  'Restaurants':  'Restaurant',
+};
 
 const CATEGORY_ICONS: Record<string, { icon: string; color: string }> = {
   'Mechanic':                       { icon: 'construct-outline',  color: '#E67E22' },
   'Tire Shop':                      { icon: 'car-outline',        color: '#2ECC71' },
   'Fuel Station':                   { icon: 'water-outline',      color: '#1ABC9C' },
   'Hotel / Motel':                  { icon: 'bed-outline',        color: '#F39C12' },
-  'Restaurant':                     { icon: 'restaurant-outline', color: '#2C6EBD' },
+  'Restaurant':                     { icon: 'restaurant-outline', color: '#C8D2DC' },
   'Truck Wash':                     { icon: 'water-outline',      color: '#3498DB' },
   'Compliance Service':             { icon: 'document-outline',   color: '#9B59B6' },
   'Towing':                         { icon: 'car-outline',        color: '#E74C3C' },
@@ -95,6 +108,7 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 function BusinessCard({ listing, onPress }: { listing: Listing; onPress: () => void }) {
+  const Colors = useColors();
   const cat   = CATEGORY_ICONS[listing.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
   const flags = [
     listing.mobileService      && 'Mobile',
@@ -105,7 +119,7 @@ function BusinessCard({ listing, onPress }: { listing: Listing; onPress: () => v
 
   return (
     <TouchableOpacity
-      style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F8FA', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 8, gap: 12 }}
+      style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border, marginBottom: 8, gap: 12 }}
       onPress={onPress}
       activeOpacity={0.8}
     >
@@ -114,36 +128,36 @@ function BusinessCard({ listing, onPress }: { listing: Listing; onPress: () => v
       </View>
       <View style={{ flex: 1, gap: 3 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', color: '#1A1A2E' }} numberOfLines={1}>{listing.businessName}</Text>
+          <Text style={{ flex: 1, fontSize: 15, fontWeight: '700', fontFamily: FONTS.bodyBold, color: Colors.text }} numberOfLines={1}>{listing.businessName}</Text>
           <View style={{ backgroundColor: NAVY, borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 }}>
-            <Text style={{ fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 }}>RRN</Text>
+            <Text style={{ fontSize: 9, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#FFFFFF', letterSpacing: 0.5 }}>RRN</Text>
           </View>
         </View>
-        <Text style={{ fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>
+        <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: Colors.textMuted }} numberOfLines={1}>
           {listing.physicalAddress || `${listing.city}, ${listing.state}`}
         </Text>
         {listing.rating > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <StarRow rating={listing.rating} />
-            <Text style={{ fontSize: 11, color: '#8E8E93' }}>{listing.rating.toFixed(1)} ({listing.reviewCount})</Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: Colors.textMuted }}>{listing.rating.toFixed(1)} ({listing.reviewCount})</Text>
           </View>
         )}
         {flags.length > 0 && (
           <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
             {flags.map(f => (
-              <View key={f} style={{ backgroundColor: '#EEF2FF', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                <Text style={{ fontSize: 9, fontWeight: '700', color: '#6366F1' }}>{f}</Text>
+              <View key={f} style={{ backgroundColor: 'rgba(99,102,241,0.18)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 9, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#6366F1' }}>{f}</Text>
               </View>
             ))}
           </View>
         )}
         {listing.hours ? (
-          <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
+          <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: Colors.textMuted }} numberOfLines={1}>
             <Ionicons name="time-outline" size={11} /> {listing.hours}
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+      <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
     </TouchableOpacity>
   );
 }
@@ -153,6 +167,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
   onClose: () => void;
   onReviewed?: (id: string, newRating: number, newCount: number) => void;
 }) {
+  const Colors = useColors();
   const [ratingPick,   setRatingPick]   = useState(0);
   const [comment,      setComment]      = useState('');
   const [submitting,   setSubmitting]   = useState(false);
@@ -211,66 +226,66 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={onClose} />
       <ScrollView
-        style={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '80%' }}
+        style={{ backgroundColor: Colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '80%' }}
         contentContainerStyle={{ paddingBottom: 44 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', alignSelf: 'center', marginBottom: 20 }} />
+        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 }} />
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 }}>
           <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: cat.color + '18', justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name={cat.icon as any} size={26} color={cat.color} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: '#1A1A2E' }}>{listing.businessName}</Text>
-            <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>{listing.category}</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: Colors.text }}>{listing.businessName}</Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: Colors.textMuted, marginTop: 2 }}>{listing.category}</Text>
           </View>
           <TouchableOpacity
-            style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F5F5F5', justifyContent: 'center', alignItems: 'center' }}
+            style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' }}
             onPress={onClose}
           >
-            <Ionicons name="close" size={20} color="#8E8E93" />
+            <Ionicons name="close" size={20} color={Colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {listing.rating > 0 && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <StarRow rating={listing.rating} />
-            <Text style={{ fontSize: 13, color: '#8E8E93' }}>{listing.rating.toFixed(1)} · {listing.reviewCount} review{listing.reviewCount !== 1 ? 's' : ''}</Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 13, color: Colors.textMuted }}>{listing.rating.toFixed(1)} · {listing.reviewCount} review{listing.reviewCount !== 1 ? 's' : ''}</Text>
           </View>
         )}
 
-        <View style={{ gap: 10, marginBottom: 20, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#EBEBEF' }}>
+        <View style={{ gap: 10, marginBottom: 20, backgroundColor: Colors.surfaceLight, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border }}>
           {(listing.physicalAddress || listing.city) && (
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-              <Ionicons name="location-outline" size={16} color="#8E8E93" />
-              <Text style={{ flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 }}>
+              <Ionicons name="location-outline" size={16} color={Colors.textMuted} />
+              <Text style={{ fontFamily: FONTS.body, flex: 1, fontSize: 14, color: Colors.textMuted, lineHeight: 19 }}>
                 {listing.physicalAddress || `${listing.city}, ${listing.state}`}
               </Text>
             </View>
           )}
           {listing.hours && (
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-              <Ionicons name="time-outline" size={16} color="#8E8E93" />
-              <Text style={{ flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 }}>{listing.hours}</Text>
+              <Ionicons name="time-outline" size={16} color={Colors.textMuted} />
+              <Text style={{ fontFamily: FONTS.body, flex: 1, fontSize: 14, color: Colors.textMuted, lineHeight: 19 }}>{listing.hours}</Text>
             </View>
           )}
           {listing.phone && (
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-              <Ionicons name="call-outline" size={16} color="#8E8E93" />
-              <Text style={{ flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 }}>{listing.phone}</Text>
+              <Ionicons name="call-outline" size={16} color={Colors.textMuted} />
+              <Text style={{ fontFamily: FONTS.body, flex: 1, fontSize: 14, color: Colors.textMuted, lineHeight: 19 }}>{listing.phone}</Text>
             </View>
           )}
           {listing.website && (
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-              <Ionicons name="globe-outline" size={16} color="#8E8E93" />
-              <Text style={{ flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 }} numberOfLines={1}>{listing.website}</Text>
+              <Ionicons name="globe-outline" size={16} color={Colors.textMuted} />
+              <Text style={{ fontFamily: FONTS.body, flex: 1, fontSize: 14, color: Colors.textMuted, lineHeight: 19 }} numberOfLines={1}>{listing.website}</Text>
             </View>
           )}
           {listing.description && (
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-              <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
-              <Text style={{ flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 }}>{listing.description}</Text>
+              <Ionicons name="information-circle-outline" size={16} color={Colors.textMuted} />
+              <Text style={{ fontFamily: FONTS.body, flex: 1, fontSize: 14, color: Colors.textMuted, lineHeight: 19 }}>{listing.description}</Text>
             </View>
           )}
         </View>
@@ -283,24 +298,24 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
               activeOpacity={0.85}
             >
               <Ionicons name="call" size={18} color="#FFFFFF" />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Call Now</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#FFFFFF' }}>Call Now</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
-            style={{ flex: 2, height: 52, borderRadius: 14, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C5D0E8', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+            style={{ flex: 2, height: 52, borderRadius: 14, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onPress={getDirections}
             activeOpacity={0.85}
           >
-            <Ionicons name="navigate" size={18} color={NAVY} />
-            <Text style={{ fontSize: 15, fontWeight: '700', color: NAVY }}>Directions</Text>
+            <Ionicons name="navigate" size={18} color={Colors.secondary} />
+            <Text style={{ fontSize: 15, fontWeight: '700', fontFamily: FONTS.bodyBold, color: Colors.secondary }}>Directions</Text>
           </TouchableOpacity>
           {listing.website && (
             <TouchableOpacity
-              style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: '#F8F8FA', borderWidth: 1, borderColor: '#EBEBEF', justifyContent: 'center', alignItems: 'center' }}
+              style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.surfaceLight, borderWidth: 1, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center' }}
               onPress={openWebsite}
               activeOpacity={0.8}
             >
-              <Ionicons name="globe-outline" size={18} color={NAVY} />
+              <Ionicons name="globe-outline" size={18} color={Colors.secondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -309,17 +324,17 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
           <View style={{ marginTop: 16, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="pricetag" size={15} color="#B45309" />
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#B45309', letterSpacing: 0.8 }}>SPECIAL OFFER</Text>
+              <Text style={{ fontSize: 11, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#B45309', letterSpacing: 0.8 }}>SPECIAL OFFER</Text>
             </View>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#92400E', lineHeight: 22 }}>{listing.coupon}</Text>
-            <Text style={{ fontSize: 11, color: '#B45309', fontStyle: 'italic' }}>Show this screen at the business to redeem</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#92400E', lineHeight: 22 }}>{listing.coupon}</Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: '#B45309', fontStyle: 'italic' }}>Show this screen at the business to redeem</Text>
           </View>
         ) : null}
 
         {submitted ? (
           <View style={{ marginTop: 16, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EBEBEF', alignItems: 'center', gap: 12 }}>
             <Ionicons name="checkmark-circle" size={28} color="#27AE60" />
-            <Text style={{ fontSize: 15, fontWeight: '700', color: '#27AE60' }}>Thanks for your review!</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#27AE60' }}>Thanks for your review!</Text>
           </View>
         ) : !showRateForm ? (
           <TouchableOpacity
@@ -328,11 +343,11 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
             activeOpacity={0.8}
           >
             <Ionicons name="star-outline" size={16} color={NAVY} />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: NAVY }}>Rate this business</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', fontFamily: FONTS.bodyBold, color: NAVY }}>Rate this business</Text>
           </TouchableOpacity>
         ) : (
           <View style={{ marginTop: 16, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EBEBEF', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontSize: 15, fontWeight: '800', color: '#1A1A2E' }}>Rate this business</Text>
+            <Text style={{ fontSize: 15, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#1A1A2E' }}>Rate this business</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {[1,2,3,4,5].map(n => (
                 <TouchableOpacity key={n} onPress={() => setRatingPick(n)} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -341,7 +356,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
               ))}
             </View>
             <TextInput
-              style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#EBEBEF', padding: 12, fontSize: 14, color: '#1A1A2E', minHeight: 72, textAlignVertical: 'top' }}
+              style={{ width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#EBEBEF', padding: 12, fontSize: 14, fontFamily: FONTS.body, color: '#1A1A2E', minHeight: 72, textAlignVertical: 'top' }}
               placeholder="Leave a comment (optional)"
               placeholderTextColor="#AEAEB2"
               value={comment}
@@ -357,7 +372,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
             >
               {submitting
                 ? <ActivityIndicator size="small" color="#FFFFFF" />
-                : <Text style={{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' }}>Submit Review</Text>
+                : <Text style={{ fontSize: 15, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#FFFFFF' }}>Submit Review</Text>
               }
             </TouchableOpacity>
           </View>
@@ -373,8 +388,10 @@ export default function DashboardScreen() {
   const Colors     = useColors();
   const { user }   = useAuth();
   const navigation = useNavigation<Nav>();
+  const isFocused  = useIsFocused();
   const insets     = useSafeAreaInsets();
   const mapRef     = useRef<MapView>(null);
+  const sheetRef   = useRef<BottomSheet>(null);
 
   const [listings,        setListings]        = useState<Listing[]>([]);
   const [totalCount,      setTotalCount]      = useState(0);
@@ -438,24 +455,42 @@ export default function DashboardScreen() {
   }, [fetchListings, loadingMore, listings.length, totalCount, nearbyMode, page]);
 
   // ── Auto-load remaining pages in the background — no tap required, the
-  // badge total and the actual loaded list should always converge on their own.
+  // badge total and the actual loaded list should always converge on their
+  // own. Gated on focus: the Dashboard's full-screen map + bottom sheet stay
+  // mounted while other tabs are active, so an ungated loop here would keep
+  // re-rendering (and re-diffing every map marker) behind the scenes and
+  // drag down whatever screen the user is actually looking at.
   useEffect(() => {
-    if (!loading && !refreshing && !loadingMore && listings.length > 0 && listings.length < totalCount) {
+    if (isFocused && !loading && !refreshing && !loadingMore && listings.length > 0 && listings.length < totalCount) {
       loadMore();
     }
-  }, [loading, refreshing, loadingMore, listings.length, totalCount, loadMore]);
+  }, [isFocused, loading, refreshing, loadingMore, listings.length, totalCount, loadMore]);
 
+  // Default to the driver's own area, not the full nationwide directory —
+  // with ~4,800 listings total, loading and rendering everything as map pins
+  // doesn't scale. Only fall back to a nationwide fetch when location is
+  // denied/unavailable, so there's still something to show.
   useEffect(() => {
-    fetchListings();
-    Location.requestForegroundPermissionsAsync().then(({ status }) => {
-      if (status === 'granted') {
-        Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }).then(pos => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos    = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          if (cancelled) return;
           setUserCoords(coords);
           coordsRef.current = coords;
-        }).catch(() => {});
+          setNearbyMode(true);
+          fetchListings(coords);
+          return;
+        }
+      } catch {
+        // fall through to nationwide fallback below
       }
-    }).catch(() => {});
+      if (!cancelled) fetchListings();
+    })();
+    return () => { cancelled = true; };
   }, [fetchListings]);
 
   useFocusEffect(useCallback(() => {
@@ -486,7 +521,7 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (mapReady && userCoords && mapRef.current) {
-      mapRef.current.animateToRegion({ ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 }, 600);
+      mapRef.current.animateCamera({ center: userCoords, pitch: 60, zoom: 15 }, { duration: 700 });
     }
   }, [mapReady, userCoords]);
 
@@ -505,9 +540,9 @@ export default function DashboardScreen() {
     setSelectedListing(prev => prev?._id === id ? { ...prev, rating: newRating, reviewCount: newCount } : prev);
   }, []);
 
-  const grouped = useMemo(() => {
-    const q        = searchQuery.trim().toLowerCase();
-    const filtered = listings.filter(l => {
+  const filteredListings = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return listings.filter(l => {
       if (activeCategory && l.category !== activeCategory) return false;
       if (!q) return true;
       return (
@@ -517,15 +552,20 @@ export default function DashboardScreen() {
         l.category.toLowerCase().includes(q)
       );
     });
+  }, [listings, searchQuery, activeCategory]);
+
+  const grouped = useMemo(() => {
     const map: Record<string, Listing[]> = {};
-    for (const l of filtered) {
+    for (const l of filteredListings) {
       if (!map[l.category]) map[l.category] = [];
       map[l.category].push(l);
     }
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
-  }, [listings, searchQuery, activeCategory]);
+  }, [filteredListings]);
 
-  const mappable = listings.filter(l => l.latitude && l.longitude);
+  const mappable = useMemo(() =>
+    filteredListings.filter(l => l.latitude && l.longitude)
+  , [filteredListings]);
   const featured = listings.filter(l => l.tier === 'featured');
 
   // Derive chips from actual data so they always match stored category values
@@ -533,169 +573,275 @@ export default function DashboardScreen() {
     Array.from(new Set(listings.map(l => l.category).filter(Boolean))).sort()
   , [listings]);
 
+  // "Search Near Me" pills without real partner data yet fall back to the
+  // phone's Maps app instead of filtering an empty set of pins.
+  const externalFilters = useMemo(() =>
+    MAP_CATEGORIES.filter(c => {
+      const alias = CATEGORY_ALIAS[c.label];
+      return !alias || !availableCategories.includes(alias);
+    })
+  , [availableCategories]);
+
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
   const firstName = user?.name?.split(' ')[0] ?? 'Driver';
   const initials  = (user?.name ?? 'D').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
+  const openFilterChip = (cat: string | null, external?: { icon: string; color: string; query: string; label: string }) => {
+    if (external) { openExternalMap(external.query); return; }
+    setActiveCategory(cat);
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
 
-      {/* ── Header ───────────────────────────────────────────────────────────── */}
-      <SafeAreaView style={{ backgroundColor: '#FFFFFF' }} edges={['top']}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, gap: 10 }}>
-          <TouchableOpacity
-            style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: NAVY, justifyContent: 'center', alignItems: 'center' }}
-            onPress={() => (navigation as any).navigate('Profile')}
-            activeOpacity={0.8}
-          >
-            <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '800' }}>{initials}</Text>
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#8E8E93' }}>{greeting},</Text>
-            <Text style={{ fontSize: 18, fontWeight: '900', color: '#1A1A2E', marginTop: -1 }}>{firstName}</Text>
-          </View>
-          <TouchableOpacity
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#F5F7FA', justifyContent: 'center', alignItems: 'center' }}
-            onPress={() => navigation.navigate('HOSAlerts')}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="notifications-outline" size={18} color={NAVY} />
-            <View style={{ position: 'absolute', top: 7, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9500', borderWidth: 1.5, borderColor: '#FFF' }} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: NAVY, justifyContent: 'center', alignItems: 'center' }}
-            onPress={() => setMenuOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="menu" size={18} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-
-      <ScrollView
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-        removeClippedSubviews={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => fetchListings(nearbyMode ? coordsRef.current : null, true)}
-            tintColor={NAVY}
-            colors={[NAVY]}
-          />
-        }
+      {/* ── Hero Header ──────────────────────────────────────────────────────── */}
+      <ImageBackground
+        source={require('../../../assets/images/hero-bg_founding_partner.jpeg')}
+        style={{ width: '100%' }}
+        resizeMode="cover"
       >
+        <LinearGradient
+          colors={['rgba(2,10,26,0.25)', 'rgba(2,10,26,0.55)', 'rgba(2,10,26,0.92)']}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <SafeAreaView edges={['top']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 10 }}>
+            <TouchableOpacity
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
+              onPress={() => (navigation as any).navigate('Profile')}
+              activeOpacity={0.8}
+            >
+              {user?.avatarUrl
+                ? <Image source={{ uri: user.avatarUrl }} style={{ width: 44, height: 44 }} />
+                : <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold }}>{initials}</Text>
+              }
+            </TouchableOpacity>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', fontWeight: '600', fontFamily: FONTS.bodySemiBold }}>{greeting},</Text>
+              <Text style={{ fontSize: 30, fontFamily: FONTS.display, color: '#FFFFFF', marginTop: -3, letterSpacing: 0.5 }}>{firstName.toUpperCase()}</Text>
+            </View>
+            <TouchableOpacity
+              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => navigation.navigate('HOSAlerts')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="notifications-outline" size={18} color="#FFFFFF" />
+              <View style={{ position: 'absolute', top: 7, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9500', borderWidth: 1.5, borderColor: NAVY }} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => setMenuOpen(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="menu" size={18} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
 
-        {/* ── Quick Tools ───────────────────────────────────────────────────── */}
-        <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EBEBEF', backgroundColor: '#FFFFFF' }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} removeClippedSubviews={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 16 }}>
+          {/* Quick Tools — overlaid on hero image */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} removeClippedSubviews={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 18 }}>
             {QUICK_TOOLS.map(tool => (
               <TouchableOpacity
                 key={tool.screen}
-                style={{ alignItems: 'center', gap: 6 }}
+                style={{ width: 74, alignItems: 'center', gap: 6, backgroundColor: 'rgba(8,16,32,0.55)', borderRadius: 16, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}
                 onPress={() => navigation.navigate(tool.screen as never)}
                 activeOpacity={0.75}
               >
-                <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: tool.color + '18', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: tool.color + '33' }}>
-                  <Ionicons name={tool.icon as any} size={24} color={tool.color} />
+                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: tool.color + '33', justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name={tool.icon as any} size={20} color={tool.color} />
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#4A4A5A', textAlign: 'center', maxWidth: 56 }} numberOfLines={2}>{tool.label}</Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#FFFFFF', textAlign: 'center' }} numberOfLines={2}>{tool.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
 
-        {/* ── Map ──────────────────────────────────────────────────────────── */}
-        <View style={{ height: MAP_HEIGHT, backgroundColor: '#E8EDF2' }}>
-          <MapView
-            ref={mapRef}
-            style={{ flex: 1 }}
-            provider={PROVIDER_DEFAULT}
-            initialRegion={userCoords ? { ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 } : DEFAULT_REGION}
-            showsUserLocation
-            showsMyLocationButton={false}
-            onMapReady={() => setMapReady(true)}
-          >
-            {mappable.map(l => {
-              const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
-              return (
-                <Marker
-                  key={l._id}
-                  coordinate={{ latitude: l.latitude!, longitude: l.longitude! }}
-                  title={l.businessName}
-                  description={l.category}
-                  pinColor={cat.color}
-                  onCalloutPress={() => setSelectedListing(l)}
-                />
-              );
-            })}
-          </MapView>
-          <View style={{ position: 'absolute', top: 12, left: 12, backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="storefront" size={13} color="#F5C842" />
-            <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+          {/* Partner count badge */}
+          <View style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(2,27,58,0.55)', paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <Ionicons name="people" size={16} color="#F5C842" />
+            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold }}>
               {totalCount} RRN Partner{totalCount !== 1 ? 's' : ''}{nearbyMode ? ' Nearby' : ' Nationwide'}
             </Text>
           </View>
-          {userCoords && (
-            <TouchableOpacity
-              style={{ position: 'absolute', bottom: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 4 }}
-              onPress={() => mapRef.current?.animateToRegion({ ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 }, 400)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="locate" size={18} color={NAVY} />
+        </SafeAreaView>
+      </ImageBackground>
+
+      {/* ── Full-bleed Map ───────────────────────────────────────────────────── */}
+      <View style={{ flex: 1 }}>
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFillObject}
+          provider={PROVIDER_DEFAULT}
+          initialRegion={userCoords ? { ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 } : DEFAULT_REGION}
+          initialCamera={{
+            center: userCoords ?? { latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude },
+            pitch: 60,
+            heading: 0,
+            altitude: 1200,
+            zoom: 15,
+          }}
+          pitchEnabled
+          showsBuildings
+          showsUserLocation
+          showsMyLocationButton={false}
+          onMapReady={() => setMapReady(true)}
+        >
+          {mappable.map(l => {
+            const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+            return (
+              <Marker
+                key={l._id}
+                coordinate={{ latitude: l.latitude!, longitude: l.longitude! }}
+                title={l.businessName}
+                description={l.category}
+                pinColor={cat.color}
+                onCalloutPress={() => setSelectedListing(l)}
+              />
+            );
+          })}
+        </MapView>
+
+        {/* Locate-me button — floats just above the collapsed sheet */}
+        {userCoords && (
+          <TouchableOpacity
+            style={{ position: 'absolute', bottom: PEEK_HEIGHT + 16, right: 16, width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 4 }}
+            onPress={() => mapRef.current?.animateCamera({ center: userCoords, pitch: 60, zoom: 15 }, { duration: 400 })}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="locate" size={18} color={NAVY} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* ── SOS Button — stacked above the locate button ────────────────────────── */}
+      <Animated.View style={{
+        position: 'absolute', bottom: PEEK_HEIGHT + 68, right: 20,
+        transform: [{ scale: sosPulse }],
+        shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.55, shadowRadius: 12, elevation: 10,
+      }}>
+        <TouchableOpacity
+          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFFFFF' }}
+          onPress={() => navigation.navigate('EmergencySOS')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="alert-circle" size={20} color="#FFF" />
+          <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900', fontFamily: FONTS.bodyBlack, letterSpacing: 1, marginTop: 1 }}>SOS</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* ── Business list — draggable sheet overlapping the map ─────────────────── */}
+      <BottomSheet
+        ref={sheetRef}
+        index={1}
+        snapPoints={SHEET_SNAP_POINTS}
+        enableDynamicSizing={false}
+        backgroundStyle={{ backgroundColor: '#FFFFFF' }}
+        handleIndicatorStyle={{ backgroundColor: '#D8D8DE', width: 40 }}
+        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 12 }}
+      >
+        {/* Search bar */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, gap: 8, marginHorizontal: 16, marginBottom: 10, height: 42 }}>
+          <Ionicons name="search-outline" size={17} color={Colors.textMuted} />
+          <TextInput
+            style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: Colors.text }}
+            placeholder="Search by name, city, or state…"
+            placeholderTextColor={Colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* ── Body ─────────────────────────────────────────────────────────── */}
-        <View style={{ padding: 16 }}>
-
-          {/* Search bar */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, gap: 8, marginBottom: 10, height: 44 }}>
-            <Ionicons name="search-outline" size={18} color={Colors.textMuted} />
-            <TextInput
-              style={{ flex: 1, fontSize: 14, color: Colors.text }}
-              placeholder="Search by name, city, or state…"
-              placeholderTextColor={Colors.textMuted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              returnKeyType="search"
-              clearButtonMode="while-editing"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
-              </TouchableOpacity>
-            )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, gap: 10 }}>
+          <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: NAVY + '14', justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons name="storefront" size={17} color={NAVY} />
           </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 15, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: Colors.text }}>
+              {totalCount} RRN Partner{totalCount !== 1 ? 's' : ''}{nearbyMode ? ' Nearby' : ' Nationwide'}
+            </Text>
+            <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: Colors.textMuted }}>
+              {nearbyMode ? 'Within 75 miles of you' : 'Drag up to browse the full directory'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: nearbyMode ? NAVY : '#EEF2FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: nearbyMode ? NAVY : '#C5D0E8' }}
+            onPress={toggleNearby}
+            activeOpacity={0.8}
+            disabled={locLoading}
+          >
+            {locLoading
+              ? <ActivityIndicator size="small" color={nearbyMode ? '#FFF' : NAVY} />
+              : <Ionicons name="locate" size={14} color={nearbyMode ? '#FFFFFF' : NAVY} />
+            }
+            <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: nearbyMode ? '#FFFFFF' : NAVY }}>
+              {nearbyMode ? 'Near Me ✓' : 'Near Me'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-          {/* Category chips — derived from real data so they always match */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
-            {[null, ...availableCategories].map(cat => {
-              const isAll  = cat === null;
-              const active = isAll ? activeCategory === null : activeCategory === cat;
-              const catInfo = cat ? (CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' }) : null;
+        <BottomSheetScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 100 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => fetchListings(nearbyMode ? coordsRef.current : null, true)}
+              tintColor={NAVY}
+              colors={[NAVY]}
+            />
+          }
+        >
+          {/* Filter chips — RRN categories (filter pins on our own map) + generic
+              "near me" pills that fall back to opening the phone's Maps app
+              when there's no partner data to filter with */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: activeCategory === null ? NAVY : Colors.surface, borderColor: activeCategory === null ? NAVY : Colors.border }}
+              onPress={() => openFilterChip(null)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: activeCategory === null ? '#FFFFFF' : Colors.text }}>All</Text>
+            </TouchableOpacity>
+            {availableCategories.map(cat => {
+              const active  = activeCategory === cat;
+              const catInfo = CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' };
               return (
                 <TouchableOpacity
-                  key={cat ?? '__all'}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, marginRight: 8, backgroundColor: active ? NAVY : Colors.surface, borderColor: active ? NAVY : Colors.border }}
-                  onPress={() => setActiveCategory(isAll ? null : cat)}
+                  key={cat}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: active ? NAVY : Colors.surface, borderColor: active ? NAVY : Colors.border }}
+                  onPress={() => openFilterChip(cat)}
                   activeOpacity={0.8}
                 >
-                  {catInfo && <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFF' : catInfo.color} />}
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#FFFFFF' : Colors.text }}>
-                    {isAll ? 'All' : cat}
-                  </Text>
+                  <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFF' : catInfo.color} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: active ? '#FFFFFF' : Colors.text }}>{cat}</Text>
                 </TouchableOpacity>
               );
             })}
+            {externalFilters.map(cat => (
+              <TouchableOpacity
+                key={cat.label}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: Colors.surface, borderColor: Colors.border }}
+                onPress={() => openFilterChip(null, cat)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={cat.icon as any} size={13} color={cat.color} />
+                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: Colors.text }}>{cat.label}</Text>
+                <Ionicons name="open-outline" size={11} color={Colors.textMuted} />
+              </TouchableOpacity>
+            ))}
           </ScrollView>
 
           {/* Featured Partners */}
           {featured.length > 0 && (
             <View style={{ marginBottom: 18 }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', color: '#92400E', letterSpacing: 0.8, marginBottom: 10, textTransform: 'uppercase' }}>
+              <Text style={{ fontSize: 11, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#92400E', letterSpacing: 0.8, marginBottom: 10, textTransform: 'uppercase' }}>
                 ★ Featured Partners{nearbyMode ? ' Near You' : ''}
               </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -708,16 +854,16 @@ export default function DashboardScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: '#F5C842', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 }}>
                       <Ionicons name="star" size={9} color="#92400E" />
-                      <Text style={{ fontSize: 9, fontWeight: '800', color: '#92400E' }}>FEATURED</Text>
+                      <Text style={{ fontSize: 9, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#92400E' }}>FEATURED</Text>
                     </View>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: '#1A1A2E' }} numberOfLines={1}>{l.businessName}</Text>
-                    <Text style={{ fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>{l.category}</Text>
-                    <Text style={{ fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>{l.physicalAddress || `${l.city}, ${l.state}`}</Text>
-                    {l.phone ? <Text style={{ fontSize: 12, color: NAVY, fontWeight: '600' }}>{l.phone}</Text> : null}
+                    <Text style={{ fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#1A1A2E' }} numberOfLines={1}>{l.businessName}</Text>
+                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>{l.category}</Text>
+                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>{l.physicalAddress || `${l.city}, ${l.state}`}</Text>
+                    {l.phone ? <Text style={{ fontSize: 12, color: NAVY, fontWeight: '600', fontFamily: FONTS.bodySemiBold }}>{l.phone}</Text> : null}
                     {l.rating > 0 && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <StarRow rating={l.rating} />
-                        <Text style={{ fontSize: 11, color: '#8E8E93' }}>{l.rating.toFixed(1)}</Text>
+                        <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: '#8E8E93' }}>{l.rating.toFixed(1)}</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -726,39 +872,15 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {/* Partner Directory */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-            <Text style={{ flex: 1, fontSize: 16, fontWeight: '800', color: Colors.text }}>Road Ready Network Partners</Text>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: nearbyMode ? NAVY : '#EEF2FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: nearbyMode ? NAVY : '#C5D0E8' }}
-              onPress={toggleNearby}
-              activeOpacity={0.8}
-              disabled={locLoading}
-            >
-              {locLoading
-                ? <ActivityIndicator size="small" color={nearbyMode ? '#FFF' : NAVY} />
-                : <Ionicons name="locate" size={14} color={nearbyMode ? '#FFFFFF' : NAVY} />
-              }
-              <Text style={{ fontSize: 12, fontWeight: '700', color: nearbyMode ? '#FFFFFF' : NAVY }}>
-                {nearbyMode ? 'Near Me ✓' : 'Near Me'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={{ fontSize: 12, color: Colors.textMuted, marginBottom: 14 }}>
-            {nearbyMode
-              ? 'Showing partners within 75 miles of your location.'
-              : 'All verified businesses on the Road Ready Network.'}
-          </Text>
-
           {loading ? (
             <View style={{ alignItems: 'center', paddingVertical: 32, gap: 8 }}>
               <ActivityIndicator size="large" color={NAVY} />
-              <Text style={{ color: Colors.textMuted, fontSize: 14 }}>Finding partners...</Text>
+              <Text style={{ fontFamily: FONTS.body, color: Colors.textMuted, fontSize: 14 }}>Finding partners...</Text>
             </View>
           ) : grouped.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 32, gap: 8 }}>
               <Ionicons name="storefront-outline" size={48} color="#E0E0E0" />
-              <Text style={{ color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
+              <Text style={{ fontFamily: FONTS.body, color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 }}>
                 {nearbyMode
                   ? 'No RRN partners within 75 miles.\nTry turning off Near Me to see all partners.'
                   : 'No RRN partners yet.\nCheck back soon as more businesses join the network.'}
@@ -773,8 +895,8 @@ export default function DashboardScreen() {
                     <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: cat.color + '18', justifyContent: 'center', alignItems: 'center' }}>
                       <Ionicons name={cat.icon as any} size={16} color={cat.color} />
                     </View>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: Colors.text }}>{category}</Text>
-                    <Text style={{ fontSize: 12, color: Colors.textMuted, marginLeft: 'auto' as any }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: Colors.text }}>{category}</Text>
+                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: Colors.textMuted, marginLeft: 'auto' as any }}>
                       {items.length} location{items.length !== 1 ? 's' : ''}
                     </Text>
                   </View>
@@ -794,57 +916,13 @@ export default function DashboardScreen() {
               flexDirection: 'row', gap: 8,
             }}>
               <ActivityIndicator size="small" color={NAVY} />
-              <Text style={{ fontSize: 12, color: Colors.textMuted }}>
+              <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: Colors.textMuted }}>
                 Loading more partners… ({listings.length} of {totalCount})
               </Text>
             </View>
           )}
-
-          {/* Divider */}
-          <View style={{ height: 1, backgroundColor: Colors.border, marginVertical: 20 }} />
-
-          {/* Search Near Me */}
-          <Text style={{ fontSize: 16, fontWeight: '800', color: Colors.text, marginBottom: 4 }}>Search Near Me</Text>
-          <Text style={{ fontSize: 12, color: Colors.textMuted, marginBottom: 14 }}>Opens your phone's maps app for general searches.</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            {MAP_CATEGORIES.map(cat => (
-              <TouchableOpacity
-                key={cat.label}
-                style={{ width: (SW - 48) / 2, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border }}
-                onPress={() => openExternalMap(cat.query)}
-                activeOpacity={0.75}
-              >
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: cat.color + '22', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
-                  <Ionicons name={cat.icon as any} size={26} color={cat.color} />
-                </View>
-                <Text style={{ color: Colors.text, fontSize: 13, fontWeight: '700' }}>{cat.label}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, backgroundColor: Colors.secondary + '18', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, alignSelf: 'flex-start', borderWidth: 1, borderColor: Colors.secondary + '44' }}>
-                  <Ionicons name="map-outline" size={10} color={Colors.secondary} />
-                  <Text style={{ color: Colors.secondary, fontSize: 9, fontWeight: '800' }}>OPEN MAPS</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-        </View>
-      </ScrollView>
-
-      {/* ── SOS Button ───────────────────────────────────────────────────────── */}
-      <Animated.View style={{
-        position: 'absolute', bottom: insets.bottom + 98, right: 20,
-        transform: [{ scale: sosPulse }],
-        shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.55, shadowRadius: 12, elevation: 10,
-      }}>
-        <TouchableOpacity
-          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#FF3B30', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFFFFF' }}
-          onPress={() => navigation.navigate('EmergencySOS')}
-          activeOpacity={0.85}
-        >
-          <Ionicons name="alert-circle" size={20} color="#FFF" />
-          <Text style={{ color: '#FFF', fontSize: 9, fontWeight: '900', letterSpacing: 1, marginTop: 1 }}>SOS</Text>
-        </TouchableOpacity>
-      </Animated.View>
+        </BottomSheetScrollView>
+      </BottomSheet>
 
       {/* ── Business Detail Modal ─────────────────────────────────────────────── */}
       {selectedListing && (

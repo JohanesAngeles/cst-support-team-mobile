@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthStack';
+import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'PartnerApplication'> };
@@ -18,6 +19,8 @@ const CATEGORIES = [
 ];
 
 export default function PartnerApplicationScreen({ navigation }: Props) {
+  const Colors = useColors();
+  const s = getStyles(Colors);
   const [businessName,  setBusinessName]  = useState('');
   const [category,      setCategory]      = useState('');
   const [contactName,   setContactName]   = useState('');
@@ -72,7 +75,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
           {/* Header bar */}
           <View style={s.topBar}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
-              <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+              <Ionicons name="chevron-back" size={22} color={Colors.text} />
             </TouchableOpacity>
             <Text style={s.topBarTitle}>Partner Application</Text>
             <View style={{ width: 32 }} />
@@ -96,7 +99,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={s.input}
                   placeholder="e.g. Mike's Truck Repair"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={businessName}
                   onChangeText={setBusinessName}
                   onFocus={() => setFocused('businessName')}
@@ -112,10 +115,10 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 onPress={() => setShowCatPicker(v => !v)}
                 activeOpacity={0.8}
               >
-                <Text style={[s.input, !category && { color: '#C7C7CC' }]}>
+                <Text style={[s.input, !category && { color: Colors.textMuted }]}>
                   {category || 'Select a category'}
                 </Text>
-                <Ionicons name={showCatPicker ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                <Ionicons name={showCatPicker ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
               </TouchableOpacity>
               {showCatPicker && (
                 <View style={s.catList}>
@@ -129,7 +132,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                       <Text style={[s.catItemText, category === cat && s.catItemTextSelected]}>
                         {cat}
                       </Text>
-                      {category === cat && <Ionicons name="checkmark" size={16} color="#021B3A" />}
+                      {category === cat && <Ionicons name="checkmark" size={16} color={Colors.secondary} />}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -143,7 +146,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                   <TextInput
                     style={s.input}
                     placeholder="Los Angeles"
-                    placeholderTextColor="#C7C7CC"
+                    placeholderTextColor={Colors.textMuted}
                     value={city}
                     onChangeText={setCity}
                     onFocus={() => setFocused('city')}
@@ -157,7 +160,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                   <TextInput
                     style={s.input}
                     placeholder="CA"
-                    placeholderTextColor="#C7C7CC"
+                    placeholderTextColor={Colors.textMuted}
                     value={state}
                     onChangeText={v => setState(v.toUpperCase())}
                     autoCapitalize="characters"
@@ -175,7 +178,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={s.input}
                   placeholder="https://yourbusiness.com"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={website}
                   onChangeText={setWebsite}
                   keyboardType="url"
@@ -193,7 +196,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={s.input}
                   placeholder="Were you referred by a driver or partner?"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={referralCode}
                   onChangeText={(t) => setReferralCode(t.toUpperCase())}
                   autoCapitalize="characters"
@@ -213,7 +216,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={s.input}
                   placeholder="Full name"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={contactName}
                   onChangeText={setContactName}
                   onFocus={() => setFocused('contactName')}
@@ -228,7 +231,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={s.input}
                   placeholder="business@email.com"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -246,7 +249,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={s.input}
                   placeholder="+1 (555) 000-0000"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={phone}
                   onChangeText={setPhone}
                   keyboardType="phone-pad"
@@ -265,7 +268,7 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
                 <TextInput
                   style={[s.input, { textAlignVertical: 'top' }]}
                   placeholder="What services do you offer? What makes your business stand out?"
-                  placeholderTextColor="#C7C7CC"
+                  placeholderTextColor={Colors.textMuted}
                   value={description}
                   onChangeText={setDescription}
                   multiline
@@ -284,10 +287,10 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
               activeOpacity={0.85}
             >
               {loading
-                ? <ActivityIndicator color="#FFFFFF" />
+                ? <ActivityIndicator color={Colors.white} />
                 : (
                   <>
-                    <Ionicons name="send-outline" size={18} color="#FFFFFF" />
+                    <Ionicons name="send-outline" size={18} color={Colors.white} />
                     <Text style={s.submitBtnText}>Submit Application</Text>
                   </>
                 )
@@ -304,44 +307,44 @@ export default function PartnerApplicationScreen({ navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+const getStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root:   { flex: 1, backgroundColor: Colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: 24, paddingBottom: 40 },
 
   topBar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#F0F0F5',
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn:      { padding: 4 },
-  topBarTitle:  { fontSize: 16, fontWeight: '700', color: '#1A1A2E' },
+  topBarTitle:  { fontSize: 16, fontWeight: '700', color: Colors.text },
 
-  pageTitle: { fontSize: 26, fontWeight: '800', color: '#1A1A2E', marginTop: 20, marginBottom: 6 },
-  pageSub:   { fontSize: 13, color: '#8E8E93', lineHeight: 19, marginBottom: 24 },
+  pageTitle: { fontSize: 26, fontWeight: '800', color: Colors.text, marginTop: 20, marginBottom: 6 },
+  pageSub:   { fontSize: 13, color: Colors.textMuted, lineHeight: 19, marginBottom: 24 },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '700', color: '#8E8E93',
+    fontSize: 11, fontWeight: '700', color: Colors.textMuted,
     letterSpacing: 1, textTransform: 'uppercase',
     marginBottom: 12, marginTop: 8,
   },
 
   field:  { gap: 6, marginBottom: 14 },
   row:    { flexDirection: 'row', gap: 10 },
-  label:  { fontSize: 14, fontWeight: '600', color: '#1A1A2E' },
+  label:  { fontSize: 14, fontWeight: '600', color: Colors.text },
 
   inputBox: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 14, paddingHorizontal: 16, height: 52,
-    backgroundColor: '#F8F8FA', borderWidth: 1.5, borderColor: '#EBEBEF',
+    backgroundColor: Colors.inputBg, borderWidth: 1.5, borderColor: Colors.border,
   },
-  inputFocused: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
-  input:        { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  inputFocused: { borderColor: Colors.primary, backgroundColor: Colors.background },
+  input:        { flex: 1, fontSize: 15, color: Colors.text },
 
   pickerRow: { justifyContent: 'space-between' },
 
   catList: {
-    backgroundColor: '#FFFFFF', borderRadius: 14,
-    borderWidth: 1, borderColor: '#EBEBEF',
+    backgroundColor: Colors.surface, borderRadius: 14,
+    borderWidth: 1, borderColor: Colors.border,
     overflow: 'hidden', marginTop: 4,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,
@@ -349,22 +352,22 @@ const s = StyleSheet.create({
   catItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: '#F0F0F5',
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  catItemSelected:     { backgroundColor: '#F0F4FA' },
-  catItemText:         { fontSize: 15, color: '#1A1A2E' },
-  catItemTextSelected: { fontWeight: '700', color: '#021B3A' },
+  catItemSelected:     { backgroundColor: Colors.surfaceLight },
+  catItemText:         { fontSize: 15, color: Colors.text },
+  catItemTextSelected: { fontWeight: '700', color: Colors.secondary },
 
   submitBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     height: 56, borderRadius: 28,
-    backgroundColor: '#021B3A',
+    backgroundColor: Colors.primary,
     gap: 10, marginTop: 12,
-    shadowColor: '#021B3A', shadowOffset: { width: 0, height: 4 },
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22, shadowRadius: 10, elevation: 5,
   },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  submitBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
   disabled:      { opacity: 0.55 },
 
-  note: { fontSize: 12, color: '#8E8E93', textAlign: 'center', marginTop: 16, lineHeight: 17 },
+  note: { fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 16, lineHeight: 17 },
 });

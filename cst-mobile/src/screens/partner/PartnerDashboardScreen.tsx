@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../../context/AuthContext';
+import { useColors } from '../../constants/colors';
 import { PartnerTabParamList } from '../../navigation/PartnerStack';
 import client from '../../api/client';
 
@@ -29,6 +30,8 @@ interface Listing {
 }
 
 export default function PartnerDashboardScreen() {
+  const Colors = useColors();
+  const s = makeStyles(Colors);
   const { user } = useAuth();
   const navigation = useNavigation<Nav>();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
@@ -72,7 +75,7 @@ export default function PartnerDashboardScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={s.scroll}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#021B3A" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />}
         >
           {/* Header */}
           <View style={s.header}>
@@ -89,14 +92,14 @@ export default function PartnerDashboardScreen() {
           </View>
 
           {loading ? (
-            <ActivityIndicator color="#021B3A" style={{ marginTop: 40 }} />
+            <ActivityIndicator color={Colors.secondary} style={{ marginTop: 40 }} />
           ) : (
             <>
               {/* Listing preview card */}
               {listing ? (
                 <View style={s.listingCard}>
                   <View style={s.listingCardIcon}>
-                    <Ionicons name="storefront" size={26} color="#021B3A" />
+                    <Ionicons name="storefront" size={26} color={Colors.secondary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={s.listingName}>{listing.businessName}</Text>
@@ -108,19 +111,19 @@ export default function PartnerDashboardScreen() {
                 </View>
               ) : (
                 <TouchableOpacity style={s.setupCard} onPress={() => navigation.navigate('MyListing')} activeOpacity={0.85}>
-                  <Ionicons name="add-circle-outline" size={28} color="#021B3A" />
+                  <Ionicons name="add-circle-outline" size={28} color={Colors.secondary} />
                   <View style={{ flex: 1 }}>
                     <Text style={s.setupTitle}>Set up your listing</Text>
                     <Text style={s.setupSub}>Add your business details so drivers can find you on the map.</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color="#C7C7CC" />
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
                 </TouchableOpacity>
               )}
 
               {/* Analytics stats */}
               <Text style={s.sectionLabel}>THIS WEEK</Text>
               <View style={s.statsRow}>
-                <StatCard icon="eye-outline"       label="Profile Views" value={analytics?.viewCount  ?? 0} color="#021B3A" />
+                <StatCard icon="eye-outline"       label="Profile Views" value={analytics?.viewCount  ?? 0} color={Colors.secondary} />
                 <StatCard icon="hand-right-outline" label="Tap-to-Calls"  value={analytics?.clickCount ?? 0} color="#D4A017" />
                 <StatCard icon="star"              label="Avg Rating"    value={stars > 0 ? stars.toFixed(1) : '—'} color="#F5C842" />
               </View>
@@ -158,10 +161,10 @@ export default function PartnerDashboardScreen() {
                     activeOpacity={0.8}
                   >
                     <View style={s.actionIcon}>
-                      <Ionicons name={item.icon as any} size={20} color="#021B3A" />
+                      <Ionicons name={item.icon as any} size={20} color={Colors.secondary} />
                     </View>
                     <Text style={s.actionLabel}>{item.label}</Text>
-                    <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -173,76 +176,78 @@ export default function PartnerDashboardScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+function makeStyles(Colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  root:   { flex: 1, backgroundColor: Colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 100 },
 
   header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 20, paddingBottom: 16 },
-  greeting:    { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
-  name:        { fontSize: 24, fontWeight: '800', color: '#1A1A2E', marginTop: 2 },
+  greeting:    { fontSize: 14, color: Colors.textMuted, fontWeight: '500' },
+  name:        { fontSize: 24, fontWeight: '800', color: Colors.text, marginTop: 2 },
 
   statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-  badgeActive: { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' },
-  badgeInactive: { backgroundColor: '#FFF3E0', borderColor: '#FF9800' },
+  badgeActive: { backgroundColor: 'rgba(76,175,80,0.15)', borderColor: 'rgba(76,175,80,0.4)' },
+  badgeInactive: { backgroundColor: 'rgba(255,152,0,0.15)', borderColor: 'rgba(255,152,0,0.4)' },
   statusDot:   { width: 7, height: 7, borderRadius: 4 },
   dotActive:   { backgroundColor: '#4CAF50' },
   dotInactive: { backgroundColor: '#FF9800' },
   statusText:  { fontSize: 13, fontWeight: '700' },
-  textActive:  { color: '#2E7D32' },
-  textInactive: { color: '#E65100' },
+  textActive:  { color: '#4CAF50' },
+  textInactive: { color: '#FF9800' },
 
   listingCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#F8F8FA', borderRadius: 16,
-    padding: 16, borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 20,
+    backgroundColor: Colors.surface, borderRadius: 16,
+    padding: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 20,
   },
   listingCardIcon: {
     width: 48, height: 48, borderRadius: 14,
-    backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center',
   },
-  listingName: { fontSize: 16, fontWeight: '700', color: '#1A1A2E' },
-  listingMeta: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
-  editBtn:     { paddingHorizontal: 14, paddingVertical: 7, backgroundColor: '#021B3A', borderRadius: 10 },
-  editBtnText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF' },
+  listingName: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  listingMeta: { fontSize: 13, color: Colors.textMuted, marginTop: 2 },
+  editBtn:     { paddingHorizontal: 14, paddingVertical: 7, backgroundColor: Colors.primary, borderRadius: 10 },
+  editBtnText: { fontSize: 13, fontWeight: '700', color: Colors.white },
 
   setupCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     borderRadius: 16, padding: 18, marginBottom: 20,
-    backgroundColor: '#FFF8E1', borderWidth: 1.5,
-    borderColor: '#FFE082', borderStyle: 'dashed',
+    backgroundColor: 'rgba(212,160,23,0.12)', borderWidth: 1.5,
+    borderColor: 'rgba(212,160,23,0.35)', borderStyle: 'dashed',
   },
-  setupTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
-  setupSub:   { fontSize: 13, color: '#8E8E93', marginTop: 2, lineHeight: 18 },
+  setupTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
+  setupSub:   { fontSize: 13, color: Colors.textMuted, marginTop: 2, lineHeight: 18 },
 
   sectionLabel: {
-    fontSize: 11, fontWeight: '700', color: '#8E8E93',
+    fontSize: 11, fontWeight: '700', color: Colors.textMuted,
     letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12, marginTop: 4,
   },
 
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: {
-    flex: 1, backgroundColor: '#F8F8FA', borderRadius: 14, padding: 14,
+    flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
     alignItems: 'center', gap: 6,
-    borderTopWidth: 3, borderWidth: 1, borderColor: '#EBEBEF',
+    borderTopWidth: 3, borderWidth: 1, borderColor: Colors.border,
   },
-  statValue: { fontSize: 22, fontWeight: '800', color: '#1A1A2E' },
-  statLabel: { fontSize: 11, color: '#8E8E93', fontWeight: '600', textAlign: 'center' },
+  statValue: { fontSize: 22, fontWeight: '800', color: Colors.text },
+  statLabel: { fontSize: 11, color: Colors.textMuted, fontWeight: '600', textAlign: 'center' },
 
   ratingCard: {
-    backgroundColor: '#FFFDE7', borderRadius: 16, padding: 18,
+    backgroundColor: 'rgba(212,160,23,0.12)', borderRadius: 16, padding: 18,
     alignItems: 'center', gap: 8, marginBottom: 24,
-    borderWidth: 1, borderColor: '#FFE082',
+    borderWidth: 1, borderColor: 'rgba(212,160,23,0.35)',
   },
   starsRow:    { flexDirection: 'row', gap: 4 },
-  ratingText:  { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
-  viewReviews: { fontSize: 14, fontWeight: '700', color: '#021B3A' },
+  ratingText:  { fontSize: 14, color: Colors.textMuted, fontWeight: '500' },
+  viewReviews: { fontSize: 14, fontWeight: '700', color: Colors.secondary },
 
   actionList: { gap: 8, marginBottom: 20 },
   actionRow:  {
     flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#F8F8FA', borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: '#EBEBEF',
+    backgroundColor: Colors.surface, borderRadius: 14, padding: 16,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  actionIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
-  actionLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-});
+  actionIcon: { width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' },
+  actionLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: Colors.text },
+  });
+}

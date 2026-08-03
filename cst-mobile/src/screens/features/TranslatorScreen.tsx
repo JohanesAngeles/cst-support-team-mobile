@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, Alert, ActivityIndicator,
@@ -69,6 +69,7 @@ function LanguagePicker({
   onClose: () => void;
   exclude?: LangCode;
 }) {
+  const Colors = useColors();
   const [search, setSearch] = useState('');
   const filtered = LANGUAGES.filter(l =>
     l.code !== exclude &&
@@ -76,22 +77,47 @@ function LanguagePicker({
      l.native.toLowerCase().includes(search.toLowerCase()))
   );
 
+  const pk = useMemo(() => StyleSheet.create({
+    root: { flex: 1, backgroundColor: Colors.background },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      paddingHorizontal: 20, paddingVertical: 16,
+      borderBottomWidth: 1, borderColor: Colors.border,
+    },
+    title:      { fontSize: 18, fontWeight: '700', color: Colors.text },
+    searchWrap: {
+      flexDirection: 'row', alignItems: 'center',
+      margin: 16, backgroundColor: Colors.surfaceLight,
+      borderRadius: 12, paddingHorizontal: 12, height: 44,
+    },
+    searchInput: { flex: 1, fontSize: 15, color: Colors.text },
+    row: {
+      flexDirection: 'row', alignItems: 'center',
+      padding: 14, borderRadius: 12, gap: 12,
+      backgroundColor: Colors.surface,
+    },
+    rowSelected: { backgroundColor: Colors.secondary + '22', borderWidth: 1.5, borderColor: Colors.secondary },
+    flag:       { fontSize: 26 },
+    langLabel:  { fontSize: 15, fontWeight: '600', color: Colors.text },
+    langNative: { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  }), [Colors]);
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={pk.root} edges={['top', 'bottom']}>
         <View style={pk.header}>
           <Text style={pk.title}>Select Language</Text>
           <TouchableOpacity onPress={() => { setSearch(''); onClose(); }}>
-            <Ionicons name="close" size={24} color="#1A1A2E" />
+            <Ionicons name="close" size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>
 
         <View style={pk.searchWrap}>
-          <Ionicons name="search-outline" size={16} color="#8E8E93" style={{ marginRight: 8 }} />
+          <Ionicons name="search-outline" size={16} color={Colors.textMuted} style={{ marginRight: 8 }} />
           <TextInput
             style={pk.searchInput}
             placeholder="Search language..."
-            placeholderTextColor="#AEAEB2"
+            placeholderTextColor={Colors.textMuted}
             value={search}
             onChangeText={setSearch}
             autoFocus
@@ -113,7 +139,7 @@ function LanguagePicker({
                 <Text style={pk.langLabel}>{item.label}</Text>
                 <Text style={pk.langNative}>{item.native}</Text>
               </View>
-              {item.code === selected && <Ionicons name="checkmark-circle" size={20} color="#021B3A" />}
+              {item.code === selected && <Ionicons name="checkmark-circle" size={20} color={Colors.secondary} />}
             </TouchableOpacity>
           )}
         />
@@ -121,31 +147,6 @@ function LanguagePicker({
     </Modal>
   );
 }
-
-const pk = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 20, paddingVertical: 16,
-    borderBottomWidth: 1, borderColor: '#F0F0F0',
-  },
-  title:      { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
-  searchWrap: {
-    flexDirection: 'row', alignItems: 'center',
-    margin: 16, backgroundColor: '#F2F2F7',
-    borderRadius: 12, paddingHorizontal: 12, height: 44,
-  },
-  searchInput: { flex: 1, fontSize: 15, color: '#1A1A2E' },
-  row: {
-    flexDirection: 'row', alignItems: 'center',
-    padding: 14, borderRadius: 12, gap: 12,
-    backgroundColor: '#F8F8FA',
-  },
-  rowSelected: { backgroundColor: '#EEF3F8', borderWidth: 1.5, borderColor: '#021B3A' },
-  flag:       { fontSize: 26 },
-  langLabel:  { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-  langNative: { fontSize: 12, color: '#8E8E93', marginTop: 1 },
-});
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function TranslatorScreen() {

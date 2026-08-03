@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColors } from '../../constants/colors';
 
 const { width } = Dimensions.get('window');
 const GAP = 8;
@@ -73,6 +74,7 @@ function MosaicTile({ icon, colors, style, isHero = false }: {
   style?: object;
   isHero?: boolean;
 }) {
+  const s = getStyles(useColors());
   return (
     <LinearGradient
       colors={colors}
@@ -96,6 +98,8 @@ interface Props {
 }
 
 export default function OnboardingScreen({ onComplete }: Props) {
+  const Colors = useColors();
+  const s = getStyles(Colors);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [containerH, setContainerH] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -214,107 +218,109 @@ export default function OnboardingScreen({ onComplete }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FAFBFF' },
+function getStyles(Colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: Colors.background },
 
-  // Mosaic
-  mosaicWrapper: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: GAP,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: GAP,
-  },
-  heroTile: {
-    flex: 4,
-    borderRadius: 24,
-  },
-  tileGrid: {
-    flex: 6,
-    gap: GAP,
-  },
-  tileRow: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: GAP,
-  },
-  gridTile: {
-    flex: 1,
-    borderRadius: 18,
-  },
-  tile: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  heroGlow: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    // Mosaic
+    mosaicWrapper: {
+      flex: 1,
+      flexDirection: 'row',
+      gap: GAP,
+      paddingHorizontal: 16,
+      paddingTop: 4,
+      paddingBottom: GAP,
+    },
+    heroTile: {
+      flex: 4,
+      borderRadius: 24,
+    },
+    tileGrid: {
+      flex: 6,
+      gap: GAP,
+    },
+    tileRow: {
+      flex: 1,
+      flexDirection: 'row',
+      gap: GAP,
+    },
+    gridTile: {
+      flex: 1,
+      borderRadius: 18,
+    },
+    tile: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      overflow: 'hidden',
+    },
+    heroGlow: {
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  // Text
-  textBlock: {
-    paddingHorizontal: 28,
-    paddingTop: 20,
-    paddingBottom: 4,
-    gap: 5,
-  },
-  title:    { fontSize: 28, fontWeight: '900', color: '#0D1B3E', letterSpacing: -0.3 },
-  subtitle: { fontSize: 13, fontWeight: '700', color: '#6366F1' },
-  body:     { fontSize: 13, color: '#6B7280', lineHeight: 20, marginTop: 2 },
+    // Text
+    textBlock: {
+      paddingHorizontal: 28,
+      paddingTop: 20,
+      paddingBottom: 4,
+      gap: 5,
+    },
+    title:    { fontSize: 28, fontWeight: '900', color: Colors.text, letterSpacing: -0.3 },
+    subtitle: { fontSize: 13, fontWeight: '700', color: '#6366F1' },
+    body:     { fontSize: 13, color: Colors.textMuted, lineHeight: 20, marginTop: 2 },
 
-  // Bottom
-  bottomBar: {
-    paddingHorizontal: 24,
-    paddingBottom: 12,
-    paddingTop: 12,
-    gap: 14,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#D1D5DB',
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: '#F97316',
-  },
-  btnRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  skipBtn: {
-    paddingHorizontal: 22,
-    paddingVertical: 16,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  skipTxt: { color: '#6B7280', fontWeight: '700', fontSize: 14 },
-  nextBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 16,
-    paddingVertical: 16,
-    shadowColor: '#F97316',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
-  },
-  nextTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
-});
+    // Bottom
+    bottomBar: {
+      paddingHorizontal: 24,
+      paddingBottom: 12,
+      paddingTop: 12,
+      gap: 14,
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 6,
+    },
+    dot: {
+      width: 8, height: 8, borderRadius: 4,
+      backgroundColor: Colors.border,
+    },
+    dotActive: {
+      width: 24,
+      backgroundColor: '#F97316',
+    },
+    btnRow: {
+      flexDirection: 'row',
+      gap: 12,
+      alignItems: 'center',
+    },
+    skipBtn: {
+      paddingHorizontal: 22,
+      paddingVertical: 16,
+      borderRadius: 16,
+      backgroundColor: Colors.surfaceLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    skipTxt: { color: Colors.textMuted, fontWeight: '700', fontSize: 14 },
+    nextBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      borderRadius: 16,
+      paddingVertical: 16,
+      shadowColor: '#F97316',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 6,
+    },
+    nextTxt: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  });
+}

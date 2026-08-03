@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { SUPPORTED_LANGUAGES, changeLanguage, LanguageCode } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
+import { useColors } from '../../constants/colors';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'LanguageSelection'> };
@@ -18,6 +19,8 @@ type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Langua
 export default function LanguageSelectionScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation();
   const { user, completePendingSetup } = useAuth();
+  const Colors = useColors();
+  const s = getStyles(Colors);
   const [search,   setSearch]   = useState('');
   const [selected, setSelected] = useState<LanguageCode>(i18n.language as LanguageCode);
   const [saving,   setSaving]   = useState(false);
@@ -47,13 +50,13 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={s.root}>
       <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
 
         {/* Header */}
         <View style={s.header}>
           <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={22} color="#1A1A2E" />
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
           </TouchableOpacity>
           <View style={s.headerText}>
             <Text style={s.title}>{t('auth.language.title')}</Text>
@@ -63,18 +66,18 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
 
         {/* Search */}
         <View style={s.searchWrap}>
-          <Ionicons name="search-outline" size={18} color="#AEAEB2" style={s.searchIcon} />
+          <Ionicons name="search-outline" size={18} color={Colors.textMuted} style={s.searchIcon} />
           <TextInput
             style={s.searchInput}
             placeholder={t('auth.language.search')}
-            placeholderTextColor="#AEAEB2"
+            placeholderTextColor={Colors.textMuted}
             value={search}
             onChangeText={setSearch}
             autoCorrect={false}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close-circle" size={18} color="#AEAEB2" />
+              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -104,7 +107,7 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
                   <Text style={s.nativeName}>{item.nativeName}</Text>
                 </View>
                 {isSelected && (
-                  <Ionicons name="checkmark-circle" size={22} color="#021B3A" />
+                  <Ionicons name="checkmark-circle" size={22} color={Colors.secondary} />
                 )}
               </TouchableOpacity>
             );
@@ -128,8 +131,8 @@ export default function LanguageSelectionScreen({ navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+const getStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.background },
 
   header: {
     flexDirection: 'row', alignItems: 'flex-start',
@@ -137,47 +140,47 @@ const s = StyleSheet.create({
   },
   backBtn:    { padding: 4, paddingTop: 2 },
   headerText: { flex: 1 },
-  title:      { fontSize: 24, fontWeight: '800', color: '#1A1A2E' },
-  subtitle:   { fontSize: 14, color: '#8E8E93', marginTop: 3 },
+  title:      { fontSize: 24, fontWeight: '800', color: Colors.text },
+  subtitle:   { fontSize: 14, color: Colors.textMuted, marginTop: 3 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
     marginHorizontal: 28, marginBottom: 12,
-    backgroundColor: '#F2F2F7', borderRadius: 14,
+    backgroundColor: Colors.inputBg, borderRadius: 14,
     paddingHorizontal: 14, height: 48,
     borderWidth: 1.5, borderColor: 'transparent',
   },
   searchIcon:  { marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  searchInput: { flex: 1, fontSize: 15, color: Colors.text },
 
   list: { paddingHorizontal: 28, paddingBottom: 16, gap: 8 },
 
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F8F8FA',
+    backgroundColor: Colors.surface,
     borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14,
     borderWidth: 1.5, borderColor: 'transparent',
     gap: 14,
   },
-  rowSelected: { borderColor: '#021B3A', backgroundColor: '#FFFFFF' },
+  rowSelected: { borderColor: Colors.primary, backgroundColor: Colors.surfaceLight },
 
   flag:     { width: 40, height: 27, borderRadius: 4 },
   rowText:  { flex: 1 },
-  langName: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-  langNameSelected: { color: '#021B3A' },
-  nativeName: { fontSize: 13, color: '#8E8E93', marginTop: 1 },
+  langName: { fontSize: 15, fontWeight: '600', color: Colors.text },
+  langNameSelected: { color: Colors.secondary },
+  nativeName: { fontSize: 13, color: Colors.textMuted, marginTop: 1 },
 
   footer: { paddingHorizontal: 28, paddingBottom: 16, paddingTop: 8 },
   primaryBtn: {
     height: 56, borderRadius: 28,
-    backgroundColor: '#021B3A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#021B3A',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 10,
     elevation: 5,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  primaryBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   disabled: { opacity: 0.55 },
 });

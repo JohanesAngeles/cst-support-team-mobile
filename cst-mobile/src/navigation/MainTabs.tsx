@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
+import { useColors } from '../constants/colors';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
 import FeaturesScreen from '../screens/features/FeaturesScreen';
@@ -74,6 +75,7 @@ const TAB_META: Record<string, TabMeta> = {
 function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const Colors = useColors();
 
   return (
     <View
@@ -91,9 +93,9 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
         borderRadius: 40,
         paddingVertical: 7,
         paddingHorizontal: 6,
-        backgroundColor: 'rgba(255, 255, 255, 0.82)',
+        backgroundColor: 'rgba(10, 27, 51, 0.88)',
         borderWidth: 1,
-        borderColor: 'rgba(200, 200, 210, 0.55)',
+        borderColor: 'rgba(200, 210, 220, 0.25)',
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.10,
@@ -105,7 +107,7 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
         {/* White glass sheen */}
         <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%' }}>
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.70)', 'rgba(255, 255, 255, 0.00)']}
+            colors={['rgba(255, 255, 255, 0.10)', 'rgba(255, 255, 255, 0.00)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={{ flex: 1, borderRadius: 40 }}
@@ -145,19 +147,19 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
                 paddingVertical: 10,
                 paddingHorizontal: isFocused ? 18 : 4,
                 borderRadius: 30,
-                backgroundColor: isFocused ? 'rgba(2, 27, 58, 0.08)' : 'transparent',
+                backgroundColor: isFocused ? 'rgba(200, 210, 220, 0.14)' : 'transparent',
                 borderWidth: isFocused ? 1 : 0,
-                borderColor: 'rgba(2, 27, 58, 0.12)',
+                borderColor: 'rgba(200, 210, 220, 0.30)',
                 gap: 7,
               }}
             >
               <Ionicons
                 name={isFocused ? meta.filled : meta.outline}
                 size={21}
-                color={isFocused ? '#021B3A' : 'rgba(0, 0, 0, 0.35)'}
+                color={isFocused ? Colors.secondary : 'rgba(255, 255, 255, 0.35)'}
               />
               {isFocused && (
-                <Text numberOfLines={1} style={{ color: '#021B3A', fontSize: 13, fontWeight: '700', letterSpacing: 0.1 }}>
+                <Text numberOfLines={1} style={{ color: Colors.secondary, fontSize: 13, fontWeight: '700', letterSpacing: 0.1 }}>
                   {label}
                 </Text>
               )}

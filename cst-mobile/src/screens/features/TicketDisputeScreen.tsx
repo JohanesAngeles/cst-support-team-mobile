@@ -293,7 +293,7 @@ Note: This letter was generated as a template. Review and customize before submi
                 }
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.copyBtn, { backgroundColor: '#3498DB' }]}
+                style={[styles.copyBtn, { backgroundColor: Colors.secondary }]}
                 onPress={saveToVault}
                 disabled={vaultSaving}
               >

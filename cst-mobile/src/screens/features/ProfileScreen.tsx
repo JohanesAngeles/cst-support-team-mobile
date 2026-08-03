@@ -18,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { authAPI } from '../../api/auth';
 import client from '../../api/client';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useColors } from '../../constants/colors';
 import { useTheme, ColorMode } from '../../context/ThemeContext';
 import { BIOMETRIC_STORAGE_KEY } from '../../components/BiometricLock';
 import { MainStackParamList } from '../../navigation/MainStack';
@@ -34,7 +35,8 @@ type Nav = NativeStackNavigationProp<MainStackParamList>;
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const { user, logout, updateUser, resetOnboarding } = useAuth();
-  const { theme, mode, setMode, isDark } = useTheme();
+  const Colors = useColors();
+  const { mode, setMode, isDark } = useTheme();
   const navigation = useNavigation<Nav>();
 
   const [editModal,      setEditModal]      = useState(false);
@@ -306,13 +308,13 @@ export default function ProfileScreen() {
   };
 
   // ── Theme + styles ─────────────────────────────────────────────────────────
-  const bg     = theme.background;
-  const surf   = theme.surface;
-  const surfL  = theme.surfaceLight;
-  const border = theme.border;
-  const text   = theme.text;
-  const muted  = theme.textMuted;
-  const gold   = theme.secondary;
+  const bg     = Colors.background;
+  const surf   = Colors.surface;
+  const surfL  = Colors.surfaceLight;
+  const border = Colors.border;
+  const text   = Colors.text;
+  const muted  = Colors.textMuted;
+  const gold   = Colors.secondary;
 
   const subStatus = user?.subscriptionStatus ?? 'free';
   const isPro     = subStatus === 'active';
@@ -486,7 +488,7 @@ export default function ProfileScreen() {
                   style={[s.themeBtn,
                     { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
                       borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' },
-                    active && { backgroundColor: theme.primary, borderColor: theme.primary }]}
+                    active && { backgroundColor: Colors.primary, borderColor: Colors.primary }]}
                   onPress={() => setMode(opt.id)}
                   activeOpacity={0.8}
                 >
@@ -540,7 +542,7 @@ export default function ProfileScreen() {
 
         {/* ── Delete Account ──────────────────────────────────────────────── */}
         <TouchableOpacity
-          style={s.deleteBtn}
+          style={[s.deleteBtn, { backgroundColor: Colors.danger }]}
           onPress={() => { setDeletePw(''); setDeleteModal(true); }}
           activeOpacity={0.8}
         >
@@ -600,30 +602,30 @@ export default function ProfileScreen() {
         <View style={s.overlay}>
           <View style={[s.modalBox, { backgroundColor: surf }]}>
             <View style={s.deleteWarningHeader}>
-              <Ionicons name="warning-outline" size={28} color="#CC0000" />
-              <Text style={[s.modalTitle, { color: '#CC0000', marginBottom: 0 }]}>{t('profile.deleteTitle')}</Text>
+              <Ionicons name="warning-outline" size={28} color={Colors.danger} />
+              <Text style={[s.modalTitle, { color: Colors.danger, marginBottom: 0 }]}>{t('profile.deleteTitle')}</Text>
             </View>
             <Text style={[s.deleteWarningText, { color: muted }]}>{t('profile.deleteWarning')}</Text>
 
             {/* Download data prompt */}
-            <View style={[s.exportBox, { backgroundColor: '#2C6EBD11', borderColor: '#2C6EBD44' }]}>
-              <Ionicons name="information-circle-outline" size={18} color="#2C6EBD" style={{ marginTop: 1 }} />
+            <View style={[s.exportBox, { backgroundColor: Colors.secondary + '11', borderColor: Colors.secondary + '44' }]}>
+              <Ionicons name="information-circle-outline" size={18} color={Colors.secondary} style={{ marginTop: 1 }} />
               <Text style={[s.exportBoxText, { color: muted }]}>{t('profile.downloadDataWarning')}</Text>
             </View>
             <TouchableOpacity
-              style={s.exportDataBtn}
+              style={[s.exportDataBtn, { backgroundColor: gold }]}
               onPress={handleExportData}
               activeOpacity={0.85}
             >
-              <Ionicons name="cloud-download-outline" size={16} color="#FFFFFF" />
-              <Text style={s.exportDataBtnTxt}>{t('profile.downloadDataBtn')}</Text>
+              <Ionicons name="cloud-download-outline" size={16} color={Colors.textDark} />
+              <Text style={[s.exportDataBtnTxt, { color: Colors.textDark }]}>{t('profile.downloadDataBtn')}</Text>
             </TouchableOpacity>
             <View style={[s.modalDivider, { backgroundColor: border }]} />
 
             {requiresPwToDelete && (
               <>
                 <Text style={[s.modalLabel, { color: muted }]}>{t('profile.enterPwToConfirm')}</Text>
-                <View style={[s.modalInput, { backgroundColor: surfL, borderColor: '#CC000055', flexDirection: 'row', alignItems: 'center', paddingRight: 8 }]}>
+                <View style={[s.modalInput, { backgroundColor: surfL, borderColor: Colors.danger + '55', flexDirection: 'row', alignItems: 'center', paddingRight: 8 }]}>
                   <TextInput
                     style={{ flex: 1, color: text, fontSize: 15 }}
                     value={deletePw}
@@ -647,7 +649,7 @@ export default function ProfileScreen() {
                 <Text style={[s.cancelText, { color: muted }]}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[s.confirmBtn, { backgroundColor: '#CC0000' }, deleting && { opacity: 0.6 }]}
+                style={[s.confirmBtn, { backgroundColor: Colors.danger }, deleting && { opacity: 0.6 }]}
                 onPress={handleDeleteAccount}
                 disabled={deleting}
               >
@@ -773,7 +775,6 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
     marginHorizontal: 16, marginBottom: 20, borderRadius: 14,
     paddingVertical: 15,
-    backgroundColor: '#CC0000',
   },
   deleteBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 
@@ -789,8 +790,8 @@ const s = StyleSheet.create({
   deleteWarningText:   { fontSize: 13, lineHeight: 20, marginBottom: 8 },
   exportBox:       { flexDirection: 'row', gap: 8, padding: 10, borderRadius: 10, borderWidth: 1, alignItems: 'flex-start' },
   exportBoxText:   { flex: 1, fontSize: 12, lineHeight: 17 },
-  exportDataBtn:   { backgroundColor: '#2C6EBD', borderRadius: 10, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  exportDataBtnTxt:{ color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  exportDataBtn:   { borderRadius: 10, padding: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  exportDataBtnTxt:{ fontWeight: '700', fontSize: 14 },
   modalDivider:    { height: 1, marginVertical: 6 },
 
   // ── Modals ───────────────────────────────────────────────────────────────────

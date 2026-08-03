@@ -15,6 +15,8 @@ Sentry.init({
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Platform, View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import { FONTS_TO_LOAD } from './src/constants/typography';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
@@ -107,6 +109,14 @@ function Root() {
 }
 
 function App() {
+  const [fontsLoaded] = useFonts(FONTS_TO_LOAD);
+
+  // Matches the native splash background — avoids a flash of system-font
+  // text before Poppins/Bebas Neue are ready.
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: '#050B18' }} />;
+  }
+
   return (
     <ErrorBoundary>
       <Analytics>

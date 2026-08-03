@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authAPI } from '../../api/auth';
 import { AuthStackParamList } from '../../navigation/AuthStack';
+import { useColors } from '../../constants/colors';
 
 export const PREFERENCES_KEY = '@rrn_preferences';
 
@@ -31,6 +32,8 @@ const PREF_KEYS = [
 
 export default function PostSignupPreferencesScreen({ navigation }: Props) {
   const { t } = useTranslation();
+  const Colors = useColors();
+  const s = getStyles(Colors);
   const [prefs, setPrefs] = useState<Record<string, boolean>>({
     pushNotifications: true,
     weeklyReport:      true,
@@ -74,13 +77,13 @@ export default function PostSignupPreferencesScreen({ navigation }: Props) {
             {PREF_KEYS.map(pref => (
               <View key={pref.key} style={s.row}>
                 <View style={s.rowIcon}>
-                  <Ionicons name={pref.icon as any} size={22} color="#021B3A" />
+                  <Ionicons name={pref.icon as any} size={22} color={Colors.primary} />
                 </View>
                 <View style={s.rowText}>
                   <Text style={s.rowTitle}>{t(`auth.preferences.${pref.tk}`)}</Text>
                   <Text style={s.rowDesc}>{t(`auth.preferences.${pref.tk}Desc`)}</Text>
                 </View>
-                <Switch value={prefs[pref.key]} onValueChange={() => toggle(pref.key)} trackColor={{ false: '#E5E5EA', true: '#021B3A' }} thumbColor="#FFFFFF" />
+                <Switch value={prefs[pref.key]} onValueChange={() => toggle(pref.key)} trackColor={{ false: Colors.border, true: Colors.secondary }} thumbColor={Colors.white} />
               </View>
             ))}
           </View>
@@ -99,46 +102,46 @@ export default function PostSignupPreferencesScreen({ navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+const getStyles = (Colors: ReturnType<typeof useColors>) => StyleSheet.create({
+  root:   { flex: 1, backgroundColor: Colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: 28, paddingBottom: 32 },
 
   header: { alignItems: 'center', paddingTop: 32, paddingBottom: 24, gap: 12 },
-  emoji:  { width: 72, height: 72, borderRadius: 36, backgroundColor: '#FFF8E1', alignItems: 'center', justifyContent: 'center' },
+  emoji:  { width: 72, height: 72, borderRadius: 36, backgroundColor: Colors.surfaceLight, alignItems: 'center', justifyContent: 'center' },
   emojiText: { fontSize: 34 },
-  title:    { fontSize: 28, fontWeight: '800', color: '#1A1A2E', textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#8E8E93', textAlign: 'center', lineHeight: 22, maxWidth: 300 },
+  title:    { fontSize: 28, fontWeight: '800', color: Colors.text, textAlign: 'center' },
+  subtitle: { fontSize: 15, color: Colors.textMuted, textAlign: 'center', lineHeight: 22, maxWidth: 300 },
 
   list: { gap: 12, marginBottom: 28 },
   row: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#F8F8FA',
+    backgroundColor: Colors.surface,
     borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: '#EBEBEF',
+    borderWidth: 1, borderColor: Colors.border,
     gap: 14,
   },
   rowIcon: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: '#EEF3F8',
+    backgroundColor: Colors.surfaceLight,
     alignItems: 'center', justifyContent: 'center',
   },
   rowText:  { flex: 1, gap: 2 },
-  rowTitle: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-  rowDesc:  { fontSize: 12, color: '#8E8E93', lineHeight: 16 },
+  rowTitle: { fontSize: 15, fontWeight: '600', color: Colors.text },
+  rowDesc:  { fontSize: 12, color: Colors.textMuted, lineHeight: 16 },
 
   primaryBtn: {
     height: 56, borderRadius: 28,
-    backgroundColor: '#021B3A',
+    backgroundColor: Colors.primary,
     justifyContent: 'center', alignItems: 'center',
-    shadowColor: '#021B3A',
+    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 10,
     elevation: 5,
   },
-  primaryBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
+  primaryBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.3 },
   disabled: { opacity: 0.55 },
 
   skipBtn:  { alignItems: 'center', paddingVertical: 16 },
-  skipText: { fontSize: 14, color: '#AEAEB2', fontWeight: '500' },
+  skipText: { fontSize: 14, color: Colors.textMuted, fontWeight: '500' },
 });

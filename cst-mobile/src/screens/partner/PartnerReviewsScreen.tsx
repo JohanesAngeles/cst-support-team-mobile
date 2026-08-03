@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 
 interface Review {
@@ -26,6 +27,8 @@ function StarRow({ rating }: { rating: number }) {
 }
 
 export default function PartnerReviewsScreen() {
+  const Colors = useColors();
+  const s = makeStyles(Colors);
   const [reviews,    setReviews]    = useState<Review[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -83,10 +86,10 @@ export default function PartnerReviewsScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color="#021B3A" style={{ marginTop: 40 }} />
+          <ActivityIndicator color={Colors.secondary} style={{ marginTop: 40 }} />
         ) : reviews.length === 0 ? (
           <View style={s.emptyState}>
-            <Ionicons name="star-outline" size={56} color="#E0E0E0" />
+            <Ionicons name="star-outline" size={56} color={Colors.border} />
             <Text style={s.emptyTitle}>No reviews yet</Text>
             <Text style={s.emptySub}>Once drivers interact with your listing, their reviews will appear here.</Text>
           </View>
@@ -97,7 +100,7 @@ export default function PartnerReviewsScreen() {
             renderItem={renderItem}
             contentContainerStyle={s.list}
             showsVerticalScrollIndicator={false}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#021B3A" />}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.secondary} />}
             ListHeaderComponent={
               <View style={s.summary}>
                 <View style={s.summaryLeft}>
@@ -126,42 +129,44 @@ export default function PartnerReviewsScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+function makeStyles(Colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+    root:   { flex: 1, backgroundColor: Colors.background },
 
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5', gap: 10 },
-  topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#FFFDE7', justifyContent: 'center', alignItems: 'center' },
-  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
+    topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 10 },
+    topBarIcon: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' },
+    topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: Colors.text },
 
-  list: { padding: 20, paddingBottom: 100 },
+    list: { padding: 20, paddingBottom: 100 },
 
-  summary: {
-    flexDirection: 'row', alignItems: 'center', gap: 20,
-    backgroundColor: '#FFFDE7', borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: '#FFE082', marginBottom: 20,
-  },
-  summaryLeft: { alignItems: 'center', gap: 6 },
-  bigRating:   { fontSize: 44, fontWeight: '800', color: '#1A1A2E', lineHeight: 48 },
-  reviewCount: { fontSize: 12, color: '#8E8E93', fontWeight: '500' },
-  summaryBars: { flex: 1, gap: 6 },
-  barRow:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  barLabel:    { fontSize: 12, color: '#8E8E93', width: 10, textAlign: 'right' },
-  barTrack:    { flex: 1, height: 6, backgroundColor: '#F0F0F0', borderRadius: 3, overflow: 'hidden' },
-  barFill:     { height: 6, backgroundColor: '#F5C842', borderRadius: 3 },
-  barCount:    { fontSize: 11, color: '#8E8E93', width: 16, textAlign: 'right' },
+    summary: {
+      flexDirection: 'row', alignItems: 'center', gap: 20,
+      backgroundColor: Colors.surface, borderRadius: 18, padding: 18,
+      borderWidth: 1, borderColor: Colors.border, marginBottom: 20,
+    },
+    summaryLeft: { alignItems: 'center', gap: 6 },
+    bigRating:   { fontSize: 44, fontWeight: '800', color: Colors.text, lineHeight: 48 },
+    reviewCount: { fontSize: 12, color: Colors.textMuted, fontWeight: '500' },
+    summaryBars: { flex: 1, gap: 6 },
+    barRow:      { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    barLabel:    { fontSize: 12, color: Colors.textMuted, width: 10, textAlign: 'right' },
+    barTrack:    { flex: 1, height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
+    barFill:     { height: 6, backgroundColor: '#F5C842', borderRadius: 3 },
+    barCount:    { fontSize: 11, color: Colors.textMuted, width: 16, textAlign: 'right' },
 
-  card: {
-    backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 10,
-  },
-  cardHeader:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
-  avatar:      { width: 40, height: 40, borderRadius: 20, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
-  avatarText:  { fontSize: 16, fontWeight: '800', color: '#FFFFFF' },
-  driverName:  { fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
-  date:        { fontSize: 12, color: '#8E8E93', marginTop: 1 },
-  comment:     { fontSize: 14, color: '#4A4A5A', lineHeight: 20, marginTop: 4 },
+    card: {
+      backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
+      borderWidth: 1, borderColor: Colors.border, marginBottom: 10,
+    },
+    cardHeader:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+    avatar:      { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+    avatarText:  { fontSize: 16, fontWeight: '800', color: Colors.white },
+    driverName:  { fontSize: 15, fontWeight: '700', color: Colors.text },
+    date:        { fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+    comment:     { fontSize: 14, color: Colors.textMuted, lineHeight: 20, marginTop: 4 },
 
-  emptyState:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
-  emptyTitle:  { fontSize: 20, fontWeight: '800', color: '#1A1A2E' },
-  emptySub:    { fontSize: 14, color: '#8E8E93', textAlign: 'center', lineHeight: 20 },
-});
+    emptyState:  { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
+    emptyTitle:  { fontSize: 20, fontWeight: '800', color: Colors.text },
+    emptySub:    { fontSize: 14, color: Colors.textMuted, textAlign: 'center', lineHeight: 20 },
+  });
+}

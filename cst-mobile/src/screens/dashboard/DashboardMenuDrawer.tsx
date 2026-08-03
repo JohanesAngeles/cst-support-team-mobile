@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useColors } from '../../constants/colors';
 import { MainStackParamList } from '../../navigation/MainStack';
 import {
   getLiveRevenue, getRevenue, getHOSEntries, getDeadlines,
@@ -51,6 +52,7 @@ interface Props {
 }
 
 export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
+  const Colors = useColors();
   const [grossRevenue, setGrossRevenue] = useState('—');
   const [revTrend,     setRevTrend]     = useState(0);
   const [weekTrend,    setWeekTrend]    = useState<number[]>([]);
@@ -113,7 +115,7 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
       {/* ── Revenue + HOS tiles ────────────────────────────────────────────── */}
       <View style={{ flexDirection: 'row', paddingHorizontal: 16, gap: 12, marginBottom: 12 }}>
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#EBEBEF' }}
+          style={{ flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border }}
           onPress={() => goTo('ProfitLoss')}
           activeOpacity={0.8}
         >
@@ -128,12 +130,12 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
               </View>
             )}
           </View>
-          <Text style={{ color: '#1A1A2E', fontSize: 20, fontWeight: '900' }}>{grossRevenue}</Text>
-          <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 2 }}>Gross Revenue</Text>
+          <Text style={{ color: Colors.text, fontSize: 20, fontWeight: '900' }}>{grossRevenue}</Text>
+          <Text style={{ color: Colors.textMuted, fontSize: 11, marginTop: 2 }}>Gross Revenue</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#EBEBEF' }}
+          style={{ flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.border }}
           onPress={() => goTo('HOSTracker')}
           activeOpacity={0.8}
         >
@@ -146,10 +148,10 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
               <Text style={{ fontSize: 10, color: '#27AE60', fontWeight: '700' }}>Live</Text>
             </View>
           </View>
-          <Text style={{ color: '#1A1A2E', fontSize: 20, fontWeight: '900' }}>
+          <Text style={{ color: Colors.text, fontSize: 20, fontWeight: '900' }}>
             {Math.max(11 - hos.driving, 0).toFixed(1)}h
           </Text>
-          <Text style={{ color: '#8E8E93', fontSize: 11, marginTop: 2 }}>Drive Time Left</Text>
+          <Text style={{ color: Colors.textMuted, fontSize: 11, marginTop: 2 }}>Drive Time Left</Text>
         </TouchableOpacity>
       </View>
 
@@ -162,12 +164,12 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
         ].map(a => (
           <TouchableOpacity
             key={a.label}
-            style={{ flex: 1, backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 12, alignItems: 'center', gap: 5, borderWidth: 1, borderColor: '#EBEBEF' }}
+            style={{ flex: 1, backgroundColor: Colors.surface, borderRadius: 12, paddingVertical: 12, alignItems: 'center', gap: 5, borderWidth: 1, borderColor: Colors.border }}
             onPress={() => goTo(a.screen)}
             activeOpacity={0.75}
           >
-            <Ionicons name={a.icon as any} size={18} color={NAVY} />
-            <Text style={{ color: '#1A1A2E', fontSize: 11, fontWeight: '600' }}>{a.label}</Text>
+            <Ionicons name={a.icon as any} size={18} color={Colors.secondary} />
+            <Text style={{ color: Colors.text, fontSize: 11, fontWeight: '600' }}>{a.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -205,10 +207,10 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
       </View>
 
       {/* ── Earnings chart ─────────────────────────────────────────────────── */}
-      <View style={{ backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#EBEBEF' }}>
+      <View style={{ backgroundColor: Colors.surface, marginHorizontal: 16, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <View>
-            <Text style={{ color: '#1A1A2E', fontSize: 15, fontWeight: '800' }}>Earnings</Text>
+            <Text style={{ color: Colors.text, fontSize: 15, fontWeight: '800' }}>Earnings</Text>
             {revTrend !== 0 && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 }}>
                 <Ionicons name={revTrend > 0 ? 'arrow-up' : 'arrow-down'} size={11} color={revTrend > 0 ? '#27AE60' : '#FF3B30'} />
@@ -218,15 +220,15 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
               </View>
             )}
           </View>
-          <View style={{ flexDirection: 'row', backgroundColor: '#F0F4F8', borderRadius: 10, padding: 3, gap: 2 }}>
+          <View style={{ flexDirection: 'row', backgroundColor: Colors.surfaceLight, borderRadius: 10, padding: 3, gap: 2 }}>
             {(['7d', '15d', '30d'] as const).map(p => (
               <TouchableOpacity
                 key={p}
-                style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: period === p ? '#FFF' : 'transparent' }}
+                style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: period === p ? Colors.surface : 'transparent' }}
                 onPress={() => setPeriod(p)}
                 activeOpacity={0.8}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: period === p ? NAVY : '#8E8E93' }}>{p}</Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: period === p ? Colors.secondary : Colors.textMuted }}>{p}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -238,8 +240,8 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
               const today = i === todayIdx;
               return (
                 <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
-                  <View style={{ width: 10, height: barH, borderRadius: 5, backgroundColor: today ? ORANGE : '#DCE6F0' }} />
-                  <Text style={{ fontSize: 10, color: today ? NAVY : '#AEAEB2', fontWeight: today ? '800' : '400' }}>
+                  <View style={{ width: 10, height: barH, borderRadius: 5, backgroundColor: today ? ORANGE : Colors.border }} />
+                  <Text style={{ fontSize: 10, color: today ? Colors.secondary : Colors.textMuted, fontWeight: today ? '800' : '400' }}>
                     {WEEK_DAYS[i]}
                   </Text>
                 </View>
@@ -249,28 +251,28 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
         ) : (
           <View style={{ alignItems: 'center', paddingVertical: 20, gap: 8 }}>
             <Ionicons name="bar-chart-outline" size={28} color="#DCE6F0" />
-            <Text style={{ color: '#AEAEB2', fontSize: 13 }}>No data yet</Text>
+            <Text style={{ color: Colors.textMuted, fontSize: 13 }}>No data yet</Text>
             <TouchableOpacity onPress={() => goTo('ProfitLoss')} activeOpacity={0.8}>
-              <Text style={{ color: NAVY, fontSize: 13, fontWeight: '600' }}>Add revenue →</Text>
+              <Text style={{ color: Colors.secondary, fontSize: 13, fontWeight: '600' }}>Add revenue →</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
       {/* ── Due Soon ───────────────────────────────────────────────────────── */}
-      <View style={{ backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#EBEBEF' }}>
+      <View style={{ backgroundColor: Colors.surface, marginHorizontal: 16, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <Text style={{ color: '#1A1A2E', fontSize: 15, fontWeight: '800' }}>Due Soon</Text>
+          <Text style={{ color: Colors.text, fontSize: 15, fontWeight: '800' }}>Due Soon</Text>
           <TouchableOpacity onPress={() => goTo('Calendar')} activeOpacity={0.7}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: NAVY }}>Manage ›</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.secondary }}>Manage ›</Text>
           </TouchableOpacity>
         </View>
         {deadlines.length > 0 ? deadlines.map((d, i) => (
-          <View key={d._id ?? i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < deadlines.length - 1 ? 1 : 0, borderColor: '#F0F4F8' }}>
+          <View key={d._id ?? i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: i < deadlines.length - 1 ? 1 : 0, borderColor: Colors.border }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: deadlineColor(d.daysLeft), marginRight: 12 }} />
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#1A1A2E' }} numberOfLines={1}>{d.title}</Text>
-              <Text style={{ fontSize: 11, color: '#8E8E93', marginTop: 1 }}>{d.type ?? 'Reminder'}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.text }} numberOfLines={1}>{d.title}</Text>
+              <Text style={{ fontSize: 11, color: Colors.textMuted, marginTop: 1 }}>{d.type ?? 'Reminder'}</Text>
             </View>
             <View style={{ backgroundColor: deadlineColor(d.daysLeft) + '18', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
               <Text style={{ fontSize: 11, fontWeight: '800', color: deadlineColor(d.daysLeft) }}>
@@ -281,9 +283,9 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
         )) : (
           <View style={{ alignItems: 'center', paddingVertical: 16, gap: 8 }}>
             <Ionicons name="checkmark-circle-outline" size={30} color="#27AE60" />
-            <Text style={{ color: '#8E8E93', fontSize: 13 }}>All clear — no upcoming deadlines</Text>
+            <Text style={{ color: Colors.textMuted, fontSize: 13 }}>All clear — no upcoming deadlines</Text>
             <TouchableOpacity onPress={() => goTo('Calendar')} activeOpacity={0.8}>
-              <Text style={{ color: NAVY, fontSize: 13, fontWeight: '600' }}>Add a deadline →</Text>
+              <Text style={{ color: Colors.secondary, fontSize: 13, fontWeight: '600' }}>Add a deadline →</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -292,20 +294,20 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
       {/* ── Recently Used ──────────────────────────────────────────────────── */}
       <View style={{ paddingHorizontal: 16 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <Text style={{ color: '#1A1A2E', fontSize: 15, fontWeight: '800' }}>Recently Used</Text>
+          <Text style={{ color: Colors.text, fontSize: 15, fontWeight: '800' }}>Recently Used</Text>
           <TouchableOpacity onPress={() => goTo('Tools')} activeOpacity={0.7}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: NAVY }}>View all ›</Text>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: Colors.secondary }}>View all ›</Text>
           </TouchableOpacity>
         </View>
         {recent.length === 0 ? (
           <TouchableOpacity
-            style={{ backgroundColor: '#FFFFFF', borderRadius: 16, borderWidth: 1, borderColor: '#EBEBEF', padding: 22, alignItems: 'center', gap: 8 }}
+            style={{ backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border, padding: 22, alignItems: 'center', gap: 8 }}
             onPress={() => goTo('Tools')}
             activeOpacity={0.8}
           >
             <Ionicons name="grid-outline" size={30} color="#C8D8EC" />
-            <Text style={{ color: '#8E8E93', fontSize: 13, fontWeight: '600' }}>No recent tools yet</Text>
-            <Text style={{ color: '#AEAEB2', fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+            <Text style={{ color: Colors.textMuted, fontSize: 13, fontWeight: '600' }}>No recent tools yet</Text>
+            <Text style={{ color: Colors.textMuted, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
               Go to the Tools tab to explore features.{'\n'}Your last 5 will appear here.
             </Text>
           </TouchableOpacity>
@@ -314,14 +316,14 @@ export default function DashboardMenuDrawer({ navigation, onClose }: Props) {
             {recent.map(f => (
               <TouchableOpacity
                 key={f.screen}
-                style={{ width: RECENT_W, backgroundColor: '#FFFFFF', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#EBEBEF', gap: 6 }}
+                style={{ width: RECENT_W, backgroundColor: Colors.surface, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: Colors.border, gap: 6 }}
                 onPress={() => goTo(f.screen!, f)}
                 activeOpacity={0.75}
               >
                 <View style={{ width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', backgroundColor: f.color + '22' }}>
                   <Ionicons name={f.icon as any} size={20} color={f.color} />
                 </View>
-                <Text style={{ color: '#1A1A2E', fontSize: 11, fontWeight: '700', lineHeight: 15 }} numberOfLines={2}>{f.label}</Text>
+                <Text style={{ color: Colors.text, fontSize: 11, fontWeight: '700', lineHeight: 15 }} numberOfLines={2}>{f.label}</Text>
               </TouchableOpacity>
             ))}
           </View>

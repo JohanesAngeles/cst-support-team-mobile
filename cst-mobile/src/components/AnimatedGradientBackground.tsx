@@ -21,10 +21,10 @@ const LIGHT: GradConfig[] = [
 ];
 
 const DARK: GradConfig[] = [
-  { colors: ['#0B1845', '#080C18', '#1A0830'], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
-  { colors: ['#1A0830', '#080C18', '#081830'], start: { x: 1, y: 0 }, end: { x: 0, y: 1 } },
-  { colors: ['#081830', '#080C18', '#180838'], start: { x: 1, y: 1 }, end: { x: 0, y: 0 } },
-  { colors: ['#180838', '#080C18', '#0B1845'], start: { x: 0, y: 1 }, end: { x: 1, y: 0 } },
+  { colors: ['#0B1845', '#050B18', '#1A0830'], start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
+  { colors: ['#1A0830', '#050B18', '#081830'], start: { x: 1, y: 0 }, end: { x: 0, y: 1 } },
+  { colors: ['#081830', '#050B18', '#180838'], start: { x: 1, y: 1 }, end: { x: 0, y: 0 } },
+  { colors: ['#180838', '#050B18', '#0B1845'], start: { x: 0, y: 1 }, end: { x: 1, y: 0 } },
 ];
 
 const FADE_DURATION = 2500;  // ms — how long each cross-fade takes
@@ -94,7 +94,7 @@ interface Props {
 export default function AnimatedGradientBackground({ children, style }: Props) {
   const { isDark } = useTheme();
   const configs = isDark ? DARK : LIGHT;
-  const baseBg  = isDark ? '#080C18' : '#F5F7FF';
+  const baseBg  = isDark ? '#050B18' : '#F5F7FF';
 
   return (
     <View style={[{ flex: 1, backgroundColor: baseBg }, style]}>

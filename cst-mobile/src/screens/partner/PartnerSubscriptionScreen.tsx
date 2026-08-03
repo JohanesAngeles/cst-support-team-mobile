@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useIAP, ErrorCode } from 'react-native-iap';
 import { useAuth } from '../../context/AuthContext';
+import { useColors } from '../../constants/colors';
 import client from '../../api/client';
 import { billingAPI } from '../../api/billing';
 
@@ -128,6 +129,8 @@ const FEATURES = [
 ];
 
 export default function PartnerSubscriptionScreen() {
+  const Colors = useColors();
+  const s = makeStyles(Colors);
   const { user, updateUser } = useAuth();
   const isIOS = Platform.OS === 'ios';
 
@@ -320,7 +323,7 @@ export default function PartnerSubscriptionScreen() {
           {/* ── Header ──────────────────────────────────────────────── */}
           <View style={s.topBar}>
             <View style={s.topBarIcon}>
-              <Ionicons name="card" size={20} color="#021B3A" />
+              <Ionicons name="card" size={20} color={Colors.secondary} />
             </View>
             <Text style={s.topBarTitle}>Billing & Subscription</Text>
           </View>
@@ -339,7 +342,7 @@ export default function PartnerSubscriptionScreen() {
               />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.statusTitle, !isActive && !submitted && { color: '#021B3A' }]}>
+              <Text style={[s.statusTitle, !isActive && !submitted && { color: Colors.secondary }]}>
                 {isActive
                   ? `${activePlan === 'annual' ? 'Annual' : 'Monthly'} Plan — Active`
                   : submitted
@@ -366,7 +369,7 @@ export default function PartnerSubscriptionScreen() {
             {FEATURES.map((f, i) => (
               <View key={i} style={[s.featureRow, i < FEATURES.length - 1 && s.featureBorder]}>
                 <View style={s.checkCircle}>
-                  <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                  <Ionicons name="checkmark" size={14} color={Colors.white} />
                 </View>
                 <Text style={s.featureText}>{f}</Text>
               </View>
@@ -422,7 +425,7 @@ export default function PartnerSubscriptionScreen() {
                   {/* Green Cash App header */}
                   <View style={s.cashAppHeader}>
                     <View style={s.cashAppIconWrap}>
-                      <Ionicons name="cash" size={22} color="#FFFFFF" />
+                      <Ionicons name="cash" size={22} color={Colors.white} />
                     </View>
                     <View>
                       <Text style={s.cashAppHeaderTitle}>Pay with Cash App</Text>
@@ -438,7 +441,7 @@ export default function PartnerSubscriptionScreen() {
                         ${promoDiscountedAmount != null ? (promoDiscountedAmount / 100).toFixed(2) : chosenPlan?.amount}
                       </Text>
                     </View>
-                    <Ionicons name="arrow-forward" size={20} color="#8E8E93" />
+                    <Ionicons name="arrow-forward" size={20} color={Colors.textMuted} />
                     <View style={s.cashAppTagBox}>
                       <Text style={s.cashAppTagLabel}>TO</Text>
                       <Text style={s.cashAppTag}>{CASHTAG}</Text>
@@ -463,8 +466,8 @@ export default function PartnerSubscriptionScreen() {
                         disabled={checkingPromo || !promoCode.trim()}
                       >
                         {checkingPromo
-                          ? <ActivityIndicator size="small" color="#FFFFFF" />
-                          : <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13 }}>Apply</Text>}
+                          ? <ActivityIndicator size="small" color={Colors.white} />
+                          : <Text style={{ color: Colors.white, fontWeight: '800', fontSize: 13 }}>Apply</Text>}
                       </TouchableOpacity>
                     </View>
                     {!!promoError && <Text style={{ color: '#DC3545', fontSize: 12 }}>{promoError}</Text>}
@@ -472,10 +475,10 @@ export default function PartnerSubscriptionScreen() {
 
                   {/* Note instruction */}
                   <View style={s.cashAppNoteBox}>
-                    <Ionicons name="chatbubble-outline" size={14} color="#8E8E93" />
+                    <Ionicons name="chatbubble-outline" size={14} color={Colors.textMuted} />
                     <Text style={s.cashAppNoteText}>
                       In the note, include:{' '}
-                      <Text style={{ fontWeight: '700', color: '#1A1A2E' }}>
+                      <Text style={{ fontWeight: '700', color: Colors.text }}>
                         "{chosenPlan?.label} Plan — {(user as any)?.name ?? 'Partner'}"
                       </Text>
                     </Text>
@@ -483,7 +486,7 @@ export default function PartnerSubscriptionScreen() {
 
                   {/* Open Cash App button */}
                   <TouchableOpacity style={s.openCashAppBtn} onPress={openCashApp} activeOpacity={0.85}>
-                    <Ionicons name="open-outline" size={17} color="#FFFFFF" />
+                    <Ionicons name="open-outline" size={17} color={Colors.white} />
                     <Text style={s.openCashAppTxt}>Open Cash App</Text>
                   </TouchableOpacity>
 
@@ -520,7 +523,7 @@ export default function PartnerSubscriptionScreen() {
                       {screenshotUri ? (
                         <Image source={{ uri: screenshotUri }} style={s.screenshotThumb} />
                       ) : (
-                        <Ionicons name="image-outline" size={18} color="#8E8E93" />
+                        <Ionicons name="image-outline" size={18} color={Colors.textMuted} />
                       )}
                       <Text style={s.screenshotBtnText}>
                         {screenshotUri ? 'Screenshot attached — tap to change' : 'Attach Payment Screenshot *'}
@@ -539,9 +542,9 @@ export default function PartnerSubscriptionScreen() {
                     activeOpacity={0.85}
                   >
                     {submitting
-                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      ? <ActivityIndicator size="small" color={Colors.white} />
                       : <>
-                          <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+                          <Ionicons name="checkmark-circle" size={18} color={Colors.white} />
                           <Text style={s.sentBtnTxt}>I've Sent My Payment</Text>
                         </>
                     }
@@ -553,7 +556,7 @@ export default function PartnerSubscriptionScreen() {
               {selectedPlan && !isIOS && anConfig && (
                 <View style={s.cardPayCard}>
                   <View style={s.cardPayHeader}>
-                    <Ionicons name="card" size={20} color="#FFFFFF" />
+                    <Ionicons name="card" size={20} color={Colors.white} />
                     <View>
                       <Text style={s.cardPayHeaderTitle}>Pay with Card</Text>
                       <Text style={s.cardPayHeaderSub}>Activates instantly, renews automatically</Text>
@@ -570,7 +573,7 @@ export default function PartnerSubscriptionScreen() {
                     />
                     {cardSubmitting && (
                       <View style={s.cardWebViewOverlay}>
-                        <ActivityIndicator size="small" color="#021B3A" />
+                        <ActivityIndicator size="small" color={Colors.secondary} />
                         <Text style={s.cardWebViewOverlayText}>Activating your subscription…</Text>
                       </View>
                     )}
@@ -582,7 +585,7 @@ export default function PartnerSubscriptionScreen() {
               {selectedPlan && isIOS && (
                 <View style={s.appleCard}>
                   <View style={s.appleHeader}>
-                    <Ionicons name="logo-apple" size={22} color="#FFFFFF" />
+                    <Ionicons name="logo-apple" size={22} color={Colors.white} />
                     <Text style={s.appleHeaderTitle}>Subscribe with Apple</Text>
                   </View>
                   <Text style={s.confirmInstruction}>
@@ -595,7 +598,7 @@ export default function PartnerSubscriptionScreen() {
                     activeOpacity={0.85}
                   >
                     {applePurchasing
-                      ? <ActivityIndicator size="small" color="#FFFFFF" />
+                      ? <ActivityIndicator size="small" color={Colors.white} />
                       : <Text style={s.sentBtnTxt}>
                           Subscribe — {appleSubscriptions.find(p => p.id === APPLE_SKUS[selectedPlan])?.displayPrice ?? chosenPlan?.price}
                         </Text>
@@ -632,7 +635,7 @@ export default function PartnerSubscriptionScreen() {
           {/* Already active */}
           {isActive && (
             <View style={s.activeNote}>
-              <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+              <Ionicons name="information-circle-outline" size={16} color={Colors.textMuted} />
               <Text style={s.activeNoteText}>
                 To change or cancel your plan, email{' '}
                 <Text
@@ -653,64 +656,65 @@ export default function PartnerSubscriptionScreen() {
 
 const CASHAPP_GREEN = '#00D64F';
 
-const s = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: '#FFFFFF' },
+function makeStyles(Colors: ReturnType<typeof useColors>) {
+  return StyleSheet.create({
+  root:   { flex: 1, backgroundColor: Colors.background },
   scroll: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 100 },
 
-  topBar:      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F5', gap: 10, marginBottom: 4 },
-  topBarIcon:  { width: 36, height: 36, borderRadius: 10, backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center' },
-  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
+  topBar:      { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: 10, marginBottom: 4 },
+  topBarIcon:  { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceLight, justifyContent: 'center', alignItems: 'center' },
+  topBarTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: Colors.text },
 
   statusBanner: { borderRadius: 20, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 16, marginBottom: 20 },
   statusIcon:   { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-  statusTitle:  { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+  statusTitle:  { fontSize: 17, fontWeight: '800', color: Colors.white },
   statusSub:    { fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 4, lineHeight: 18 },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 12, marginTop: 4 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, marginBottom: 12, marginTop: 4 },
 
-  featuresCard:  { backgroundColor: '#F8F8FA', borderRadius: 18, borderWidth: 1, borderColor: '#EBEBEF', overflow: 'hidden', marginBottom: 24 },
+  featuresCard:  { backgroundColor: Colors.surface, borderRadius: 18, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden', marginBottom: 24 },
   featureRow:    { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  featureBorder: { borderBottomWidth: 1, borderBottomColor: '#F0F0F5' },
-  checkCircle:   { width: 22, height: 22, borderRadius: 11, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
-  featureText:   { flex: 1, fontSize: 14, color: '#1A1A2E', lineHeight: 19 },
+  featureBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border },
+  checkCircle:   { width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
+  featureText:   { flex: 1, fontSize: 14, color: Colors.text, lineHeight: 19 },
 
   planCard: {
     flexDirection: 'row', alignItems: 'center',
     borderRadius: 16, padding: 18, marginBottom: 10,
-    borderWidth: 1.5, borderColor: '#EBEBEF', backgroundColor: '#F8F8FA',
+    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.surface,
   },
-  planCardSelected: { borderColor: '#021B3A', backgroundColor: '#EEF2FF' },
+  planCardSelected: { borderColor: '#021B3A', backgroundColor: Colors.surfaceLight },
   planLeft:    { flex: 1, gap: 4 },
   planRight:   { alignItems: 'flex-end', gap: 8 },
-  planName:    { fontSize: 17, fontWeight: '800', color: '#1A1A2E' },
-  planPrice:   { fontSize: 22, fontWeight: '800', color: '#021B3A' },
-  planPer:     { fontSize: 14, fontWeight: '500', color: '#8E8E93' },
-  planNote:    { fontSize: 12, color: '#8E8E93' },
-  saveBadge:   { backgroundColor: '#E8F5E9', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#A5D6A7' },
-  saveBadgeText: { fontSize: 11, fontWeight: '700', color: '#2E7D32' },
-  currentBadge: { backgroundColor: '#021B3A', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  currentBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFFFFF' },
-  radioOuter:   { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#C8C8D0', justifyContent: 'center', alignItems: 'center' },
+  planName:    { fontSize: 17, fontWeight: '800', color: Colors.text },
+  planPrice:   { fontSize: 22, fontWeight: '800', color: Colors.secondary },
+  planPer:     { fontSize: 14, fontWeight: '500', color: Colors.textMuted },
+  planNote:    { fontSize: 12, color: Colors.textMuted },
+  saveBadge:   { backgroundColor: 'rgba(76,175,80,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: 'rgba(76,175,80,0.4)' },
+  saveBadgeText: { fontSize: 11, fontWeight: '700', color: '#4CAF50' },
+  currentBadge: { backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  currentBadgeText: { fontSize: 11, fontWeight: '700', color: Colors.white },
+  radioOuter:   { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center' },
   radioOuterSelected: { borderColor: '#021B3A' },
-  radioInner:   { width: 11, height: 11, borderRadius: 6, backgroundColor: '#021B3A' },
+  radioInner:   { width: 11, height: 11, borderRadius: 6, backgroundColor: Colors.primary },
 
   // ── Apple IAP card ───────────────────────────────────────────────────────────
   appleCard: {
-    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#EBEBEF',
-    backgroundColor: '#F8F8FA', overflow: 'hidden', marginBottom: 16, padding: 16,
+    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.surface, overflow: 'hidden', marginBottom: 16, padding: 16,
   },
   appleHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
     backgroundColor: '#000000', alignSelf: 'flex-start', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 8,
   },
-  appleHeaderTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
-  restoreLink: { color: '#021B3A', fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  appleHeaderTitle: { color: Colors.white, fontSize: 14, fontWeight: '800' },
+  restoreLink: { color: Colors.secondary, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
 
   // ── Cash App card ────────────────────────────────────────────────────────────
   cashAppCard: {
-    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#C8F7D9',
-    backgroundColor: '#F0FFF6', overflow: 'hidden', marginBottom: 16,
+    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: 'rgba(0,214,110,0.35)',
+    backgroundColor: 'rgba(0,214,110,0.08)', overflow: 'hidden', marginBottom: 16,
   },
   cashAppHeader: {
     backgroundColor: CASHAPP_GREEN, flexDirection: 'row', alignItems: 'center',
@@ -720,7 +724,7 @@ const s = StyleSheet.create({
     width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.15)',
     justifyContent: 'center', alignItems: 'center',
   },
-  cashAppHeaderTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  cashAppHeaderTitle: { color: Colors.white, fontSize: 16, fontWeight: '900' },
   cashAppHeaderSub:   { color: 'rgba(255,255,255,0.8)', fontSize: 12, marginTop: 1 },
 
   cashAppAmountRow: {
@@ -728,64 +732,64 @@ const s = StyleSheet.create({
     paddingHorizontal: 18, paddingVertical: 20, gap: 12,
   },
   cashAppAmountBox: { alignItems: 'center', flex: 1 },
-  cashAppAmountLabel: { fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 4 },
-  cashAppAmount:  { fontSize: 36, fontWeight: '900', color: '#1A1A2E' },
+  cashAppAmountLabel: { fontSize: 10, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, marginBottom: 4 },
+  cashAppAmount:  { fontSize: 36, fontWeight: '900', color: Colors.text },
   cashAppTagBox:  { alignItems: 'center', flex: 1 },
-  cashAppTagLabel:{ fontSize: 10, fontWeight: '700', color: '#8E8E93', letterSpacing: 1, marginBottom: 4 },
+  cashAppTagLabel:{ fontSize: 10, fontWeight: '700', color: Colors.textMuted, letterSpacing: 1, marginBottom: 4 },
   cashAppTag:     { fontSize: 22, fontWeight: '900', color: CASHAPP_GREEN },
 
   cashAppNoteBox: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#FFFFFF', marginHorizontal: 16, borderRadius: 12,
-    padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#E8F5E9',
+    backgroundColor: Colors.background, marginHorizontal: 16, borderRadius: 12,
+    padding: 12, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,214,110,0.3)',
   },
-  cashAppNoteText: { flex: 1, fontSize: 13, color: '#8E8E93', lineHeight: 18 },
+  cashAppNoteText: { flex: 1, fontSize: 13, color: Colors.textMuted, lineHeight: 18 },
 
   openCashAppBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: CASHAPP_GREEN, marginHorizontal: 16, borderRadius: 14,
     paddingVertical: 14, marginBottom: 16,
   },
-  openCashAppTxt: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  openCashAppTxt: { color: Colors.white, fontSize: 15, fontWeight: '800' },
 
-  divider: { height: 1, backgroundColor: '#D4F5E0', marginHorizontal: 16, marginBottom: 16 },
+  divider: { height: 1, backgroundColor: 'rgba(0,214,110,0.3)', marginHorizontal: 16, marginBottom: 16 },
 
   fieldGroup: { gap: 6 },
-  fieldLabel: { fontSize: 12, fontWeight: '700', color: '#1A1A2E' },
+  fieldLabel: { fontSize: 12, fontWeight: '700', color: Colors.text },
   textInput: {
     height: 46, borderRadius: 12, paddingHorizontal: 14,
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#D4F5E0',
-    fontSize: 14, color: '#1A1A2E',
+    backgroundColor: Colors.background, borderWidth: 1, borderColor: 'rgba(0,214,110,0.35)',
+    fontSize: 14, color: Colors.text,
   },
   screenshotBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     height: 48, borderRadius: 12, paddingHorizontal: 14,
-    backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#D4F5E0', borderStyle: 'dashed',
+    backgroundColor: Colors.background, borderWidth: 1.5, borderColor: 'rgba(0,214,110,0.35)', borderStyle: 'dashed',
   },
   screenshotThumb: { width: 28, height: 28, borderRadius: 6 },
-  screenshotBtnText: { fontSize: 13, fontWeight: '600', color: '#1A1A2E', flexShrink: 1 },
+  screenshotBtnText: { fontSize: 13, fontWeight: '600', color: Colors.text, flexShrink: 1 },
 
   confirmInstruction: {
-    fontSize: 13, color: '#8E8E93', textAlign: 'center',
+    fontSize: 13, color: Colors.textMuted, textAlign: 'center',
     lineHeight: 18, paddingHorizontal: 16, marginBottom: 12,
   },
   sentBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#021B3A', marginHorizontal: 16, borderRadius: 14,
+    backgroundColor: Colors.primary, marginHorizontal: 16, borderRadius: 14,
     paddingVertical: 14, marginBottom: 20,
   },
-  sentBtnTxt: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  sentBtnTxt: { color: Colors.white, fontSize: 15, fontWeight: '800' },
 
   // ── Card pay card (Authorize.Net) ───────────────────────────────────────────
   cardPayCard: {
-    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: '#EBEBEF',
-    backgroundColor: '#F8F8FA', overflow: 'hidden', marginBottom: 16,
+    marginTop: 8, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.surface, overflow: 'hidden', marginBottom: 16,
   },
   cardPayHeader: {
-    backgroundColor: '#021B3A', flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.primary, flexDirection: 'row', alignItems: 'center',
     gap: 12, paddingHorizontal: 18, paddingVertical: 14,
   },
-  cardPayHeaderTitle: { color: '#FFFFFF', fontSize: 16, fontWeight: '900' },
+  cardPayHeaderTitle: { color: Colors.white, fontSize: 16, fontWeight: '900' },
   cardPayHeaderSub:   { color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 1 },
   cardWebViewWrap: { position: 'relative' },
   cardWebView: { height: 300, backgroundColor: 'transparent' },
@@ -793,23 +797,24 @@ const s = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(248,248,250,0.9)', justifyContent: 'center', alignItems: 'center', gap: 10,
   },
-  cardWebViewOverlayText: { fontSize: 13, fontWeight: '700', color: '#021B3A' },
+  cardWebViewOverlayText: { fontSize: 13, fontWeight: '700', color: Colors.secondary },
 
   // ── Pending / active states ───────────────────────────────────────────────
   pendingCard: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    backgroundColor: '#F0FFF6', borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 16,
-    borderWidth: 1, borderColor: '#C8F7D9',
+    backgroundColor: 'rgba(0,214,110,0.08)', borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 16,
+    borderWidth: 1, borderColor: 'rgba(0,214,110,0.35)',
   },
-  pendingTitle: { fontSize: 15, fontWeight: '700', color: '#1A1A2E', marginBottom: 4 },
-  pendingSub:   { fontSize: 13, color: '#8E8E93', lineHeight: 18 },
-  pendingEmail: { color: '#021B3A', fontWeight: '600', textDecorationLine: 'underline' },
+  pendingTitle: { fontSize: 15, fontWeight: '700', color: Colors.text, marginBottom: 4 },
+  pendingSub:   { fontSize: 13, color: Colors.textMuted, lineHeight: 18 },
+  pendingEmail: { color: Colors.secondary, fontWeight: '600', textDecorationLine: 'underline' },
 
   activeNote: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    marginTop: 16, padding: 14, backgroundColor: '#F8F8FA',
-    borderRadius: 14, borderWidth: 1, borderColor: '#EBEBEF',
+    marginTop: 16, padding: 14, backgroundColor: Colors.surface,
+    borderRadius: 14, borderWidth: 1, borderColor: Colors.border,
   },
-  activeNoteText: { flex: 1, fontSize: 13, color: '#8E8E93', lineHeight: 18 },
-  contactLink:    { color: '#021B3A', fontWeight: '600', textDecorationLine: 'underline' },
-});
+  activeNoteText: { flex: 1, fontSize: 13, color: Colors.textMuted, lineHeight: 18 },
+  contactLink:    { color: Colors.secondary, fontWeight: '600', textDecorationLine: 'underline' },
+  });
+}

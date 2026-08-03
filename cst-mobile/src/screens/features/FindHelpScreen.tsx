@@ -45,7 +45,7 @@ const MAP_CATEGORIES = [
   { icon: 'construct-outline',  label: 'Truck Repair',  color: '#E67E22', query: 'semi+truck+repair+shop' },
   { icon: 'bed-outline',        label: 'Rest Areas',    color: '#F39C12', query: 'rest+area+truck+parking'},
   { icon: 'car-outline',        label: 'Tire Shops',    color: '#2ECC71', query: 'semi+truck+tire+shop'   },
-  { icon: 'restaurant-outline', label: 'Restaurants',   color: '#2C6EBD', query: 'truck+friendly+restaurant'},
+  { icon: 'restaurant-outline', label: 'Restaurants',   color: '#C8D2DC', query: 'truck+friendly+restaurant'},
   { icon: 'medical-outline',    label: 'Hospitals',     color: '#E74C3C', query: 'hospital+emergency+room'},
   { icon: 'home-outline',       label: 'Truck Parking', color: '#8E44AD', query: 'semi+truck+parking'     },
 ];
@@ -55,7 +55,7 @@ const CATEGORY_ICONS: Record<string, { icon: string; color: string }> = {
   'Tire Shop':                   { icon: 'car-outline',        color: '#2ECC71' },
   'Fuel Station':                { icon: 'water-outline',      color: '#1ABC9C' },
   'Hotel / Motel':               { icon: 'bed-outline',        color: '#F39C12' },
-  'Restaurant':                  { icon: 'restaurant-outline', color: '#2C6EBD' },
+  'Restaurant':                  { icon: 'restaurant-outline', color: '#C8D2DC' },
   'Truck Wash':                  { icon: 'car-wash-outline',   color: '#3498DB' },
   'Compliance Service':          { icon: 'document-outline',   color: '#9B59B6' },
   'Towing':                      { icon: 'car-outline',        color: '#E74C3C' },
@@ -118,26 +118,26 @@ function BusinessCard({ listing, onPress }: { listing: Listing; onPress: () => v
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
+      <Ionicons name="chevron-forward" size={16} color="#8FA0B3" />
     </TouchableOpacity>
   );
 }
 
 const bc = StyleSheet.create({
-  card:         { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F8FA', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#EBEBEF', marginBottom: 8, gap: 12 },
+  card:         { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0A1B33', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#1E3A5C', marginBottom: 8, gap: 12 },
   left:         { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   body:         { flex: 1, gap: 3 },
   titleRow:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name:         { flex: 1, fontSize: 15, fontWeight: '700', color: '#1A1A2E' },
+  name:         { flex: 1, fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   rrnBadge:     { backgroundColor: '#021B3A', borderRadius: 5, paddingHorizontal: 5, paddingVertical: 1 },
   rrnBadgeText: { fontSize: 9, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0.5 },
-  sub:          { fontSize: 12, color: '#8E8E93' },
+  sub:          { fontSize: 12, color: '#8FA0B3' },
   ratingRow:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  ratingText:   { fontSize: 11, color: '#8E8E93' },
+  ratingText:   { fontSize: 11, color: '#8FA0B3' },
   flagRow:      { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
-  flag:         { backgroundColor: '#EEF2FF', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
-  flagText:     { fontSize: 9, fontWeight: '700', color: '#6366F1' },
-  hours:        { fontSize: 11, color: '#8E8E93' },
+  flag:         { backgroundColor: '#102A4C', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  flagText:     { fontSize: 9, fontWeight: '700', color: '#C8D2DC' },
+  hours:        { fontSize: 11, color: '#8FA0B3' },
 });
 
 function BusinessDetailModal({ listing, onClose, onReviewed }: {
@@ -215,7 +215,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
             <Text style={dm.bMeta}>{listing.category}</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={dm.closeBtn}>
-            <Ionicons name="close" size={20} color="#8E8E93" />
+            <Ionicons name="close" size={20} color="#8FA0B3" />
           </TouchableOpacity>
         </View>
 
@@ -229,31 +229,31 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
         <View style={dm.details}>
           {(listing.physicalAddress || listing.city) ? (
             <View style={dm.detailRow}>
-              <Ionicons name="location-outline" size={16} color="#8E8E93" />
+              <Ionicons name="location-outline" size={16} color="#8FA0B3" />
               <Text style={dm.detailText}>{listing.physicalAddress || `${listing.city}, ${listing.state}`}</Text>
             </View>
           ) : null}
           {listing.hours ? (
             <View style={dm.detailRow}>
-              <Ionicons name="time-outline" size={16} color="#8E8E93" />
+              <Ionicons name="time-outline" size={16} color="#8FA0B3" />
               <Text style={dm.detailText}>{listing.hours}</Text>
             </View>
           ) : null}
           {listing.phone ? (
             <View style={dm.detailRow}>
-              <Ionicons name="call-outline" size={16} color="#8E8E93" />
+              <Ionicons name="call-outline" size={16} color="#8FA0B3" />
               <Text style={dm.detailText}>{listing.phone}</Text>
             </View>
           ) : null}
           {listing.website ? (
             <View style={dm.detailRow}>
-              <Ionicons name="globe-outline" size={16} color="#8E8E93" />
+              <Ionicons name="globe-outline" size={16} color="#8FA0B3" />
               <Text style={dm.detailText} numberOfLines={1}>{listing.website}</Text>
             </View>
           ) : null}
           {listing.description ? (
             <View style={dm.detailRow}>
-              <Ionicons name="information-circle-outline" size={16} color="#8E8E93" />
+              <Ionicons name="information-circle-outline" size={16} color="#8FA0B3" />
               <Text style={dm.detailText}>{listing.description}</Text>
             </View>
           ) : null}
@@ -267,12 +267,12 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity style={dm.dirBtn} onPress={getDirections} activeOpacity={0.85}>
-            <Ionicons name="navigate" size={18} color="#021B3A" />
+            <Ionicons name="navigate" size={18} color="#C8D2DC" />
             <Text style={dm.dirBtnText}>Directions</Text>
           </TouchableOpacity>
           {listing.website ? (
             <TouchableOpacity style={dm.webBtn} onPress={openWebsite} activeOpacity={0.85}>
-              <Ionicons name="globe-outline" size={18} color="#021B3A" />
+              <Ionicons name="globe-outline" size={18} color="#FFFFFF" />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -281,7 +281,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
         {listing.coupon ? (
           <View style={dm.couponBox}>
             <View style={dm.couponHeader}>
-              <Ionicons name="pricetag" size={15} color="#B45309" />
+              <Ionicons name="pricetag" size={15} color="#F5C842" />
               <Text style={dm.couponLabel}>SPECIAL OFFER</Text>
             </View>
             <Text style={dm.couponText}>{listing.coupon}</Text>
@@ -297,7 +297,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
           </View>
         ) : !showRateForm ? (
           <TouchableOpacity style={dm.rateToggle} onPress={() => setShowRateForm(true)} activeOpacity={0.8}>
-            <Ionicons name="star-outline" size={16} color="#021B3A" />
+            <Ionicons name="star-outline" size={16} color="#C8D2DC" />
             <Text style={dm.rateToggleText}>Rate this business</Text>
           </TouchableOpacity>
         ) : (
@@ -313,7 +313,7 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
             <TextInput
               style={dm.commentInput}
               placeholder="Leave a comment (optional)"
-              placeholderTextColor="#AEAEB2"
+              placeholderTextColor="#8FA0B3"
               value={comment}
               onChangeText={setComment}
               multiline
@@ -339,35 +339,35 @@ function BusinessDetailModal({ listing, onClose, onReviewed }: {
 
 const dm = StyleSheet.create({
   overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet:      { backgroundColor: '#FFFFFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 44, position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '80%' },
-  handle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#E0E0E0', alignSelf: 'center', marginBottom: 20 },
+  sheet:      { backgroundColor: '#0A1B33', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, paddingBottom: 44, position: 'absolute', bottom: 0, left: 0, right: 0, maxHeight: '80%' },
+  handle:     { width: 40, height: 4, borderRadius: 2, backgroundColor: '#1E3A5C', alignSelf: 'center', marginBottom: 20 },
   header:     { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
   headerIcon: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  bName:      { fontSize: 18, fontWeight: '800', color: '#1A1A2E' },
-  bMeta:      { fontSize: 13, color: '#8E8E93', marginTop: 2 },
-  closeBtn:   { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F5F5F5', justifyContent: 'center', alignItems: 'center' },
+  bName:      { fontSize: 18, fontWeight: '800', color: '#FFFFFF' },
+  bMeta:      { fontSize: 13, color: '#8FA0B3', marginTop: 2 },
+  closeBtn:   { width: 32, height: 32, borderRadius: 16, backgroundColor: '#102A4C', justifyContent: 'center', alignItems: 'center' },
   ratingRow:  { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, paddingHorizontal: 2 },
-  ratingText: { fontSize: 13, color: '#8E8E93' },
-  details:    { gap: 10, marginBottom: 20, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#EBEBEF' },
+  ratingText: { fontSize: 13, color: '#8FA0B3' },
+  details:    { gap: 10, marginBottom: 20, backgroundColor: '#0A1B33', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#1E3A5C' },
   detailRow:  { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  detailText: { flex: 1, fontSize: 14, color: '#4A4A5A', lineHeight: 19 },
+  detailText: { flex: 1, fontSize: 14, color: '#8FA0B3', lineHeight: 19 },
   actions:    { flexDirection: 'row', gap: 10 },
   callBtn:    { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#021B3A', gap: 8 },
   callBtnText:{ fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  dirBtn:     { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C5D0E8', gap: 8 },
-  dirBtnText: { fontSize: 15, fontWeight: '700', color: '#021B3A' },
-  webBtn:     { width: 52, height: 52, borderRadius: 14, backgroundColor: '#F8F8FA', borderWidth: 1, borderColor: '#EBEBEF', justifyContent: 'center', alignItems: 'center' },
-  couponBox:    { marginTop: 16, backgroundColor: '#FFFBEB', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 },
+  dirBtn:     { flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: 52, borderRadius: 14, backgroundColor: '#102A4C', borderWidth: 1, borderColor: '#1E3A5C', gap: 8 },
+  dirBtnText: { fontSize: 15, fontWeight: '700', color: '#C8D2DC' },
+  webBtn:     { width: 52, height: 52, borderRadius: 14, backgroundColor: '#102A4C', borderWidth: 1, borderColor: '#1E3A5C', justifyContent: 'center', alignItems: 'center' },
+  couponBox:    { marginTop: 16, backgroundColor: '#0A1B33', borderRadius: 14, padding: 14, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 },
   couponHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  couponLabel:  { fontSize: 11, fontWeight: '800', color: '#B45309', letterSpacing: 0.8 },
-  couponText:   { fontSize: 15, fontWeight: '700', color: '#92400E', lineHeight: 22 },
-  couponHint:   { fontSize: 11, color: '#B45309', fontStyle: 'italic' },
-  rateToggle:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#C5D0E8', backgroundColor: '#EEF2FF' },
-  rateToggleText: { fontSize: 14, fontWeight: '700', color: '#021B3A' },
-  rateBox:        { marginTop: 16, backgroundColor: '#F8F8FA', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#EBEBEF', alignItems: 'center', gap: 12 },
-  rateTitle:      { fontSize: 15, fontWeight: '800', color: '#1A1A2E' },
+  couponLabel:  { fontSize: 11, fontWeight: '800', color: '#F5C842', letterSpacing: 0.8 },
+  couponText:   { fontSize: 15, fontWeight: '700', color: '#FFFFFF', lineHeight: 22 },
+  couponHint:   { fontSize: 11, color: '#8FA0B3', fontStyle: 'italic' },
+  rateToggle:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#1E3A5C', backgroundColor: '#102A4C' },
+  rateToggleText: { fontSize: 14, fontWeight: '700', color: '#C8D2DC' },
+  rateBox:        { marginTop: 16, backgroundColor: '#0A1B33', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#1E3A5C', alignItems: 'center', gap: 12 },
+  rateTitle:      { fontSize: 15, fontWeight: '800', color: '#FFFFFF' },
   starPicker:     { flexDirection: 'row', gap: 8 },
-  commentInput:   { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 10, borderWidth: 1, borderColor: '#EBEBEF', padding: 12, fontSize: 14, color: '#1A1A2E', minHeight: 72, textAlignVertical: 'top' },
+  commentInput:   { width: '100%', backgroundColor: '#102A4C', borderRadius: 10, borderWidth: 1, borderColor: '#1E3A5C', padding: 12, fontSize: 14, color: '#FFFFFF', minHeight: 72, textAlignVertical: 'top' },
   submitBtn:      { width: '100%', height: 48, borderRadius: 12, backgroundColor: '#021B3A', justifyContent: 'center', alignItems: 'center' },
   submitBtnText:  { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   rateThanks:     { fontSize: 15, fontWeight: '700', color: '#27AE60' },
@@ -555,9 +555,9 @@ export default function FindHelpScreen() {
     container:    { flex: 1, backgroundColor: Colors.background },
     scroll:       { paddingBottom: 40 },
 
-    mapWrapper:   { height: MAP_HEIGHT, width: SW, backgroundColor: '#E8EDF2' },
+    mapWrapper:   { height: MAP_HEIGHT, width: SW, backgroundColor: Colors.surface },
     map:          { flex: 1 },
-    recenterBtn:  { position: 'absolute', bottom: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 4 },
+    recenterBtn:  { position: 'absolute', bottom: 12, right: 12, width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 4 },
     mapOverlay:   { position: 'absolute', top: 12, left: 12, backgroundColor: '#021B3A', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
     mapOverlayTx: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
 
@@ -579,13 +579,13 @@ export default function FindHelpScreen() {
     emptyText:    { color: Colors.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
 
     featuredSection:  { marginBottom: 18 },
-    featuredLabel:    { fontSize: 11, fontWeight: '800', color: '#92400E', letterSpacing: 0.8, marginBottom: 10, textTransform: 'uppercase' },
-    featuredCard:     { width: 200, backgroundColor: '#FFFBEB', borderRadius: 16, padding: 14, marginRight: 12, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 },
+    featuredLabel:    { fontSize: 11, fontWeight: '800', color: '#F5C842', letterSpacing: 0.8, marginBottom: 10, textTransform: 'uppercase' },
+    featuredCard:     { width: 200, backgroundColor: '#0A1B33', borderRadius: 16, padding: 14, marginRight: 12, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 },
     featuredBadge:    { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: '#F5C842', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 },
     featuredBadgeTxt: { fontSize: 9, fontWeight: '800', color: '#92400E' },
-    featuredName:     { fontSize: 14, fontWeight: '800', color: '#1A1A2E' },
-    featuredSub:      { fontSize: 12, color: '#8E8E93' },
-    featuredPhone:    { fontSize: 12, color: '#021B3A', fontWeight: '600' },
+    featuredName:     { fontSize: 14, fontWeight: '800', color: '#FFFFFF' },
+    featuredSub:      { fontSize: 12, color: '#8FA0B3' },
+    featuredPhone:    { fontSize: 12, color: '#C8D2DC', fontWeight: '600' },
     divider:      { height: 1, backgroundColor: Colors.border, marginVertical: 20 },
     mapGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     mapCard:      { width: (SW - 48) / 2, backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border },
@@ -604,8 +604,8 @@ export default function FindHelpScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => fetchListings(coordsRef.current, true)}
-            tintColor="#021B3A"
-            colors={['#021B3A']}
+            tintColor={Colors.secondary}
+            colors={[Colors.secondary]}
           />
         }
       >
@@ -648,7 +648,7 @@ export default function FindHelpScreen() {
           {/* Re-center button */}
           {userCoords && (
             <TouchableOpacity style={styles.recenterBtn} onPress={recenter} activeOpacity={0.8}>
-              <Ionicons name="locate" size={18} color="#021B3A" />
+              <Ionicons name="locate" size={18} color={Colors.secondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -721,7 +721,7 @@ export default function FindHelpScreen() {
                       {l.rating > 0 && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                           <StarRow rating={l.rating} />
-                          <Text style={{ fontSize: 11, color: '#8E8E93' }}>{l.rating.toFixed(1)}</Text>
+                          <Text style={{ fontSize: 11, color: '#8FA0B3' }}>{l.rating.toFixed(1)}</Text>
                         </View>
                       )}
                     </TouchableOpacity>
@@ -737,19 +737,19 @@ export default function FindHelpScreen() {
             <TouchableOpacity
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 5,
-                backgroundColor: nearbyMode ? '#021B3A' : '#EEF2FF',
+                backgroundColor: nearbyMode ? '#021B3A' : Colors.surfaceLight,
                 borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7,
-                borderWidth: 1, borderColor: nearbyMode ? '#021B3A' : '#C5D0E8',
+                borderWidth: 1, borderColor: nearbyMode ? '#021B3A' : Colors.border,
               }}
               onPress={toggleNearby}
               activeOpacity={0.8}
               disabled={locLoading}
             >
               {locLoading
-                ? <ActivityIndicator size="small" color={nearbyMode ? '#FFF' : '#021B3A'} />
-                : <Ionicons name="locate" size={14} color={nearbyMode ? '#FFFFFF' : '#021B3A'} />
+                ? <ActivityIndicator size="small" color={nearbyMode ? '#FFF' : Colors.secondary} />
+                : <Ionicons name="locate" size={14} color={nearbyMode ? '#FFFFFF' : Colors.secondary} />
               }
-              <Text style={{ fontSize: 12, fontWeight: '700', color: nearbyMode ? '#FFFFFF' : '#021B3A' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: nearbyMode ? '#FFFFFF' : Colors.secondary }}>
                 {nearbyMode ? 'Near Me ✓' : 'Near Me'}
               </Text>
             </TouchableOpacity>
@@ -762,12 +762,12 @@ export default function FindHelpScreen() {
 
           {loading ? (
             <View style={styles.emptyBox}>
-              <ActivityIndicator size="large" color="#021B3A" />
+              <ActivityIndicator size="large" color={Colors.secondary} />
               <Text style={styles.emptyText}>Finding nearby partners...</Text>
             </View>
           ) : grouped.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Ionicons name="storefront-outline" size={48} color="#E0E0E0" />
+              <Ionicons name="storefront-outline" size={48} color={Colors.textMuted} />
               <Text style={styles.emptyText}>
                 {nearbyMode
                   ? 'No RRN partners within 75 miles of your location.\nTry turning off Near Me to see all partners.'

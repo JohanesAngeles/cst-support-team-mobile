@@ -284,8 +284,8 @@ export default function CargoClaimScreen() {
                   <Text style={[s.actionBtnText, { color: Colors.secondary }]}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.actionBtn} onPress={() => exportPDF(claim)}>
-                  <Ionicons name="document-outline" size={14} color='#3498DB' />
-                  <Text style={[s.actionBtnText, { color: '#3498DB' }]}>Export PDF</Text>
+                  <Ionicons name="document-outline" size={14} color={Colors.secondary} />
+                  <Text style={[s.actionBtnText, { color: Colors.secondary }]}>Export PDF</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.actionBtn} onPress={() => remove(claim)}>
                   <Ionicons name="trash-outline" size={14} color={Colors.danger} />

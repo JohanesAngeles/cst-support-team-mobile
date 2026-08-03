@@ -21,7 +21,7 @@ const games = [
     icon: 'star-outline',
     label: 'Road Ready Score',
     desc: 'Build your 1,000-point driver profile across 4 game modes',
-    color: '#2C6EBD',
+    color: '#C8D2DC',
     screen: 'RoadReady' as const,
   },
   {

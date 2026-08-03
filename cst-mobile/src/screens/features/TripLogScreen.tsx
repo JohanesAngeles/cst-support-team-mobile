@@ -24,7 +24,7 @@ interface Trip {
   status: 'Completed' | 'In Progress' | 'Cancelled';
 }
 
-const STATUS_COLORS = { Completed: '#27AE60', 'In Progress': '#2C6EBD', Cancelled: '#CC0000' };
+const STATUS_COLORS = { Completed: '#27AE60', 'In Progress': '#C8D2DC', Cancelled: '#CC0000' };
 const todayStr = () => new Date().toISOString().split('T')[0];
 const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -218,7 +218,7 @@ export default function TripLogScreen() {
 
   const summaryCards = [
     { label: t('tripLog.totalTrips'), value: String(filteredTrips.length), icon: 'map-outline', color: Colors.secondary },
-    { label: t('tripLog.totalMiles'), value: totalMiles.toLocaleString(), icon: 'speedometer-outline', color: '#3498DB' },
+    { label: t('tripLog.totalMiles'), value: totalMiles.toLocaleString(), icon: 'speedometer-outline', color: Colors.secondary },
     { label: t('tripLog.revenue'), value: totalRevenue > 0 ? `$${totalRevenue.toLocaleString()}` : '—', icon: 'cash-outline', color: Colors.success },
   ];
 

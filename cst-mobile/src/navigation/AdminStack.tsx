@@ -9,22 +9,25 @@ import AdminUniversityApplicationsScreen from '../screens/admin/AdminUniversityA
 import AdminListingsScreen from '../screens/admin/AdminListingsScreen';
 import AdminCashAppScreen from '../screens/admin/AdminCashAppScreen';
 import { useAuth } from '../context/AuthContext';
+import { useColors } from '../constants/colors';
 
 const Tab   = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
 function LogoutScreen() {
   const { logout } = useAuth();
+  const Colors = useColors();
   React.useEffect(() => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: logout },
     ]);
   }, []);
-  return <View style={{ flex: 1, backgroundColor: '#F5F7FA' }} />;
+  return <View style={{ flex: 1, backgroundColor: Colors.background }} />;
 }
 
 function AdminTabs() {
+  const Colors = useColors();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -38,17 +41,17 @@ function AdminTabs() {
         tabBarBackground: () => (
           <BlurView
             intensity={60}
-            tint="light"
+            tint="dark"
             style={{
-              ...Platform.select({ ios: {}, android: { backgroundColor: 'rgba(255,255,255,0.92)' } }),
+              ...Platform.select({ ios: {}, android: { backgroundColor: 'rgba(5,11,24,0.92)' } }),
               flex: 1,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(0,0,0,0.08)',
+              borderTopColor: 'rgba(255,255,255,0.08)',
             }}
           />
         ),
-        tabBarActiveTintColor:   '#021B3A',
-        tabBarInactiveTintColor: '#AEAEB2',
+        tabBarActiveTintColor:   Colors.secondary,
+        tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: { fontSize: 10, fontWeight: '700', marginBottom: 4 },
         tabBarIcon: ({ color, focused }) => {
           const icons: Record<string, any> = {
