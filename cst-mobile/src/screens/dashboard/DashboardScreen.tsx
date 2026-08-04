@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContext';
+import { useTabBarVisibility } from '../../context/TabBarVisibilityContext';
 import { useColors } from '../../constants/colors';
 import { FONTS } from '../../constants/typography';
 import { MainStackParamList } from '../../navigation/MainStack';
@@ -392,6 +393,7 @@ export default function DashboardScreen() {
   const insets     = useSafeAreaInsets();
   const mapRef     = useRef<MapView>(null);
   const sheetRef   = useRef<BottomSheet>(null);
+  const { show: showTabBar, hide: hideTabBar } = useTabBarVisibility();
 
   const [listings,        setListings]        = useState<Listing[]>([]);
   const [totalCount,      setTotalCount]      = useState(0);
@@ -407,6 +409,9 @@ export default function DashboardScreen() {
   const [searchQuery,     setSearchQuery]     = useState('');
   const [activeCategory,  setActiveCategory]  = useState<string | null>(null);
   const [menuOpen,        setMenuOpen]        = useState(false);
+  const [nearbyCount,     setNearbyCount]     = useState<number | null>(null);
+  const [nationwideCount, setNationwideCount] = useState<number | null>(null);
+  const [tickerIndex,     setTickerIndex]     = useState(0);
   const coordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const PAGE_SIZE = 100;
 
@@ -420,6 +425,41 @@ export default function DashboardScreen() {
       ])
     ).start();
   }, [sosPulse]);
+
+  // "Nearby" vs "Nationwide" partner-count ticker — whichever mode is active
+  // already has its count from the main fetch below; the other one is topped
+  // up with a cheap limit:1 request just to read the x-total-count header.
+  const tickerAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (nearbyMode) setNearbyCount(totalCount);
+    else setNationwideCount(totalCount);
+  }, [totalCount, nearbyMode]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if (nearbyMode) {
+          const res = await client.get('/partner/listings', { params: { page: '1', limit: '1' } });
+          const t = parseInt(res.headers?.['x-total-count'], 10);
+          if (!cancelled && Number.isFinite(t)) setNationwideCount(t);
+        } else if (userCoords) {
+          const res = await client.get('/partner/listings', { params: { lat: String(userCoords.latitude), lng: String(userCoords.longitude), radius: '75', page: '1', limit: '1' } });
+          const t = parseInt(res.headers?.['x-total-count'], 10);
+          if (!cancelled && Number.isFinite(t)) setNearbyCount(t);
+        }
+      } catch { /* silent — ticker just shows a dash for that stat */ }
+    })();
+    return () => { cancelled = true; };
+  }, [nearbyMode, userCoords, totalCount]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      Animated.timing(tickerAnim, { toValue: 1, duration: 420, useNativeDriver: true }).start(() => {
+        setTickerIndex(i => (i + 1) % 2);
+        tickerAnim.setValue(0);
+      });
+    }, 3200);
+    return () => clearInterval(id);
+  }, [tickerAnim]);
 
   // Fetch partner listings — pageNum > 1 appends instead of replacing, so
   // "Load More" can page past the 100-per-request cap.
@@ -499,6 +539,13 @@ export default function DashboardScreen() {
     }, 60_000);
     return () => clearInterval(interval);
   }, [fetchListings, nearbyMode]));
+
+  // Tab bar hides while the sheet is fully expanded (immersive full list);
+  // always restore it if the user swipes away to another tab mid-expand.
+  const handleSheetChange = useCallback((index: number) => {
+    if (index >= 2) hideTabBar(); else showTabBar();
+  }, [hideTabBar, showTabBar]);
+  useFocusEffect(useCallback(() => () => showTabBar(), [showTabBar]));
 
   const toggleNearby = useCallback(async () => {
     if (nearbyMode) { setNearbyMode(false); fetchListings(null); return; }
@@ -592,6 +639,15 @@ export default function DashboardScreen() {
     setActiveCategory(cat);
   };
 
+  const tickerStats = [
+    { count: nearbyCount,     label: 'Nearby'     },
+    { count: nationwideCount, label: 'Nationwide' },
+  ];
+  const tickerLabel = (i: number) => {
+    const s = tickerStats[i];
+    return `${s.count ?? '—'} RRN Partner${s.count === 1 ? '' : 's'} ${s.label}`;
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
 
@@ -608,13 +664,13 @@ export default function DashboardScreen() {
         <SafeAreaView edges={['top']}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 16, gap: 10 }}>
             <TouchableOpacity
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}
+              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 }}
               onPress={() => (navigation as any).navigate('Profile')}
               activeOpacity={0.8}
             >
               {user?.avatarUrl
                 ? <Image source={{ uri: user.avatarUrl }} style={{ width: 44, height: 44 }} />
-                : <Text style={{ color: '#FFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold }}>{initials}</Text>
+                : <Text style={{ color: NAVY, fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold }}>{initials}</Text>
               }
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
@@ -622,19 +678,19 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 30, fontFamily: FONTS.display, color: '#FFFFFF', marginTop: -3, letterSpacing: 0.5 }}>{firstName.toUpperCase()}</Text>
             </View>
             <TouchableOpacity
-              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', justifyContent: 'center', alignItems: 'center' }}
+              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 }}
               onPress={() => navigation.navigate('HOSAlerts')}
               activeOpacity={0.8}
             >
-              <Ionicons name="notifications-outline" size={18} color="#FFFFFF" />
-              <View style={{ position: 'absolute', top: 7, right: 7, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9500', borderWidth: 1.5, borderColor: NAVY }} />
+              <Ionicons name="notifications-outline" size={18} color={NAVY} />
+              <View style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9500', borderWidth: 1.5, borderColor: '#FFFFFF' }} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', justifyContent: 'center', alignItems: 'center' }}
+              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 }}
               onPress={() => setMenuOpen(true)}
               activeOpacity={0.8}
             >
-              <Ionicons name="menu" size={18} color="#FFFFFF" />
+              <Ionicons name="menu" size={18} color={NAVY} />
             </TouchableOpacity>
           </View>
 
@@ -643,24 +699,45 @@ export default function DashboardScreen() {
             {QUICK_TOOLS.map(tool => (
               <TouchableOpacity
                 key={tool.screen}
-                style={{ width: 74, alignItems: 'center', gap: 6, backgroundColor: 'rgba(8,16,32,0.55)', borderRadius: 16, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}
+                style={{ width: 74, alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: 16, paddingVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 5, elevation: 5 }}
                 onPress={() => navigation.navigate(tool.screen as never)}
                 activeOpacity={0.75}
               >
                 <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: tool.color + '33', justifyContent: 'center', alignItems: 'center' }}>
                   <Ionicons name={tool.icon as any} size={20} color={tool.color} />
                 </View>
-                <Text style={{ fontSize: 10, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#FFFFFF', textAlign: 'center' }} numberOfLines={2}>{tool.label}</Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#1A1A2E', textAlign: 'center' }} numberOfLines={2}>{tool.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {/* Partner count badge */}
-          <View style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(2,27,58,0.55)', paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          {/* Partner count ticker — slides between Nearby / Nationwide regardless of which mode is active */}
+          <View style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(2,27,58,0.55)', paddingVertical: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
             <Ionicons name="people" size={16} color="#F5C842" />
-            <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold }}>
-              {totalCount} RRN Partner{totalCount !== 1 ? 's' : ''}{nearbyMode ? ' Nearby' : ' Nationwide'}
-            </Text>
+            <View style={{ flex: 1, height: 20, overflow: 'hidden' }}>
+              <Animated.Text
+                numberOfLines={1}
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center',
+                  color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold,
+                  opacity: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+                  transform: [{ translateY: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }],
+                }}
+              >
+                {tickerLabel(tickerIndex)}
+              </Animated.Text>
+              <Animated.Text
+                numberOfLines={1}
+                style={{
+                  position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center',
+                  color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold,
+                  opacity: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
+                  transform: [{ translateY: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+                }}
+              >
+                {tickerLabel((tickerIndex + 1) % 2)}
+              </Animated.Text>
+            </View>
           </View>
         </SafeAreaView>
       </ImageBackground>
@@ -691,14 +768,86 @@ export default function DashboardScreen() {
               <Marker
                 key={l._id}
                 coordinate={{ latitude: l.latitude!, longitude: l.longitude! }}
-                title={l.businessName}
-                description={l.category}
-                pinColor={cat.color}
-                onCalloutPress={() => setSelectedListing(l)}
-              />
+                onPress={() => setSelectedListing(l)}
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={false}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: cat.color, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6 }}>
+                  <Ionicons name={cat.icon as any} size={15} color="#FFFFFF" />
+                </View>
+              </Marker>
             );
           })}
         </MapView>
+
+        {/* ── Floating search bar + category pills — sits over the map ────────── */}
+        <View style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10 }} pointerEvents="box-none">
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(8,14,26,0.92)', borderRadius: 28, paddingLeft: 16, paddingRight: 6, height: 52, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8 }}>
+            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
+            <TextInput
+              style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: '#FFFFFF' }}
+              placeholder="Search partners near you…"
+              placeholderTextColor="rgba(255,255,255,0.45)"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.5)" />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: nearbyMode ? '#F5C842' : 'rgba(255,255,255,0.14)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={toggleNearby}
+              activeOpacity={0.8}
+              disabled={locLoading}
+            >
+              {locLoading
+                ? <ActivityIndicator size="small" color={nearbyMode ? NAVY : '#FFFFFF'} />
+                : <Ionicons name="navigate" size={16} color={nearbyMode ? NAVY : '#FFFFFF'} />
+              }
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ gap: 8, paddingRight: 16 }}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: activeCategory === null ? NAVY : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
+              onPress={() => openFilterChip(null)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="compass" size={13} color={activeCategory === null ? '#FFFFFF' : NAVY} />
+              <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: activeCategory === null ? '#FFFFFF' : NAVY }}>All</Text>
+            </TouchableOpacity>
+            {availableCategories.map(cat => {
+              const active  = activeCategory === cat;
+              const catInfo = CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' };
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: active ? NAVY : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
+                  onPress={() => openFilterChip(cat)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFFFFF' : catInfo.color} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: active ? '#FFFFFF' : '#1A1A2E' }}>{cat}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            {externalFilters.map(cat => (
+              <TouchableOpacity
+                key={cat.label}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
+                onPress={() => openFilterChip(null, cat)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name={cat.icon as any} size={13} color={cat.color} />
+                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#1A1A2E' }}>{cat.label}</Text>
+                <Ionicons name="open-outline" size={11} color="#8E8E93" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
 
         {/* Locate-me button — floats just above the collapsed sheet */}
         {userCoords && (
@@ -735,29 +884,11 @@ export default function DashboardScreen() {
         index={1}
         snapPoints={SHEET_SNAP_POINTS}
         enableDynamicSizing={false}
-        backgroundStyle={{ backgroundColor: '#FFFFFF' }}
+        onChange={handleSheetChange}
+        backgroundStyle={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
         handleIndicatorStyle={{ backgroundColor: '#D8D8DE', width: 40 }}
         style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 12 }}
       >
-        {/* Search bar */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.border, paddingHorizontal: 12, gap: 8, marginHorizontal: 16, marginBottom: 10, height: 42 }}>
-          <Ionicons name="search-outline" size={17} color={Colors.textMuted} />
-          <TextInput
-            style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: Colors.text }}
-            placeholder="Search by name, city, or state…"
-            placeholderTextColor={Colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, gap: 10 }}>
           <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: NAVY + '14', justifyContent: 'center', alignItems: 'center' }}>
             <Ionicons name="storefront" size={17} color={NAVY} />
@@ -771,18 +902,12 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: nearbyMode ? NAVY : '#EEF2FF', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: nearbyMode ? NAVY : '#C5D0E8' }}
-            onPress={toggleNearby}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#C5D0E8' }}
+            onPress={() => navigation.navigate('FindHelp')}
             activeOpacity={0.8}
-            disabled={locLoading}
           >
-            {locLoading
-              ? <ActivityIndicator size="small" color={nearbyMode ? '#FFF' : NAVY} />
-              : <Ionicons name="locate" size={14} color={nearbyMode ? '#FFFFFF' : NAVY} />
-            }
-            <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: nearbyMode ? '#FFFFFF' : NAVY }}>
-              {nearbyMode ? 'Near Me ✓' : 'Near Me'}
-            </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: NAVY }}>View All</Text>
+            <Ionicons name="chevron-forward" size={13} color={NAVY} />
           </TouchableOpacity>
         </View>
 
@@ -798,46 +923,6 @@ export default function DashboardScreen() {
             />
           }
         >
-          {/* Filter chips — RRN categories (filter pins on our own map) + generic
-              "near me" pills that fall back to opening the phone's Maps app
-              when there's no partner data to filter with */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }} contentContainerStyle={{ gap: 8 }}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: activeCategory === null ? NAVY : Colors.surface, borderColor: activeCategory === null ? NAVY : Colors.border }}
-              onPress={() => openFilterChip(null)}
-              activeOpacity={0.8}
-            >
-              <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: activeCategory === null ? '#FFFFFF' : Colors.text }}>All</Text>
-            </TouchableOpacity>
-            {availableCategories.map(cat => {
-              const active  = activeCategory === cat;
-              const catInfo = CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' };
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: active ? NAVY : Colors.surface, borderColor: active ? NAVY : Colors.border }}
-                  onPress={() => openFilterChip(cat)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFF' : catInfo.color} />
-                  <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: active ? '#FFFFFF' : Colors.text }}>{cat}</Text>
-                </TouchableOpacity>
-              );
-            })}
-            {externalFilters.map(cat => (
-              <TouchableOpacity
-                key={cat.label}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, backgroundColor: Colors.surface, borderColor: Colors.border }}
-                onPress={() => openFilterChip(null, cat)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name={cat.icon as any} size={13} color={cat.color} />
-                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: Colors.text }}>{cat.label}</Text>
-                <Ionicons name="open-outline" size={11} color={Colors.textMuted} />
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
           {/* Featured Partners */}
           {featured.length > 0 && (
             <View style={{ marginBottom: 18 }}>

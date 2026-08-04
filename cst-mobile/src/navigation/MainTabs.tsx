@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Animated } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { GestureDetector, Gesture, Directions } from 'react-native-gesture-handler';
 import { useColors } from '../constants/colors';
 import { useAuth } from '../context/AuthContext';
+import { TabBarVisibilityProvider, useTabBarVisibility } from '../context/TabBarVisibilityContext';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import DocumentVaultScreen from '../screens/features/DocumentVaultScreen';
 import FeaturesScreen from '../screens/features/FeaturesScreen';
@@ -77,16 +78,18 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
   const { t } = useTranslation();
   const Colors = useColors();
   const { user } = useAuth();
+  const { translateY, hidden } = useTabBarVisibility();
   const initials = (user?.name ?? 'D').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <View
-      pointerEvents="box-none"
+    <Animated.View
+      pointerEvents={hidden ? 'none' : 'box-none'}
       style={{
         position: 'absolute',
         bottom: insets.bottom - 4,
         left: 14,
         right: 14,
+        transform: [{ translateY }],
       }}
     >
       <View style={{
@@ -173,27 +176,29 @@ function GlassTabBar({ state, navigation }: BottomTabBarProps) {
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
 // ─── Navigator ────────────────────────────────────────────────────────────────
 export default function MainTabs() {
   return (
-    <Tab.Navigator
-      tabBar={props => <GlassTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: { display: 'none' },
-        sceneStyle: { backgroundColor: 'transparent' },
-      }}
-    >
-      <Tab.Screen name="Dashboard" component={makeSwipeable(DashboardScreen,     0)} />
-      <Tab.Screen name="Documents" component={makeSwipeable(DocumentVaultScreen, 1)} />
-      <Tab.Screen name="Game"      component={makeSwipeable(RoadReadyScreen,     2)} />
-      <Tab.Screen name="Tools"     component={makeSwipeable(FeaturesScreen,      3)} />
-      <Tab.Screen name="Fuel"      component={makeSwipeable(FuelLogScreen,       4)} />
-      <Tab.Screen name="Profile"   component={makeSwipeable(ProfileScreen,       5)} />
-    </Tab.Navigator>
+    <TabBarVisibilityProvider>
+      <Tab.Navigator
+        tabBar={props => <GlassTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' },
+          sceneStyle: { backgroundColor: 'transparent' },
+        }}
+      >
+        <Tab.Screen name="Dashboard" component={makeSwipeable(DashboardScreen,     0)} />
+        <Tab.Screen name="Documents" component={makeSwipeable(DocumentVaultScreen, 1)} />
+        <Tab.Screen name="Game"      component={makeSwipeable(RoadReadyScreen,     2)} />
+        <Tab.Screen name="Tools"     component={makeSwipeable(FeaturesScreen,      3)} />
+        <Tab.Screen name="Fuel"      component={makeSwipeable(FuelLogScreen,       4)} />
+        <Tab.Screen name="Profile"   component={makeSwipeable(ProfileScreen,       5)} />
+      </Tab.Navigator>
+    </TabBarVisibilityProvider>
   );
 }

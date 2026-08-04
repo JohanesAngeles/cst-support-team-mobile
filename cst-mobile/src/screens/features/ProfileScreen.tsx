@@ -23,6 +23,12 @@ import { useTheme, ColorMode } from '../../context/ThemeContext';
 import { BIOMETRIC_STORAGE_KEY } from '../../components/BiometricLock';
 import { MainStackParamList } from '../../navigation/MainStack';
 
+const ROLE_META: Record<string, { label: string; icon: string }> = {
+  driver:  { label: 'Driver',           icon: 'car-sport-outline'        },
+  partner: { label: 'Founding Partner', icon: 'storefront-outline'       },
+  admin:   { label: 'Administrator',    icon: 'shield-checkmark-outline' },
+};
+
 const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '1';
 const IOS_APP_ID = process.env.EXPO_PUBLIC_IOS_APP_ID ?? '';
@@ -320,6 +326,7 @@ export default function ProfileScreen() {
   const isPro     = subStatus === 'active';
 
   const initials = user?.name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() ?? 'U';
+  const roleMeta = ROLE_META[user?.role ?? ''] ?? { label: 'Member', icon: 'person-outline' };
 
   const cardBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.84)';
   const cardBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.92)';
@@ -392,85 +399,85 @@ export default function ProfileScreen() {
     <SafeAreaView style={[s.safe, { backgroundColor: bg }]} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
 
-        {/* ── Header banner ──────────────────────────────────────────────── */}
-        <LinearGradient
-          colors={['#021B3A', '#0A2A5C', '#0D3270']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={s.header}
-        >
-          {/* Edit button top-right */}
-          <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
-            <Ionicons name="pencil-outline" size={14} color="#FFFFFF" />
-            <Text style={s.editBtnText}>Edit</Text>
-          </TouchableOpacity>
-
-          {/* Avatar + info row */}
-          <View style={s.headerBody}>
-            <TouchableOpacity style={s.avatarWrap} onPress={handleAvatarPress} activeOpacity={0.8}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.5)']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={s.avatarRing}
-              >
-                {avatarLoading ? (
-                  <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
-                    <ActivityIndicator color="#F97316" />
-                  </View>
-                ) : user?.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={s.avatar} />
-                ) : (
-                  <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
-                    <Text style={[s.avatarText, { color: '#F97316' }]}>{initials}</Text>
-                  </View>
-                )}
-              </LinearGradient>
-              <LinearGradient colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.75)']} style={s.cameraBtn}>
-                <Ionicons name="camera" size={11} color="#021B3A" />
-              </LinearGradient>
+        {/* ── Header banner — same card shape as the sections below, but a
+             black/silver gradient + lifted shadow to set it apart as the hero ── */}
+        <View style={s.headerShadowWrap}>
+          <LinearGradient
+            colors={['#0A0A0C', '#3A3B40', '#9A9DA3', '#1C1D20']}
+            locations={[0, 0.38, 0.68, 1]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={s.header}
+          >
+            {/* Edit button top-right */}
+            <TouchableOpacity style={s.editBtn} onPress={openEdit} activeOpacity={0.8}>
+              <Ionicons name="pencil-outline" size={14} color="#FFFFFF" />
+              <Text style={s.editBtnText}>Edit</Text>
             </TouchableOpacity>
 
-            <View style={s.headerInfo}>
-              <Text style={s.name} numberOfLines={1}>{user?.name}</Text>
-              <Text style={s.email} numberOfLines={1}>{user?.email}</Text>
-              {user?.phone ? <Text style={s.phone} numberOfLines={1}>{user.phone}</Text> : null}
+            {/* Avatar + info row */}
+            <View style={s.headerBody}>
+              <TouchableOpacity style={s.avatarWrap} onPress={handleAvatarPress} activeOpacity={0.8}>
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.5)']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={s.avatarRing}
+                >
+                  {avatarLoading ? (
+                    <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
+                      <ActivityIndicator color="#F97316" />
+                    </View>
+                  ) : user?.avatarUrl ? (
+                    <Image source={{ uri: user.avatarUrl }} style={s.avatar} />
+                  ) : (
+                    <View style={[s.avatar, { backgroundColor: '#021B3A' }]}>
+                      <Text style={[s.avatarText, { color: '#F97316' }]}>{initials}</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+                <LinearGradient colors={['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.75)']} style={s.cameraBtn}>
+                  <Ionicons name="camera" size={11} color="#021B3A" />
+                </LinearGradient>
+              </TouchableOpacity>
 
-              {/* Subscription badge */}
-              <View style={[s.badge,
-                { backgroundColor: isPro ? 'rgba(249,115,22,0.25)' : 'rgba(255,255,255,0.15)',
-                  borderColor:      isPro ? '#F97316'               : 'rgba(255,255,255,0.3)' }]}>
-                {isPro && <Ionicons name="star" size={10} color="#F97316" style={{ marginRight: 3 }} />}
-                <Text style={[s.badgeText, { color: isPro ? '#F97316' : 'rgba(255,255,255,0.75)' }]}>
-                  {isPro ? `ROAD READY PRO` : t('profile.freePlan')}
-                </Text>
+              <View style={s.headerInfo}>
+                <Text style={s.name} numberOfLines={1}>{user?.name}</Text>
+                <Text style={s.email} numberOfLines={1}>{user?.email}</Text>
+                {user?.phone ? <Text style={s.phone} numberOfLines={1}>{user.phone}</Text> : null}
+
+                {/* Role badge + verified-email badge, side by side */}
+                <View style={s.badgeRow}>
+                  <View style={[s.badge, { backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.35)' }]}>
+                    <Ionicons name={roleMeta.icon as any} size={10} color="#F1F2F4" style={{ marginRight: 3 }} />
+                    <Text style={[s.badgeText, { color: '#F1F2F4' }]}>{roleMeta.label}</Text>
+                  </View>
+
+                  {user?.isVerified ? (
+                    <View style={[s.badge, { backgroundColor: 'rgba(74,222,128,0.18)', borderColor: '#4ADE80' }]}>
+                      <Ionicons name="checkmark-circle" size={10} color="#4ADE80" style={{ marginRight: 3 }} />
+                      <Text style={[s.badgeText, { color: '#4ADE80' }]}>{t('profile.emailVerified')}</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={[s.badge, { backgroundColor: 'rgba(230,126,34,0.2)', borderColor: '#E67E22' }]}
+                      onPress={handleResendVerification}
+                      disabled={resending}
+                      activeOpacity={0.7}
+                    >
+                      {resending
+                        ? <ActivityIndicator size="small" color="#E67E22" style={{ marginRight: 4 }} />
+                        : <Ionicons name="alert-circle" size={10} color="#E67E22" style={{ marginRight: 3 }} />
+                      }
+                      <Text style={[s.badgeText, { color: '#E67E22' }]}>{t('profile.tapToVerify')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-
-          {/* Verification status */}
-          {user?.isVerified ? (
-            <View style={s.verifiedRow}>
-              <Ionicons name="checkmark-circle" size={13} color="#4ADE80" />
-              <Text style={[s.verifiedText, { color: '#4ADE80' }]}>{t('profile.emailVerified')}</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[s.verifyBanner, { backgroundColor: 'rgba(230,126,34,0.2)', borderColor: '#E67E22' }]}
-              onPress={handleResendVerification}
-              disabled={resending}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="alert-circle" size={13} color="#E67E22" />
-              <Text style={s.verifyBannerText}>{t('profile.emailNotVerified')}</Text>
-              {resending
-                ? <ActivityIndicator size="small" color="#E67E22" style={{ marginLeft: 6 }} />
-                : <Text style={s.verifyAction}>{t('profile.tapToVerify')}</Text>
-              }
-            </TouchableOpacity>
-          )}
-        </LinearGradient>
+          </LinearGradient>
+        </View>
 
         {/* ── Appearance ─────────────────────────────────────────────────── */}
-        <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder, marginTop: 16 }]}>
+        <View style={[s.groupCard, { backgroundColor: cardBg, borderColor: cardBorder }]}>
           <View style={s.groupHeader}>
             <Ionicons name="color-palette-outline" size={15} color={muted} />
             <Text style={[s.groupTitle, { color: muted }]}>{t('profile.appearance')}</Text>
@@ -715,7 +722,15 @@ const s = StyleSheet.create({
   safe: { flex: 1 },
 
   // ── Header ──────────────────────────────────────────────────────────────────
-  header:       { paddingTop: 20, paddingBottom: 20, paddingHorizontal: 20 },
+  headerShadowWrap: {
+    marginHorizontal: 16, marginBottom: 10, borderRadius: 18,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35, shadowRadius: 14, elevation: 12,
+  },
+  header: {
+    paddingTop: 20, paddingBottom: 20, paddingHorizontal: 20,
+    borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)', overflow: 'hidden',
+  },
   editBtn:      {
     position: 'absolute', top: 14, right: 16, zIndex: 10,
     flexDirection: 'row', alignItems: 'center', gap: 5,
@@ -734,13 +749,9 @@ const s = StyleSheet.create({
   name:         { fontSize: 20, fontWeight: '800', color: '#FFFFFF' },
   email:        { fontSize: 13, color: 'rgba(255,255,255,0.65)' },
   phone:        { fontSize: 12, color: 'rgba(255,255,255,0.50)' },
-  badge:        { flexDirection: 'row', alignItems: 'center', marginTop: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
+  badgeRow:     { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: 8 },
+  badge:        { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: 1 },
   badgeText:    { fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
-  verifiedRow:    { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },
-  verifiedText:   { fontSize: 11, fontWeight: '600' },
-  verifyBanner:   { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, borderWidth: 1 },
-  verifyBannerText: { color: '#E67E22', fontSize: 11, fontWeight: '600' },
-  verifyAction:   { color: '#E67E22', fontSize: 11, fontWeight: '800', marginLeft: 4 },
 
   // ── Group cards ─────────────────────────────────────────────────────────────
   groupCard:    { marginHorizontal: 16, marginBottom: 10, borderRadius: 18, borderWidth: 1, overflow: 'hidden' },

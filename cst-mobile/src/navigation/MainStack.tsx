@@ -211,7 +211,7 @@ export default function MainStack() {
       <Stack.Screen name="IFTATracker" component={IFTATrackerScreen} options={{ title: 'IFTA Tracker' }} />
       <Stack.Screen name="TruckProfile" component={TruckProfileScreen} options={{ title: 'My Truck' }} />
       <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ title: 'Emergency Contacts', headerStyle: { backgroundColor: Colors.danger }, contentStyle: { backgroundColor: Colors.danger } }} />
-      <Stack.Screen name="FindHelp" component={FindHelpScreen} options={{ title: 'Find Help Near Me' }} />
+      <Stack.Screen name="FindHelp" component={FindHelpScreen} options={{ title: 'Find Help Near Me', presentation: 'modal' }} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} options={{ title: 'Road Ready Subscription' }} />
       <Stack.Screen name="TruckerMap" component={TruckerMapScreen} options={{ headerShown: false }} />
       <Stack.Screen name="LoadBoard" component={LoadBoardScreen} options={{ title: 'Load Board' }} />
