@@ -824,52 +824,56 @@ export default function DashboardScreen() {
         />
 
         {/* Search bar + "search this area" pill — sit on the exposed map area,
-            only once the sheet is dragged up past its collapsed peek */}
-        {sheetIndex > 0 && (
-          <View style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10 }} pointerEvents="box-none">
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: NAVY, borderRadius: 28, paddingLeft: 16, paddingRight: 6, height: 52, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8 }}>
-              <Ionicons name="search" size={18} color="rgba(255,255,255,0.55)" />
-              <TextInput
-                style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: '#FFFFFF' }}
-                placeholder="Search partners near you…"
-                placeholderTextColor="rgba(255,255,255,0.45)"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                returnKeyType="search"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.55)" />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: nearbyMode ? '#F5C842' : 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' }}
-                onPress={toggleNearby}
-                activeOpacity={0.8}
-                disabled={locLoading}
-              >
-                {locLoading
-                  ? <ActivityIndicator size="small" color={nearbyMode ? NAVY : '#FFFFFF'} />
-                  : <Ionicons name="navigate" size={16} color={nearbyMode ? NAVY : '#FFFFFF'} />
-                }
+            only once the sheet is dragged up past its collapsed peek. Kept
+            permanently mounted and toggled with `display` (not conditional
+            JSX) — mounting a TextInput + ScrollView mid-gesture was the
+            actual cause of the stutter when swiping the sheet up. */}
+        <View
+          style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10, display: sheetIndex > 0 ? 'flex' : 'none' }}
+          pointerEvents={sheetIndex > 0 ? 'box-none' : 'none'}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: NAVY, borderRadius: 28, paddingLeft: 16, paddingRight: 6, height: 52, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8 }}>
+            <Ionicons name="search" size={18} color="rgba(255,255,255,0.55)" />
+            <TextInput
+              style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: '#FFFFFF' }}
+              placeholder="Search partners near you…"
+              placeholderTextColor="rgba(255,255,255,0.45)"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.55)" />
               </TouchableOpacity>
-            </View>
-
-            {/* Sits directly under the search bar — anchored to the overlay's own
-                top offset, not the sheet's edge, since the sheet's live height
-                isn't available as plain state (and would be covered at 92% anyway) */}
-            <View style={{ alignItems: 'center', marginTop: 12 }}>
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 6 }}
-                onPress={() => fetchListings(nearbyMode ? coordsRef.current : null, true)}
-                activeOpacity={0.85}
-              >
-                <Ionicons name="refresh" size={13} color={NAVY} />
-                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: NAVY }}>Search this area</Text>
-              </TouchableOpacity>
-            </View>
+            )}
+            <TouchableOpacity
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: nearbyMode ? '#F5C842' : 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={toggleNearby}
+              activeOpacity={0.8}
+              disabled={locLoading}
+            >
+              {locLoading
+                ? <ActivityIndicator size="small" color={nearbyMode ? NAVY : '#FFFFFF'} />
+                : <Ionicons name="navigate" size={16} color={nearbyMode ? NAVY : '#FFFFFF'} />
+              }
+            </TouchableOpacity>
           </View>
-        )}
+
+          {/* Sits directly under the search bar — anchored to the overlay's own
+              top offset, not the sheet's edge, since the sheet's live height
+              isn't available as plain state (and would be covered at 92% anyway) */}
+          <View style={{ alignItems: 'center', marginTop: 12 }}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 6 }}
+              onPress={() => fetchListings(nearbyMode ? coordsRef.current : null, true)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="refresh" size={13} color={NAVY} />
+              <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: NAVY }}>Search this area</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* Locate-me button — floats just above the collapsed sheet */}
         {userCoords && (
@@ -933,9 +937,9 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Discover + category chips — only shown once the sheet is dragged up past peek */}
-        {sheetIndex > 0 && (
-          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+        {/* Discover + category chips — only shown once the sheet is dragged up past
+            peek. Permanently mounted, toggled via `display` — see note above. */}
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12, display: sheetIndex > 0 ? 'flex' : 'none' }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               <TouchableOpacity
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, backgroundColor: activeCategory === null ? NAVY : Colors.surface, borderColor: activeCategory === null ? NAVY : Colors.border }}
@@ -975,7 +979,6 @@ export default function DashboardScreen() {
               ))}
             </ScrollView>
           </View>
-        )}
 
         <BottomSheetScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 100 }}
