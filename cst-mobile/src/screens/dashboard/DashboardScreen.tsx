@@ -163,6 +163,115 @@ function BusinessCard({ listing, onPress }: { listing: Listing; onPress: () => v
   );
 }
 
+// Isolated so its 3.2s ticking interval only re-renders this small text
+// block — not the whole screen (and, critically, not the ~100-marker map).
+const PartnerCountTicker = React.memo(function PartnerCountTicker({
+  nearbyCount, nationwideCount,
+}: { nearbyCount: number | null; nationwideCount: number | null }) {
+  const [tickerIndex, setTickerIndex] = useState(0);
+  const tickerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      Animated.timing(tickerAnim, { toValue: 1, duration: 420, useNativeDriver: true }).start(() => {
+        setTickerIndex(i => (i + 1) % 2);
+        tickerAnim.setValue(0);
+      });
+    }, 3200);
+    return () => clearInterval(id);
+  }, [tickerAnim]);
+
+  const stats = [
+    { count: nearbyCount,     label: 'Nearby'     },
+    { count: nationwideCount, label: 'Nationwide' },
+  ];
+  const label = (i: number) => {
+    const s = stats[i];
+    return `${s.count ?? '—'} RRN Partner${s.count === 1 ? '' : 's'} ${s.label}`;
+  };
+
+  return (
+    <View style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(2,27,58,0.55)', paddingVertical: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
+      <Ionicons name="people" size={16} color="#F5C842" />
+      <View style={{ flex: 1, height: 20, overflow: 'hidden' }}>
+        <Animated.Text
+          numberOfLines={1}
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center',
+            color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold,
+            opacity: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
+            transform: [{ translateY: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }],
+          }}
+        >
+          {label(tickerIndex)}
+        </Animated.Text>
+        <Animated.Text
+          numberOfLines={1}
+          style={{
+            position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center',
+            color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold,
+            opacity: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
+            transform: [{ translateY: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+          }}
+        >
+          {label((tickerIndex + 1) % 2)}
+        </Animated.Text>
+      </View>
+    </View>
+  );
+});
+
+// Isolated + memoized so re-renders elsewhere on screen (search typing, the
+// count ticker, sheet drag events, tab focus) never force react-native-maps
+// to re-diff every marker — only an actual data/location change does.
+const PartnerMap = React.memo(function PartnerMap({
+  mapRef, userCoords, mappable, onMapReady, onSelectListing,
+}: {
+  mapRef: React.RefObject<MapView | null>;
+  userCoords: { latitude: number; longitude: number } | null;
+  mappable: Listing[];
+  onMapReady: () => void;
+  onSelectListing: (l: Listing) => void;
+}) {
+  return (
+    <MapView
+      ref={mapRef}
+      style={StyleSheet.absoluteFillObject}
+      provider={PROVIDER_DEFAULT}
+      initialRegion={userCoords ? { ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 } : DEFAULT_REGION}
+      initialCamera={{
+        center: userCoords ?? { latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude },
+        pitch: 60,
+        heading: 0,
+        altitude: 1200,
+        zoom: 15,
+      }}
+      pitchEnabled
+      showsBuildings
+      showsUserLocation
+      showsMyLocationButton={false}
+      onMapReady={onMapReady}
+    >
+      {mappable.map(l => {
+        const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+        return (
+          <Marker
+            key={l._id}
+            coordinate={{ latitude: l.latitude!, longitude: l.longitude! }}
+            onPress={() => onSelectListing(l)}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
+          >
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: cat.color, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6 }}>
+              <Ionicons name={cat.icon as any} size={15} color="#FFFFFF" />
+            </View>
+          </Marker>
+        );
+      })}
+    </MapView>
+  );
+});
+
 function BusinessDetailModal({ listing, onClose, onReviewed }: {
   listing: Listing;
   onClose: () => void;
@@ -411,7 +520,7 @@ export default function DashboardScreen() {
   const [menuOpen,        setMenuOpen]        = useState(false);
   const [nearbyCount,     setNearbyCount]     = useState<number | null>(null);
   const [nationwideCount, setNationwideCount] = useState<number | null>(null);
-  const [tickerIndex,     setTickerIndex]     = useState(0);
+  const [sheetIndex,      setSheetIndex]      = useState(0);
   const coordsRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const PAGE_SIZE = 100;
 
@@ -429,7 +538,6 @@ export default function DashboardScreen() {
   // "Nearby" vs "Nationwide" partner-count ticker — whichever mode is active
   // already has its count from the main fetch below; the other one is topped
   // up with a cheap limit:1 request just to read the x-total-count header.
-  const tickerAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (nearbyMode) setNearbyCount(totalCount);
     else setNationwideCount(totalCount);
@@ -451,15 +559,6 @@ export default function DashboardScreen() {
     })();
     return () => { cancelled = true; };
   }, [nearbyMode, userCoords, totalCount]);
-  useEffect(() => {
-    const id = setInterval(() => {
-      Animated.timing(tickerAnim, { toValue: 1, duration: 420, useNativeDriver: true }).start(() => {
-        setTickerIndex(i => (i + 1) % 2);
-        tickerAnim.setValue(0);
-      });
-    }, 3200);
-    return () => clearInterval(id);
-  }, [tickerAnim]);
 
   // Fetch partner listings — pageNum > 1 appends instead of replacing, so
   // "Load More" can page past the 100-per-request cap.
@@ -542,7 +641,9 @@ export default function DashboardScreen() {
 
   // Tab bar hides while the sheet is fully expanded (immersive full list);
   // always restore it if the user swipes away to another tab mid-expand.
+  // Search/category chips only show once the sheet is dragged up past peek.
   const handleSheetChange = useCallback((index: number) => {
+    setSheetIndex(index);
     if (index >= 2) hideTabBar(); else showTabBar();
   }, [hideTabBar, showTabBar]);
   useFocusEffect(useCallback(() => () => showTabBar(), [showTabBar]));
@@ -571,6 +672,8 @@ export default function DashboardScreen() {
       mapRef.current.animateCamera({ center: userCoords, pitch: 60, zoom: 15 }, { duration: 700 });
     }
   }, [mapReady, userCoords]);
+
+  const handleMapReady = useCallback(() => setMapReady(true), []);
 
   const openExternalMap = async (query: string) => {
     if (!userCoords) { Alert.alert('Location Required', 'Enable location to use this feature.'); return; }
@@ -614,6 +717,9 @@ export default function DashboardScreen() {
     filteredListings.filter(l => l.latitude && l.longitude)
   , [filteredListings]);
   const featured = listings.filter(l => l.tier === 'featured');
+  const topRated = useMemo(() =>
+    [...listings].filter(l => l.rating > 0).sort((a, b) => b.rating - a.rating).slice(0, 10)
+  , [listings]);
 
   // Derive chips from actual data so they always match stored category values
   const availableCategories = useMemo(() =>
@@ -637,15 +743,6 @@ export default function DashboardScreen() {
   const openFilterChip = (cat: string | null, external?: { icon: string; color: string; query: string; label: string }) => {
     if (external) { openExternalMap(external.query); return; }
     setActiveCategory(cat);
-  };
-
-  const tickerStats = [
-    { count: nearbyCount,     label: 'Nearby'     },
-    { count: nationwideCount, label: 'Nationwide' },
-  ];
-  const tickerLabel = (i: number) => {
-    const s = tickerStats[i];
-    return `${s.count ?? '—'} RRN Partner${s.count === 1 ? '' : 's'} ${s.label}`;
   };
 
   return (
@@ -712,142 +809,67 @@ export default function DashboardScreen() {
           </ScrollView>
 
           {/* Partner count ticker — slides between Nearby / Nationwide regardless of which mode is active */}
-          <View style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', backgroundColor: 'rgba(2,27,58,0.55)', paddingVertical: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-            <Ionicons name="people" size={16} color="#F5C842" />
-            <View style={{ flex: 1, height: 20, overflow: 'hidden' }}>
-              <Animated.Text
-                numberOfLines={1}
-                style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center',
-                  color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold,
-                  opacity: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-                  transform: [{ translateY: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }],
-                }}
-              >
-                {tickerLabel(tickerIndex)}
-              </Animated.Text>
-              <Animated.Text
-                numberOfLines={1}
-                style={{
-                  position: 'absolute', top: 0, left: 0, right: 0, textAlign: 'center',
-                  color: '#FFFFFF', fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold,
-                  opacity: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
-                  transform: [{ translateY: tickerAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-                }}
-              >
-                {tickerLabel((tickerIndex + 1) % 2)}
-              </Animated.Text>
-            </View>
-          </View>
+          <PartnerCountTicker nearbyCount={nearbyCount} nationwideCount={nationwideCount} />
         </SafeAreaView>
       </ImageBackground>
 
       {/* ── Full-bleed Map ───────────────────────────────────────────────────── */}
       <View style={{ flex: 1 }}>
-        <MapView
-          ref={mapRef}
-          style={StyleSheet.absoluteFillObject}
-          provider={PROVIDER_DEFAULT}
-          initialRegion={userCoords ? { ...userCoords, latitudeDelta: 0.5, longitudeDelta: 0.5 } : DEFAULT_REGION}
-          initialCamera={{
-            center: userCoords ?? { latitude: DEFAULT_REGION.latitude, longitude: DEFAULT_REGION.longitude },
-            pitch: 60,
-            heading: 0,
-            altitude: 1200,
-            zoom: 15,
-          }}
-          pitchEnabled
-          showsBuildings
-          showsUserLocation
-          showsMyLocationButton={false}
-          onMapReady={() => setMapReady(true)}
-        >
-          {mappable.map(l => {
-            const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
-            return (
-              <Marker
-                key={l._id}
-                coordinate={{ latitude: l.latitude!, longitude: l.longitude! }}
-                onPress={() => setSelectedListing(l)}
-                anchor={{ x: 0.5, y: 0.5 }}
-                tracksViewChanges={false}
-              >
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: cat.color, justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 6 }}>
-                  <Ionicons name={cat.icon as any} size={15} color="#FFFFFF" />
-                </View>
-              </Marker>
-            );
-          })}
-        </MapView>
+        <PartnerMap
+          mapRef={mapRef}
+          userCoords={userCoords}
+          mappable={mappable}
+          onMapReady={handleMapReady}
+          onSelectListing={setSelectedListing}
+        />
 
-        {/* ── Floating search bar + category pills — sits over the map ────────── */}
-        <View style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10 }} pointerEvents="box-none">
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(8,14,26,0.92)', borderRadius: 28, paddingLeft: 16, paddingRight: 6, height: 52, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8 }}>
-            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
-            <TextInput
-              style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: '#FFFFFF' }}
-              placeholder="Search partners near you…"
-              placeholderTextColor="rgba(255,255,255,0.45)"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.5)" />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: nearbyMode ? '#F5C842' : 'rgba(255,255,255,0.14)', justifyContent: 'center', alignItems: 'center' }}
-              onPress={toggleNearby}
-              activeOpacity={0.8}
-              disabled={locLoading}
-            >
-              {locLoading
-                ? <ActivityIndicator size="small" color={nearbyMode ? NAVY : '#FFFFFF'} />
-                : <Ionicons name="navigate" size={16} color={nearbyMode ? NAVY : '#FFFFFF'} />
-              }
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }} contentContainerStyle={{ gap: 8, paddingRight: 16 }}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: activeCategory === null ? NAVY : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
-              onPress={() => openFilterChip(null)}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="compass" size={13} color={activeCategory === null ? '#FFFFFF' : NAVY} />
-              <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: activeCategory === null ? '#FFFFFF' : NAVY }}>All</Text>
-            </TouchableOpacity>
-            {availableCategories.map(cat => {
-              const active  = activeCategory === cat;
-              const catInfo = CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' };
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: active ? NAVY : '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
-                  onPress={() => openFilterChip(cat)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFFFFF' : catInfo.color} />
-                  <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: active ? '#FFFFFF' : '#1A1A2E' }}>{cat}</Text>
+        {/* Search bar + "search this area" pill — sit on the exposed map area,
+            only once the sheet is dragged up past its collapsed peek */}
+        {sheetIndex > 0 && (
+          <View style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10 }} pointerEvents="box-none">
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: NAVY, borderRadius: 28, paddingLeft: 16, paddingRight: 6, height: 52, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8 }}>
+              <Ionicons name="search" size={18} color="rgba(255,255,255,0.55)" />
+              <TextInput
+                style={{ flex: 1, fontSize: 14, fontFamily: FONTS.body, color: '#FFFFFF' }}
+                placeholder="Search partners near you…"
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.55)" />
                 </TouchableOpacity>
-              );
-            })}
-            {externalFilters.map(cat => (
+              )}
               <TouchableOpacity
-                key={cat.label}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 4, elevation: 3 }}
-                onPress={() => openFilterChip(null, cat)}
+                style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: nearbyMode ? '#F5C842' : 'rgba(255,255,255,0.16)', justifyContent: 'center', alignItems: 'center' }}
+                onPress={toggleNearby}
                 activeOpacity={0.8}
+                disabled={locLoading}
               >
-                <Ionicons name={cat.icon as any} size={13} color={cat.color} />
-                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: '#1A1A2E' }}>{cat.label}</Text>
-                <Ionicons name="open-outline" size={11} color="#8E8E93" />
+                {locLoading
+                  ? <ActivityIndicator size="small" color={nearbyMode ? NAVY : '#FFFFFF'} />
+                  : <Ionicons name="navigate" size={16} color={nearbyMode ? NAVY : '#FFFFFF'} />
+                }
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+            </View>
+
+            {/* Sits directly under the search bar — anchored to the overlay's own
+                top offset, not the sheet's edge, since the sheet's live height
+                isn't available as plain state (and would be covered at 92% anyway) */}
+            <View style={{ alignItems: 'center', marginTop: 12 }}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FFFFFF', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 6 }}
+                onPress={() => fetchListings(nearbyMode ? coordsRef.current : null, true)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="refresh" size={13} color={NAVY} />
+                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: NAVY }}>Search this area</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Locate-me button — floats just above the collapsed sheet */}
         {userCoords && (
@@ -881,7 +903,7 @@ export default function DashboardScreen() {
       {/* ── Business list — draggable sheet overlapping the map ─────────────────── */}
       <BottomSheet
         ref={sheetRef}
-        index={1}
+        index={0}
         snapPoints={SHEET_SNAP_POINTS}
         enableDynamicSizing={false}
         onChange={handleSheetChange}
@@ -911,6 +933,50 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Discover + category chips — only shown once the sheet is dragged up past peek */}
+        {sheetIndex > 0 && (
+          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, backgroundColor: activeCategory === null ? NAVY : Colors.surface, borderColor: activeCategory === null ? NAVY : Colors.border }}
+                onPress={() => openFilterChip(null)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="compass" size={13} color={activeCategory === null ? '#FFFFFF' : NAVY} />
+                <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: activeCategory === null ? '#FFFFFF' : Colors.text }}>Discover</Text>
+                <Ionicons name="chevron-down" size={12} color={activeCategory === null ? '#FFFFFF' : Colors.text} />
+              </TouchableOpacity>
+              {availableCategories.map(cat => {
+                const active  = activeCategory === cat;
+                const catInfo = CATEGORY_ICONS[cat] ?? { icon: 'business-outline', color: '#7F8C8D' };
+                return (
+                  <TouchableOpacity
+                    key={cat}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, backgroundColor: active ? NAVY : Colors.surface, borderColor: active ? NAVY : Colors.border }}
+                    onPress={() => openFilterChip(cat)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name={catInfo.icon as any} size={13} color={active ? '#FFFFFF' : catInfo.color} />
+                    <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: active ? '#FFFFFF' : Colors.text }}>{cat}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+              {externalFilters.map(cat => (
+                <TouchableOpacity
+                  key={cat.label}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, backgroundColor: Colors.surface, borderColor: Colors.border }}
+                  onPress={() => openFilterChip(null, cat)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name={cat.icon as any} size={13} color={cat.color} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: Colors.text }}>{cat.label}</Text>
+                  <Ionicons name="open-outline" size={11} color={Colors.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         <BottomSheetScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
@@ -923,36 +989,69 @@ export default function DashboardScreen() {
             />
           }
         >
-          {/* Featured Partners */}
+          {/* Featured Partners — wide banner cards, "curations for you" style */}
           {featured.length > 0 && (
-            <View style={{ marginBottom: 18 }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#92400E', letterSpacing: 0.8, marginBottom: 10, textTransform: 'uppercase' }}>
-                ★ Featured Partners{nearbyMode ? ' Near You' : ''}
+            <View style={{ marginBottom: 22 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: Colors.text, marginBottom: 12 }}>
+                Featured Partners{nearbyMode ? ' Near You' : ''}
               </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {featured.map(l => (
-                  <TouchableOpacity
-                    key={l._id}
-                    style={{ width: 200, backgroundColor: '#FFFBEB', borderRadius: 16, padding: 14, marginRight: 12, borderWidth: 1.5, borderColor: '#F5C842', gap: 6 }}
-                    onPress={() => setSelectedListing(l)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', backgroundColor: '#F5C842', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginBottom: 2 }}>
-                      <Ionicons name="star" size={9} color="#92400E" />
-                      <Text style={{ fontSize: 9, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#92400E' }}>FEATURED</Text>
-                    </View>
-                    <Text style={{ fontSize: 14, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#1A1A2E' }} numberOfLines={1}>{l.businessName}</Text>
-                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>{l.category}</Text>
-                    <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: '#8E8E93' }} numberOfLines={1}>{l.physicalAddress || `${l.city}, ${l.state}`}</Text>
-                    {l.phone ? <Text style={{ fontSize: 12, color: NAVY, fontWeight: '600', fontFamily: FONTS.bodySemiBold }}>{l.phone}</Text> : null}
-                    {l.rating > 0 && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <StarRow rating={l.rating} />
-                        <Text style={{ fontFamily: FONTS.body, fontSize: 11, color: '#8E8E93' }}>{l.rating.toFixed(1)}</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+                {featured.map(l => {
+                  const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+                  return (
+                    <TouchableOpacity
+                      key={l._id}
+                      style={{ width: 170, height: 210, borderRadius: 18, overflow: 'hidden', backgroundColor: cat.color }}
+                      onPress={() => setSelectedListing(l)}
+                      activeOpacity={0.88}
+                    >
+                      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <Ionicons name={cat.icon as any} size={62} color="rgba(255,255,255,0.32)" />
                       </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
+                      <LinearGradient
+                        colors={['transparent', 'rgba(0,0,0,0.78)']}
+                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '58%', justifyContent: 'flex-end', padding: 14 }}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#FFFFFF' }} numberOfLines={1}>{l.businessName}</Text>
+                        <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: 'rgba(255,255,255,0.8)' }} numberOfLines={1}>
+                          {l.physicalAddress || `${l.city}, ${l.state}`}
+                        </Text>
+                      </LinearGradient>
+                      <View style={{ position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 }}>
+                        <Ionicons name="star" size={11} color="#F5C842" />
+                        <Text style={{ fontSize: 10, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#FFFFFF', letterSpacing: 0.4 }}>FEATURED</Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Top Rated Partners — circular avatar row, "curators for you" style */}
+          {topRated.length > 0 && (
+            <View style={{ marginBottom: 22 }}>
+              <Text style={{ fontSize: 16, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: Colors.text, marginBottom: 14 }}>
+                Top Rated Partners
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 18 }}>
+                {topRated.map(l => {
+                  const cat = CATEGORY_ICONS[l.category] ?? { icon: 'business-outline', color: '#7F8C8D' };
+                  return (
+                    <TouchableOpacity key={l._id} style={{ alignItems: 'center', width: 66 }} onPress={() => setSelectedListing(l)} activeOpacity={0.8}>
+                      <View style={{ width: 58, height: 58, borderRadius: 29, backgroundColor: cat.color, justifyContent: 'center', alignItems: 'center' }}>
+                        <Ionicons name={cat.icon as any} size={24} color="#FFFFFF" />
+                        <View style={{ position: 'absolute', bottom: -5, right: -5, flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: NAVY, borderRadius: 10, paddingHorizontal: 5, paddingVertical: 2, borderWidth: 2, borderColor: '#FFFFFF' }}>
+                          <Ionicons name="star" size={8} color="#F5C842" />
+                          <Text style={{ fontSize: 8, fontWeight: '800', fontFamily: FONTS.bodyExtraBold, color: '#FFFFFF' }}>{l.rating.toFixed(1)}</Text>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 11, fontWeight: '700', fontFamily: FONTS.bodyBold, color: Colors.text, marginTop: 10, textAlign: 'center' }} numberOfLines={1}>
+                        {l.businessName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </View>
           )}
