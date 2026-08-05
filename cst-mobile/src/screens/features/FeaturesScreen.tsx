@@ -1,25 +1,32 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  FlatList, ScrollView, Dimensions, StyleSheet,
+  ScrollView, Dimensions, StyleSheet, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { useColors } from '../../constants/colors';
 import { useTheme } from '../../context/ThemeContext';
 import { FEATURES, CATS, Feature, CatId } from '../../constants/features';
-import { recordFeatureUse } from '../../utils/recentFeatures';
+import { recordFeatureUse, getRecentFeatures, RecentFeature } from '../../utils/recentFeatures';
 import { MainStackParamList } from '../../navigation/MainStack';
 
 type Nav = NativeStackNavigationProp<MainStackParamList>;
 
 const { width: SW } = Dimensions.get('window');
-const CARD_W      = (SW - 48) / 3;
 const GRID_CARD_W = (SW - 42) / 2;
+const HERO_GAP    = 12;
+const HERO_W      = SW - 32 - HERO_GAP;
+
+function isToday(ts: number): boolean {
+  const d = new Date(ts);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
 
 // Converts a 6-char hex color to rgba string
 function rgba(hex: string, alpha: number): string {
@@ -29,8 +36,8 @@ function rgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function FeatureCard({ item, onPress, width = CARD_W, isDark }: {
-  item: Feature; onPress: () => void; width?: number; isDark: boolean;
+function FeatureCard({ item, onPress, width, isDark }: {
+  item: Feature; onPress: () => void; width: number; isDark: boolean;
 }) {
   const cardBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.84)';
   const cardBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.92)';
@@ -45,19 +52,107 @@ function FeatureCard({ item, onPress, width = CARD_W, isDark }: {
       onPress={onPress}
       activeOpacity={0.75}
     >
-      {/* Gradient icon tile */}
+      {/* Image-style icon tile up top, title + short description below —
+          mirrors the reference layout's image-then-caption card shape */}
       <LinearGradient
         colors={[item.color, rgba(item.color, 0.65)]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.iconTile}
       >
-        <Ionicons name={item.icon as any} size={22} color="#FFFFFF" />
+        <Ionicons name={item.icon as any} size={30} color="#FFFFFF" />
       </LinearGradient>
 
-      <Text style={[s.cardLabel, { color: textColor }]} numberOfLines={2}>{item.label}</Text>
-      <Text style={[s.cardDesc,  { color: mutedColor }]} numberOfLines={1}>{item.desc}</Text>
+      <Text style={[s.cardLabel, { color: textColor }]} numberOfLines={1}>{item.label}</Text>
+      <Text style={[s.cardDesc,  { color: mutedColor }]} numberOfLines={2}>{item.desc}</Text>
     </TouchableOpacity>
+  );
+}
+
+// Full-width, swipeable "used today" hero — the first thing on the screen,
+// paged with dot indicators, matching the reference layout's big image +
+// dots up top. Falls back to a friendly empty state before any tool's been
+// opened today so the slot is always present, not just once there's history.
+function TodayUsedSection({ items, onPress, isDark }: {
+  items: RecentFeature[]; onPress: (f: RecentFeature) => void; isDark: boolean;
+}) {
+  const [page, setPage] = useState(0);
+  const textColor  = isDark ? '#FFFFFF' : '#0D1B3E';
+  const mutedColor = isDark ? 'rgba(255,255,255,0.5)' : '#6B7280';
+  const cardBg     = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.84)';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.92)';
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setPage(Math.round(e.nativeEvent.contentOffset.x / (HERO_W + HERO_GAP)));
+  };
+
+  return (
+    <View style={{ marginBottom: 22 }}>
+      <View style={[s.sectionHeader, { paddingTop: 4 }]}>
+        <Text style={[s.sectionTitle, { color: textColor, flex: undefined }]}>Used Today</Text>
+      </View>
+
+      {items.length === 0 ? (
+        <View style={[s.heroEmpty, { width: HERO_W, backgroundColor: cardBg, borderColor: cardBorder }]}>
+          <Ionicons name="time-outline" size={26} color={mutedColor} />
+          <Text style={{ color: mutedColor, fontSize: 13, textAlign: 'center', marginTop: 8 }}>
+            Tools you open today will show up here
+          </Text>
+        </View>
+      ) : (
+        <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={HERO_W + HERO_GAP}
+            decelerationRate="fast"
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            contentContainerStyle={{ paddingHorizontal: 16, gap: HERO_GAP }}
+          >
+            {items.map(item => (
+              <TouchableOpacity
+                key={item.screen}
+                style={[s.heroCard, { width: HERO_W }]}
+                onPress={() => onPress(item)}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={[item.color, rgba(item.color, 0.6)]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                  <Ionicons name={item.icon as any} size={54} color="rgba(255,255,255,0.35)" />
+                </View>
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.72)']}
+                  style={s.heroOverlay}
+                >
+                  <Text style={s.heroLabel} numberOfLines={1}>{item.label}</Text>
+                  <Text style={s.heroDesc} numberOfLines={1}>{item.desc}</Text>
+                  <View style={s.heroOpenRow}>
+                    <Text style={s.heroOpenText}>Open</Text>
+                    <Ionicons name="arrow-forward" size={12} color="#FFFFFF" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {items.length > 1 && (
+            <View style={s.dotsRow}>
+              {items.map((_, i) => (
+                <View
+                  key={i}
+                  style={[s.dot, { width: i === page ? 16 : 6, backgroundColor: i === page ? '#021B3A' : (isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)') }]}
+                />
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
   );
 }
 
@@ -84,19 +179,11 @@ function CategorySection({
           <Text style={[s.sectionCount, { color: cat.color }]}>{features.length}</Text>
         </View>
       </View>
-      <FlatList
-        data={features}
-        keyExtractor={f => f.label}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        nestedScrollEnabled
-        directionalLockEnabled
-        disableIntervalMomentum
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 10 }}
-        renderItem={({ item }) => (
-          <FeatureCard item={item} onPress={() => onPress(item)} isDark={isDark} />
-        )}
-      />
+      <View style={s.gridWrap}>
+        {features.map(f => (
+          <FeatureCard key={f.label} item={f} onPress={() => onPress(f)} width={GRID_CARD_W} isDark={isDark} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -108,6 +195,14 @@ export default function FeaturesScreen() {
   const { t } = useTranslation();
   const [search,    setSearch]    = useState('');
   const [activeCat, setActiveCat] = useState<CatId>('all');
+  const [recents,   setRecents]   = useState<RecentFeature[]>([]);
+
+  // Refetched on every focus (not just mount) so a tool opened just now shows
+  // up immediately when the user backs out to this screen.
+  useFocusEffect(useCallback(() => {
+    getRecentFeatures().then(setRecents);
+  }, []));
+  const todaysTools = useMemo(() => recents.filter(r => isToday(r.usedAt)), [recents]);
 
   const headerBg   = isDark ? 'rgba(8,12,24,0.90)'    : 'rgba(245,247,255,0.90)';
   const headerBorder = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
@@ -122,6 +217,12 @@ export default function FeaturesScreen() {
       label: feature.label, icon: feature.icon,
       color: feature.color, desc: feature.desc, screen: feature.screen,
     });
+    navigation.navigate(feature.screen as any);
+  };
+
+  const goToRecent = async (feature: RecentFeature) => {
+    if (!feature.screen) return;
+    await recordFeatureUse(feature);
     navigation.navigate(feature.screen as any);
   };
 
@@ -259,9 +360,12 @@ export default function FeaturesScreen() {
               )}
             </View>
           ) : (
-            groupedCats.map(({ cat, features }) => (
-              <CategorySection key={cat.id} cat={cat} features={features} onPress={goTo} isDark={isDark} />
-            ))
+            <>
+              <TodayUsedSection items={todaysTools} onPress={goToRecent} isDark={isDark} />
+              {groupedCats.map(({ cat, features }) => (
+                <CategorySection key={cat.id} cat={cat} features={features} onPress={goTo} isDark={isDark} />
+              ))}
+            </>
           )}
           <View style={{ height: 100 }} />
         </ScrollView>
@@ -291,14 +395,38 @@ const s = StyleSheet.create({
 
   // Feature card
   card: {
-    borderRadius: 18, padding: 14, borderWidth: 1, gap: 9,
+    borderRadius: 18, padding: 12, borderWidth: 1, gap: 8,
   },
   iconTile: {
-    width: 48, height: 48, borderRadius: 14,
+    width: '100%', height: 84, borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
   },
-  cardLabel: { fontSize: 12, fontWeight: '700', lineHeight: 16 },
-  cardDesc:  { fontSize: 10 },
+  cardLabel: { fontSize: 13, fontWeight: '700', lineHeight: 17 },
+  cardDesc:  { fontSize: 11, lineHeight: 15 },
+
+  // "Used Today" hero
+  heroCard: {
+    height: 170, borderRadius: 20, overflow: 'hidden',
+  },
+  heroOverlay: {
+    position: 'absolute', left: 0, right: 0, bottom: 0,
+    paddingHorizontal: 16, paddingTop: 28, paddingBottom: 14, gap: 2,
+  },
+  heroLabel: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  heroDesc:  { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
+  heroOpenRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6,
+  },
+  heroOpenText: { color: '#FFFFFF', fontSize: 12, fontWeight: '700' },
+  heroEmpty: {
+    marginHorizontal: 16, height: 120, borderRadius: 20, borderWidth: 1,
+    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24,
+  },
+  dotsRow: {
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
+    gap: 6, marginTop: 12,
+  },
+  dot: { height: 6, borderRadius: 3 },
 
   // Category section header
   sectionHeader: {

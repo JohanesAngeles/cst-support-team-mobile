@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import Reanimated, { useSharedValue, useAnimatedStyle, interpolate, Extrapolation } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
@@ -503,6 +504,10 @@ export default function DashboardScreen() {
   const mapRef     = useRef<MapView>(null);
   const sheetRef   = useRef<BottomSheet>(null);
   const { show: showTabBar, hide: hideTabBar } = useTabBarVisibility();
+  // Driven live by BottomSheet itself (written into every frame of the drag
+  // gesture) so the search overlay's fade/slide tracks the sheet exactly —
+  // no lag waiting for a snap point to settle, no popping in mid-screen.
+  const sheetAnimatedIndex = useSharedValue(0);
 
   const [listings,        setListings]        = useState<Listing[]>([]);
   const [totalCount,      setTotalCount]      = useState(0);
@@ -599,11 +604,16 @@ export default function DashboardScreen() {
   // mounted while other tabs are active, so an ungated loop here would keep
   // re-rendering (and re-diffing every map marker) behind the scenes and
   // drag down whatever screen the user is actually looking at.
+  // Also gated on nearbyMode: that's bounded to a 75mi radius, so the total
+  // stays small. Nationwide is ~4,800 listings — auto-paging through all ~48
+  // pages back-to-back would pile thousands of markers onto the MapView in
+  // one burst and freeze/crash the app, so nationwide falls back to a manual
+  // "Load More" tap below instead.
   useEffect(() => {
-    if (isFocused && !loading && !refreshing && !loadingMore && listings.length > 0 && listings.length < totalCount) {
+    if (nearbyMode && isFocused && !loading && !refreshing && !loadingMore && listings.length > 0 && listings.length < totalCount) {
       loadMore();
     }
-  }, [isFocused, loading, refreshing, loadingMore, listings.length, totalCount, loadMore]);
+  }, [nearbyMode, isFocused, loading, refreshing, loadingMore, listings.length, totalCount, loadMore]);
 
   // Default to the driver's own area, not the full nationwide directory —
   // with ~4,800 listings total, loading and rendering everything as map pins
@@ -647,6 +657,19 @@ export default function DashboardScreen() {
     if (index >= 2) hideTabBar(); else showTabBar();
   }, [hideTabBar, showTabBar]);
   useFocusEffect(useCallback(() => () => showTabBar(), [showTabBar]));
+
+  // Fades + slides the search overlay/chips in as the sheet crosses from peek
+  // (index 0) toward the first snap point (index 1), continuously — synced to
+  // sheetAnimatedIndex, which BottomSheet updates every frame of the drag, so
+  // it's already in place by the time the sheet finishes rising (no jump/pop
+  // partway up the screen) and reverses just as smoothly on the way down.
+  const revealStyle = useAnimatedStyle(() => {
+    const progress = interpolate(sheetAnimatedIndex.value, [0, 1], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: progress,
+      transform: [{ translateY: interpolate(progress, [0, 1], [-14, 0]) }],
+    };
+  });
 
   const toggleNearby = useCallback(async () => {
     if (nearbyMode) { setNearbyMode(false); fetchListings(null); return; }
@@ -824,12 +847,14 @@ export default function DashboardScreen() {
         />
 
         {/* Search bar + "search this area" pill — sit on the exposed map area,
-            only once the sheet is dragged up past its collapsed peek. Kept
-            permanently mounted and toggled with `display` (not conditional
-            JSX) — mounting a TextInput + ScrollView mid-gesture was the
-            actual cause of the stutter when swiping the sheet up. */}
-        <View
-          style={{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10, display: sheetIndex > 0 ? 'flex' : 'none' }}
+            fading/sliding in as the sheet rises past its collapsed peek. Kept
+            permanently mounted (not conditional JSX) — mounting a TextInput +
+            ScrollView mid-gesture was the actual cause of the old stutter —
+            and driven by `revealStyle`, a reanimated style synced live to the
+            drag itself, so it's already in the upper part of the screen by
+            the time the sheet reaches the top instead of popping in partway. */}
+        <Reanimated.View
+          style={[{ position: 'absolute', top: 16, left: 16, right: 16, zIndex: 10 }, revealStyle]}
           pointerEvents={sheetIndex > 0 ? 'box-none' : 'none'}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: NAVY, borderRadius: 28, paddingLeft: 16, paddingRight: 6, height: 52, gap: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10, elevation: 8 }}>
@@ -873,7 +898,7 @@ export default function DashboardScreen() {
               <Text style={{ fontSize: 12, fontWeight: '700', fontFamily: FONTS.bodyBold, color: NAVY }}>Search this area</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Reanimated.View>
 
         {/* Locate-me button — floats just above the collapsed sheet */}
         {userCoords && (
@@ -910,6 +935,7 @@ export default function DashboardScreen() {
         index={0}
         snapPoints={SHEET_SNAP_POINTS}
         enableDynamicSizing={false}
+        animatedIndex={sheetAnimatedIndex}
         onChange={handleSheetChange}
         backgroundStyle={{ backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
         handleIndicatorStyle={{ backgroundColor: '#D8D8DE', width: 40 }}
@@ -937,9 +963,10 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Discover + category chips — only shown once the sheet is dragged up past
-            peek. Permanently mounted, toggled via `display` — see note above. */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 12, display: sheetIndex > 0 ? 'flex' : 'none' }}>
+        {/* Discover + category chips — fade/slide in as the sheet crosses peek,
+            in sync with the search overlay above (same `revealStyle`).
+            Permanently mounted — see note above. */}
+        <Reanimated.View style={[{ paddingHorizontal: 16, paddingBottom: 12 }, revealStyle]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               <TouchableOpacity
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1, backgroundColor: activeCategory === null ? NAVY : Colors.surface, borderColor: activeCategory === null ? NAVY : Colors.border }}
@@ -978,7 +1005,7 @@ export default function DashboardScreen() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
+        </Reanimated.View>
 
         <BottomSheetScrollView
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 100 }}
@@ -1095,18 +1122,40 @@ export default function DashboardScreen() {
             })
           )}
 
-          {/* Loading indicator — remaining pages load automatically in the
-              background, no tap required */}
+          {/* Nearby mode: remaining pages load automatically in the background,
+              no tap required (bounded to a 75mi radius, so the total stays
+              small). Nationwide: manual tap, since auto-paging through all
+              ~4,800 listings at once is what was freezing/crashing the app. */}
           {!loading && listings.length < totalCount && (
-            <View style={{
-              marginTop: 8, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
-              flexDirection: 'row', gap: 8,
-            }}>
-              <ActivityIndicator size="small" color={NAVY} />
-              <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: Colors.textMuted }}>
-                Loading more partners… ({listings.length} of {totalCount})
-              </Text>
-            </View>
+            nearbyMode ? (
+              <View style={{
+                marginTop: 8, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center',
+                flexDirection: 'row', gap: 8,
+              }}>
+                <ActivityIndicator size="small" color={NAVY} />
+                <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: Colors.textMuted }}>
+                  Loading more partners… ({listings.length} of {totalCount})
+                </Text>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={{
+                  marginTop: 8, height: 44, borderRadius: 12, backgroundColor: Colors.surface,
+                  borderWidth: 1, borderColor: Colors.border, justifyContent: 'center', alignItems: 'center',
+                  flexDirection: 'row', gap: 8,
+                }}
+                onPress={loadMore}
+                disabled={loadingMore}
+                activeOpacity={0.8}
+              >
+                {loadingMore
+                  ? <ActivityIndicator size="small" color={NAVY} />
+                  : <Text style={{ fontFamily: FONTS.body, fontSize: 13, fontWeight: '700', color: NAVY }}>
+                      Load {Math.min(PAGE_SIZE, totalCount - listings.length)} More ({listings.length} of {totalCount})
+                    </Text>
+                }
+              </TouchableOpacity>
+            )
           )}
         </BottomSheetScrollView>
       </BottomSheet>
