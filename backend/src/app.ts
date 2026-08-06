@@ -30,6 +30,8 @@ import billingRoutes from './routes/billing';
 import appleBillingRoutes from './routes/appleBilling';
 import authorizeNetBillingRoutes from './routes/authorizeNetBilling';
 import authorizeNetWebhookRoutes from './routes/authorizeNetWebhook';
+import kurvBillingRoutes from './routes/kurvBilling';
+import kurvWebhookRoutes from './routes/kurvWebhook';
 import mapRoutes from './routes/map';
 import loadsRoutes from './routes/loads';
 import dispatchContactsRoutes from './routes/dispatchcontacts';
@@ -228,6 +230,12 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/billing/apple', appleBillingRoutes);
 app.use('/api/billing/authorizenet', authorizeNetBillingRoutes);
+// Kurv's response_url callback has no documented signature scheme, so unlike
+// the Authorize.Net webhook above it doesn't need raw-body/express.raw() —
+// kurvWebhook.ts re-verifies payments server-to-server instead of trusting
+// the POST body, so normal express.json() parsing is fine here.
+app.use('/api/billing/kurv/webhook', kurvWebhookRoutes);
+app.use('/api/billing/kurv', kurvBillingRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/loads', loadsRoutes);
 app.use('/api/dispatch-contacts', dispatchContactsRoutes);

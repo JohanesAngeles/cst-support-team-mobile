@@ -53,7 +53,7 @@ export interface IUser extends Document {
   subscriptionStatus?: 'free' | 'active' | 'cancelled' | 'past_due';
   subscriptionPlan?: 'monthly' | 'annual';
   subscriptionEnd?: Date;
-  subscriptionSource?: 'stripe' | 'cashapp' | 'apple' | 'authorizenet';
+  subscriptionSource?: 'stripe' | 'cashapp' | 'apple' | 'authorizenet' | 'kurv';
   appleOriginalTransactionId?: string;
   cashAppPending?: boolean;
   cashAppPendingPlan?: 'monthly' | 'annual';
@@ -61,6 +61,14 @@ export interface IUser extends Document {
   authorizeNetCustomerProfileId?: string;
   authorizeNetPaymentProfileId?: string;
   authorizeNetSubscriptionId?: string;
+  kurvTransactionId?: string;
+  kurvPaymentId?: string;
+  // Set when a Kurv payment request is created and cleared once the response_url
+  // webhook confirms (or the pending request is superseded) — the checkout link
+  // itself doesn't mean paid, so subscriptionStatus/Plan can't be set until then.
+  kurvPendingPlan?: 'monthly' | 'annual';
+  kurvPendingCelebrityId?: string;
+  kurvPendingAmountCents?: number;
   referralCode?: string;
   referredBy?: string;
   notificationPreferences?: INotificationPreferences;
@@ -112,7 +120,7 @@ const UserSchema = new Schema<IUser>(
     subscriptionStatus:  { type: String, enum: ['free', 'active', 'cancelled', 'past_due'], default: 'free' },
     subscriptionPlan:    { type: String, enum: ['monthly', 'annual'] },
     subscriptionEnd:     { type: Date },
-    subscriptionSource:  { type: String, enum: ['stripe', 'cashapp', 'apple', 'authorizenet'] },
+    subscriptionSource:  { type: String, enum: ['stripe', 'cashapp', 'apple', 'authorizenet', 'kurv'] },
     appleOriginalTransactionId: { type: String },
     cashAppPending:      { type: Boolean, default: false },
     cashAppPendingPlan:  { type: String, enum: ['monthly', 'annual'] },
@@ -120,6 +128,11 @@ const UserSchema = new Schema<IUser>(
     authorizeNetCustomerProfileId: { type: String },
     authorizeNetPaymentProfileId:  { type: String },
     authorizeNetSubscriptionId:    { type: String },
+    kurvTransactionId:      { type: String },
+    kurvPaymentId:          { type: String },
+    kurvPendingPlan:        { type: String, enum: ['monthly', 'annual'] },
+    kurvPendingCelebrityId: { type: String },
+    kurvPendingAmountCents: { type: Number },
     referralCode:        { type: String, unique: true, sparse: true },
     referredBy:          { type: String },
     notificationPreferences: {
